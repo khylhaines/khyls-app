@@ -485,48 +485,45 @@ function openMissionMenu() {
   speakText(`${currentPin.n}. Quest menu opened.`);
   showModal("quest-modal");
 }
-
 function openTask(mode) {
   if (!currentPin) return;
 
-  const tier = getEffectiveTier();
-  let task;
+  const content = ADULT_CONTENT?.[currentPin.id];
 
-  if (state.activePack === "adult") {
-    const content = ADULT_CONTENT?.[currentPin.id];
-    task = {
-      q: content?.title || `${mode.toUpperCase()} @ ${currentPin.n}`,
-      options: ["CONTINUE", "LEAVE", "SKIP", "BACK"],
-      answer: 0,
-      fact: content?.story || "Adult story content not found for this pin yet.",
-      meta: { rewardCoins: 40 },
-    };
-  } else {
-    task = getQA(currentPin.id, mode, tier);
+  let title = currentPin.n;
+  let story = "";
+  let evidence = "";
+  let clue = "";
+
+  if (content) {
+    title = content.title || currentPin.n;
+    story = content.story || "";
   }
 
-  currentTask = {
-    mode,
-    pin: currentPin,
-    question: task,
-  };
+  // Optional future fields (safe if not present)
+  evidence = content?.evidence || "No physical evidence recovered.";
+  clue = content?.clue || "No key clue identified yet.";
 
+  // UI
   if ($("task-title")) {
-    $("task-title").innerText = `${mode.toUpperCase()} @ ${currentPin.n}`;
+    $("task-title").innerText = title;
   }
 
   if ($("task-desc")) {
-    $("task-desc").innerText = task?.q || "No mission found.";
+    $("task-desc").innerText =
+      `${story}\n\n` + `EVIDENCE:\n${evidence}\n\n` + `CLUE:\n${clue}`;
   }
 
-  renderTaskOptions(task);
-
-  speakText(task?.q || "No mission found.");
-  setTimeout(() => speakOptions(task?.options || []), 700);
-
-  if (state.activePack === "adult" && task?.fact) {
-    setTimeout(() => speakText(task.fact, false), 1400);
+  // 🔇 REMOVE QUIZ OPTIONS
+  if ($("task-options")) {
+    $("task-options").innerHTML = "";
   }
+
+  // 🎤 CLEAN VOICE FLOW
+  speakText(title);
+  setTimeout(() => speakText(story, false), 700);
+  setTimeout(() => speakText(`Evidence: ${evidence}`, false), 1600);
+  setTimeout(() => speakText(`Clue: ${clue}`, false), 2500);
 
   showModal("task-modal");
 }
