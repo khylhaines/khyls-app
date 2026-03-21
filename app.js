@@ -416,9 +416,7 @@ function startLocationWatch() {
       } else {
         if (state.activePack === "adult") {
           const label = state.activeAdultCategory
-            ? `ADULT: ${String(state.activeAdultCategory)
-                .replaceAll("_", " ")
-                .toUpperCase()}`
+            ? `ADULT: ${String(state.activeAdultCategory).replaceAll("_", " ").toUpperCase()}`
             : "ADULT MAP";
           updateCaptureText(label);
         } else {
@@ -485,45 +483,48 @@ function openMissionMenu() {
   speakText(`${currentPin.n}. Quest menu opened.`);
   showModal("quest-modal");
 }
+
 function openTask(mode) {
   if (!currentPin) return;
 
-  const content = ADULT_CONTENT?.[currentPin.id];
+  const tier = getEffectiveTier();
+  let task;
 
-  let title = currentPin.n;
-  let story = "";
-  let evidence = "";
-  let clue = "";
-
-  if (content) {
-    title = content.title || currentPin.n;
-    story = content.story || "";
+  if (state.activePack === "adult") {
+    const content = ADULT_CONTENT?.[currentPin.id];
+    task = {
+      q: content?.title || `${mode.toUpperCase()} @ ${currentPin.n}`,
+      options: ["CONTINUE", "LEAVE", "SKIP", "BACK"],
+      answer: 0,
+      fact: content?.story || "Adult story content not found for this pin yet.",
+      meta: { rewardCoins: 40 },
+    };
+  } else {
+    task = getQA(currentPin.id, mode, tier);
   }
 
-  // Optional future fields (safe if not present)
-  evidence = content?.evidence || "No physical evidence recovered.";
-  clue = content?.clue || "No key clue identified yet.";
+  currentTask = {
+    mode,
+    pin: currentPin,
+    question: task,
+  };
 
-  // UI
   if ($("task-title")) {
-    $("task-title").innerText = title;
+    $("task-title").innerText = `${mode.toUpperCase()} @ ${currentPin.n}`;
   }
 
   if ($("task-desc")) {
-    $("task-desc").innerText =
-      `${story}\n\n` + `EVIDENCE:\n${evidence}\n\n` + `CLUE:\n${clue}`;
+    $("task-desc").innerText = task?.q || "No mission found.";
   }
 
-  // 🔇 REMOVE QUIZ OPTIONS
-  if ($("task-options")) {
-    $("task-options").innerHTML = "";
-  }
+  renderTaskOptions(task);
 
-  // 🎤 CLEAN VOICE FLOW
-  speakText(title);
-  setTimeout(() => speakText(story, false), 700);
-  setTimeout(() => speakText(`Evidence: ${evidence}`, false), 1600);
-  setTimeout(() => speakText(`Clue: ${clue}`, false), 2500);
+  speakText(task?.q || "No mission found.");
+  setTimeout(() => speakOptions(task?.options || []), 700);
+
+  if (state.activePack === "adult" && task?.fact) {
+    setTimeout(() => speakText(task.fact, false), 1400);
+  }
 
   showModal("task-modal");
 }
@@ -608,7 +609,8 @@ function answerMission(index) {
 
   const active = getActivePlayer();
   const reward =
-    Number(q?.meta?.rewardCoins) || (state.activePack === "adult" ? 40 : 25);
+    Number(q?.meta?.rewardCoins) ||
+    (state.activePack === "adult" ? 40 : 25);
 
   if (active) {
     updateCoins(active.id, reward);
@@ -627,17 +629,14 @@ function answerMission(index) {
       `${mystery.evidence || ""}`;
 
     speakText(
-      `Correct. ${reward} coins awarded. Bonus mystery unlocked. ${
-        mystery.title
-      }. ${mystery.story}. ${mystery.evidence || ""}`
+      `Correct. ${reward} coins awarded. Bonus mystery unlocked. ${mystery.title}. ${mystery.story}. ${mystery.evidence || ""}`
     );
   } else {
     feedback.innerText =
-      `Correct! +${reward} coins\n\n` + `${q.fact || "Mission complete."}`;
+      `Correct! +${reward} coins\n\n` +
+      `${q.fact || "Mission complete."}`;
 
-    speakText(
-      `Correct. ${reward} coins awarded. ${q.fact || "Mission complete."}`
-    );
+    speakText(`Correct. ${reward} coins awarded. ${q.fact || "Mission complete."}`);
   }
 }
 
@@ -700,9 +699,7 @@ function renderHomeLog() {
         (pin) => `
         <div style="padding:10px;border:1px solid #333;border-radius:12px;margin:8px 0;background:#111;">
           <div style="font-weight:bold;">${pin.n}</div>
-          <div style="opacity:.85;font-size:12px;">${
-            pin.zone || pin.set || pin.category || "unknown"
-          }</div>
+          <div style="opacity:.85;font-size:12px;">${pin.zone || pin.set || pin.category || "unknown"}</div>
         </div>
       `
       )
@@ -758,9 +755,7 @@ function wireButtons() {
     speakText("Home base log opened.");
   });
 
-  $("btn-home-close")?.addEventListener("click", () =>
-    closeModal("home-modal")
-  );
+  $("btn-home-close")?.addEventListener("click", () => closeModal("home-modal"));
   $("btn-home-close-x")?.addEventListener("click", () =>
     closeModal("home-modal")
   );
@@ -804,12 +799,8 @@ function wireButtons() {
     closeModal("commander-hub")
   );
 
-  $("btn-close-quest")?.addEventListener("click", () =>
-    closeModal("quest-modal")
-  );
-  $("btn-task-close")?.addEventListener("click", () =>
-    closeModal("task-modal")
-  );
+  $("btn-close-quest")?.addEventListener("click", () => closeModal("quest-modal"));
+  $("btn-task-close")?.addEventListener("click", () => closeModal("task-modal"));
 
   $("action-trigger")?.addEventListener("click", openMissionMenu);
 
@@ -945,9 +936,7 @@ function wireButtons() {
 
   $("btn-show-node-stats")?.addEventListener("click", () => {
     alert(
-      `Pins loaded: ${getCurrentPins().length}\nPack: ${
-        state.activePack
-      }\nMode: ${state.mapMode}`
+      `Pins loaded: ${getCurrentPins().length}\nPack: ${state.activePack}\nMode: ${state.mapMode}`
     );
   });
 
