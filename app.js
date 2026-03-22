@@ -949,9 +949,28 @@ function wireButtons() {
   );
 
   $("btn-home")?.addEventListener("click", () => {
-    renderHomeLog();
-    showModal("home-modal");
-    speakText("Home base log opened.");
+    // reset active gameplay
+    currentPin = null;
+    currentTask = null;
+
+    // hide action button
+    const actionBtn = $("action-trigger");
+    if (actionBtn) actionBtn.style.display = "none";
+
+    // reset game mode back to default home
+    state.activePack = "classic";
+    state.activeAdultCategory = null;
+    state.mapMode = "core";
+
+    saveState?.();
+
+    // reset map cleanly
+    if (typeof resetMap === "function") {
+      resetMap();
+    }
+
+    // show your START / HOME screen
+    showModal?.("start-modal");
   });
 
   $("btn-home-close")?.addEventListener("click", () =>
