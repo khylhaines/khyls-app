@@ -527,3 +527,28 @@ input[type="range"] {
     font-size: 13px;
   }
 }
+
+/* MONK CHARACTER */
+#start-modal {
+  position: relative;
+}
+
+#monk-image {
+  position: absolute;
+  bottom: 90px;
+  right: 20px;
+  width: 130px;
+  z-index: 5;
+  opacity: 0.95;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6));
+}
+
+/* MOBILE ADJUST */
+@media (max-width: 480px) {
+  #monk-image {
+    width: 100px;
+    bottom: 80px;
+    right: 12px;
+  }
+}
