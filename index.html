@@ -1,544 +1,673 @@
-:root {
-  --bg: #dfe2e8;
-  --panel: rgba(10, 14, 24, 0.94);
-  --panel-2: rgba(18, 24, 38, 0.94);
-  --border: rgba(255, 255, 255, 0.1);
-  --text: #f5f7fb;
-  --muted: #b7c0d3;
-  --gold: #ffd54a;
-  --neon: #63ffd3;
-  --kylan: #3f8cff;
-  --piper: #ffe07a;
-  --parent: #ff8c66;
-  --danger: #ff6666;
-  --success: #44d17d;
-  --shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
-  --radius: 20px;
-}
-
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  background: #000;
-  color: var(--text);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Arial, sans-serif;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-body {
-  position: relative;
-}
-
-button,
-input,
-select {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-  border: 0;
-}
-
-#map {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  background: #0a1220;
-}
-
-#map.night-vision {
-  filter: hue-rotate(115deg) saturate(1.15) brightness(0.72) contrast(1.08);
-}
-
-.leaflet-container {
-  background: #0a1220;
-}
-
-#coin-hud {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  z-index: 1200;
-  background: rgba(6, 10, 18, 0.86);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 12px 14px;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow);
-  font-weight: 700;
-  font-size: 14px;
-}
-
-#coin-hud > div + div {
-  margin-top: 6px;
-}
-
-.hp-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 8px;
-  min-width: 56px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.hp-on {
-  background: rgba(68, 209, 125, 0.18);
-  color: #8dffc0;
-}
-
-.hp-off {
-  background: rgba(255, 255, 255, 0.08);
-  color: #c7cedd;
-}
-
-#action-trigger {
-  position: fixed;
-  left: 50%;
-  bottom: 108px;
-  transform: translateX(-50%);
-  z-index: 1600;
-  width: 112px;
-  height: 112px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #ffd54a, #f0a400);
-  color: #201500;
-  font-size: 48px;
-  font-weight: 900;
-  border: 3px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45),
-    0 0 22px rgba(255, 213, 74, 0.28);
-  display: none;
-}
-
-#action-trigger:hover {
-  transform: translateX(-50%) scale(1.04);
-}
-
-#action-trigger:active {
-  transform: translateX(-50%) scale(0.97);
-}
-
-.hud-dock {
-  position: fixed;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  z-index: 1200;
-  display: grid;
-  grid-template-columns: repeat(3, 64px);
-  gap: 14px;
-  padding: 10px 14px;
-  background: rgba(6, 10, 18, 0.86);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow);
-}
-
-.hud-btn {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #1f2940, #101827);
-  color: #fff;
-  font-size: 28px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.hud-btn:active {
-  transform: scale(0.97);
-}
-
-.full-modal {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  z-index: 10000;
-  padding: 20px;
-  overflow-y: auto;
-  display: none;
-}
-
-.full-modal > * {
-  max-width: 760px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* START SCREEN MONK BACKGROUND */
-#start-modal {
-  background:
-    linear-gradient(rgba(0, 0, 0, 0.68), rgba(0, 0, 0, 0.82)),
-    url("./monk.jpg");
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: cover;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.modal-header h1,
-.modal-header h2,
-.full-modal h1,
-.full-modal h2,
-.full-modal h3 {
-  margin: 0;
-}
-
-.close-x {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: #111827;
-  color: #fff;
-  border: 1px solid var(--border);
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.close-x:active {
-  transform: scale(0.97);
-}
-
-.start-hero {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 213, 74, 0.08),
-    rgba(255, 213, 74, 0.03)
-  );
-  border: 1px solid rgba(255, 213, 74, 0.18);
-  border-radius: var(--radius);
-  padding: 22px 18px;
-  text-align: center;
-  box-shadow: var(--shadow);
-}
-
-.start-logo {
-  font-size: 48px;
-  margin-bottom: 8px;
-}
-
-.start-sub,
-.start-mini,
-.settings-mini {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.start-grid {
-  display: grid;
-  gap: 14px;
-  margin-top: 16px;
-}
-
-.start-card,
-.settings-card,
-.setting-row {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  box-shadow: var(--shadow);
-}
-
-.start-card h3,
-.settings-card h3,
-.setting-row h3 {
-  margin: 0 0 12px;
-  color: var(--gold);
-  font-size: 15px;
-  letter-spacing: 0.04em;
-}
-
-.pill-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.pill {
-  min-height: 42px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: #171f31;
-  color: #d9e2f2;
-  border: 1px solid var(--border);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.pill.active {
-  background: linear-gradient(180deg, #ffd54a, #f0b300);
-  color: #231600;
-  border-color: rgba(255, 213, 74, 0.9);
-}
-
-.start-actions {
-  display: grid;
-  gap: 10px;
-}
-
-.win-btn {
-  min-height: 46px;
-  width: 100%;
-  border-radius: 14px;
-  padding: 12px 14px;
-  background: linear-gradient(180deg, #ffd54a, #f0b300);
-  color: #231600;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-  border: 1px solid rgba(255, 213, 74, 0.75);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
-}
-
-.win-btn:active {
-  transform: scale(0.99);
-}
-
-.settings-card + .settings-card,
-.setting-row + .setting-row {
-  margin-top: 14px;
-}
-
-.settings-line,
-.settings-row {
-  display: grid;
-  gap: 10px;
-}
-
-.settings-line {
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-#settings-player-manager {
-  min-height: 8px;
-}
-
-select,
-input[type="text"],
-input[type="search"] {
-  width: 100%;
-  min-height: 46px;
-  background: #111827;
-  color: #fff;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 10px 12px;
-  outline: none;
-}
-
-input[type="range"] {
-  width: 100%;
-  accent-color: var(--gold);
-}
-
-#home-summary {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 12px 14px;
-  color: var(--muted);
-  line-height: 1.45;
-}
-
-#home-list {
-  margin-top: 12px;
-}
-
-.zone-banner,
-.boss-banner {
-  margin-top: 14px;
-  border-radius: 16px;
-  padding: 12px 14px;
-  white-space: pre-line;
-  font-weight: 900;
-  text-align: center;
-  letter-spacing: 0.03em;
-  box-shadow: var(--shadow);
-}
-
-.zone-banner {
-  background: rgba(63, 140, 255, 0.16);
-  border: 1px solid rgba(63, 140, 255, 0.35);
-  color: #b9d7ff;
-}
-
-.boss-banner {
-  background: rgba(255, 90, 90, 0.14);
-  border: 1px solid rgba(255, 90, 90, 0.35);
-  color: #ffbaba;
-}
-
-#quest-status {
-  margin-top: 12px;
-  color: var(--muted);
-}
-
-.mission-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.m-tile {
-  min-height: 92px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #161f31, #0d1320);
-  border: 1px solid var(--border);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  padding: 12px 8px;
-  font-weight: 900;
-  gap: 6px;
-  box-shadow: var(--shadow);
-}
-
-.m-tile span {
-  display: block;
-  font-size: 24px;
-  margin-bottom: 4px;
-}
-
-.m-tile:active {
-  transform: scale(0.99);
-}
-
-#task-title,
-#q-name {
-  text-align: center;
-  color: var(--gold);
-  margin-bottom: 12px;
-}
-
-#task-desc {
-  color: var(--muted);
-  line-height: 1.5;
-  text-align: center;
-  max-width: 680px;
-  margin: 0 auto 16px;
-}
-
-#task-options {
-  display: grid;
-  gap: 10px;
-}
-
-.mcq-btn {
-  width: 100%;
-  min-height: 48px;
-  border-radius: 14px;
-  background: #151c2c;
-  color: #fff;
-  border: 1px solid var(--border);
-  padding: 12px 14px;
-  text-align: left;
-  font-weight: 700;
-}
-
-.mcq-btn:active {
-  transform: scale(0.99);
-}
-
-#reward-panel {
-  background: rgba(255, 213, 74, 0.08);
-  border: 1px solid rgba(255, 213, 74, 0.22);
-  border-radius: 16px;
-  padding: 12px;
-}
-
-#task-feedback {
-  font-weight: 700;
-  line-height: 1.45;
-}
-
-.marker-logo {
-  background: transparent;
-  border: 0;
-}
-
-#reward-fx-layer {
-  overflow: hidden;
-}
-
-@media (min-width: 700px) {
-  .start-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .mission-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .full-modal {
-    padding-top: 26px;
-  }
-}
-
-@media (max-width: 699px) {
-  .mission-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
-  #coin-hud {
-    font-size: 13px;
-    padding: 10px 12px;
-  }
-
-  .hud-dock {
-    grid-template-columns: repeat(3, 58px);
-    gap: 10px;
-    padding: 8px 10px;
-  }
-
-  .hud-btn {
-    width: 58px;
-    height: 58px;
-    font-size: 24px;
-  }
-
-  #action-trigger {
-    width: 96px;
-    height: 96px;
-    bottom: 94px;
-    font-size: 40px;
-  }
-
-  .m-tile {
-    min-height: 82px;
-    font-size: 13px;
-  }
-
-  #start-modal {
-    background-position: center top;
-  }
-}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#000000" />
+    <title>Barrow Quest</title>
+
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+
+    <style>
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .modal-header h1,
+      .modal-header h2 {
+        margin: 0;
+      }
+
+      .close-x {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        border: 1px solid #333;
+        background: #111;
+        color: #fff;
+        font-size: 20px;
+        line-height: 44px;
+        text-align: center;
+        cursor: pointer;
+      }
+
+      .start-grid {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .start-card,
+      .settings-card,
+      .setting-row,
+      .case-card {
+        border: 1px solid #333;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 18px;
+        padding: 14px;
+        text-align: left;
+      }
+
+      .start-card h3,
+      .settings-card h3,
+      .setting-row h3,
+      .case-card h3 {
+        margin: 0 0 10px;
+      }
+
+      .start-mini,
+      .settings-mini,
+      .case-mini {
+        opacity: 0.8;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+
+      .pill-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 10px;
+      }
+
+      .pill {
+        border: 1px solid #333;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 999px;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-family: monospace;
+        font-size: 12px;
+        color: white;
+      }
+
+      .pill.active {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.12) inset;
+      }
+
+      .adult-action-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .adult-action {
+        background: linear-gradient(180deg, #1b2d4c 0%, #14233a 100%);
+        border: 2px solid rgba(255, 255, 255, 0.14);
+        padding: 18px 12px;
+        border-radius: 18px;
+        font-weight: 900;
+        cursor: pointer;
+        user-select: none;
+        color: white;
+        text-align: center;
+      }
+
+      .adult-action span {
+        display: block;
+        font-size: 30px;
+        margin-bottom: 8px;
+      }
+
+      .case-block {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        padding: 14px;
+        margin-top: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        text-align: left;
+      }
+
+      .case-label {
+        font-size: 12px;
+        opacity: 0.8;
+        margin-bottom: 8px;
+        letter-spacing: 0.4px;
+      }
+
+      .case-body {
+        white-space: pre-wrap;
+        line-height: 1.45;
+      }
+
+      .adult-only {
+        display: none;
+      }
+
+      .classic-only {
+        display: block;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="coin-hud">
+      <div style="color: var(--kylan)">
+        P1: <span id="h-k">Player 1: 0 🪙</span>
+        <span id="hp-k-tag" class="hp-status hp-off">OFF</span>
+      </div>
+      <div style="color: var(--piper)">
+        P2: <span id="h-p">Player 2: 0 🪙</span>
+        <span id="hp-p-tag" class="hp-status hp-off">OFF</span>
+      </div>
+      <div style="color: var(--parent)">
+        P3: <span id="h-me">Player 3: 0 🪙</span>
+      </div>
+      <div
+        id="capture-hud"
+        style="margin-top: 10px; font-size: 12px; color: var(--gold)"
+      >
+        CAPTURE: —
+      </div>
+    </div>
+
+    <div id="map"></div>
+
+    <button id="action-trigger" aria-label="Action">⚡</button>
+
+    <div class="hud-dock" aria-label="Bottom Controls">
+      <button id="btn-home" class="hud-btn" aria-label="Home">🏠</button>
+      <button id="btn-commander" class="hud-btn" aria-label="Commander">
+        🎮
+      </button>
+      <button id="btn-settings" class="hud-btn" aria-label="Settings">
+        ⚙️
+      </button>
+    </div>
+
+    <div id="start-modal" class="full-modal" style="display: block">
+      <div class="modal-header">
+        <h2 style="color: var(--gold)">BARROW QUEST</h2>
+        <button
+          type="button"
+          class="close-x"
+          id="btn-start-close-x"
+          aria-label="Close Start"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="start-grid">
+        <div class="start-card">
+          <h3>🧒 CLASSIC ADVENTURE</h3>
+          <div class="pill-row">
+            <button class="pill active" id="pill-kids" type="button">
+              KIDS
+            </button>
+            <button class="pill" id="pill-teen" type="button">TEEN</button>
+          </div>
+          <div class="start-mini">
+            Adventure mode uses quiz, battle, logic, speed, activity, family and
+            more.
+          </div>
+        </div>
+
+        <div class="start-card">
+          <h3>🗺️ ADVENTURE MAPS</h3>
+          <div class="pill-row">
+            <button class="pill active" id="pill-full" type="button">
+              FULL BARROW
+            </button>
+            <button class="pill" id="pill-park" type="button">
+              BARROW PARK
+            </button>
+            <button class="pill" id="pill-docks" type="button">ABBEY</button>
+          </div>
+        </div>
+
+        <div class="start-card">
+          <h3>🕵️ ADULT CASE MODE</h3>
+          <div class="pill-row">
+            <button class="pill" id="pill-truecrime" type="button">
+              TRUE CRIME
+            </button>
+            <button class="pill" id="pill-conspiracy" type="button">
+              CONSPIRACY
+            </button>
+            <button class="pill" id="pill-history" type="button">
+              HISTORY
+            </button>
+          </div>
+          <div class="start-mini">
+            Case mode uses story, evidence, clue and AR verify instead of the
+            adventure grid.
+          </div>
+        </div>
+
+        <div class="start-card">
+          <h3>🚀 READY</h3>
+          <button class="win-btn" id="btn-start" type="button">
+            START ADVENTURE
+          </button>
+          <button
+            class="win-btn"
+            id="btn-open-settings"
+            type="button"
+            style="background: #222; color: #fff"
+          >
+            SETTINGS
+          </button>
+        </div>
+      </div>
+
+      <button
+        class="win-btn"
+        id="btn-start-close"
+        style="background: #222; color: #fff; margin-top: 14px"
+      >
+        CLOSE
+      </button>
+    </div>
+
+    <div id="commander-hub" class="full-modal">
+      <div class="modal-header">
+        <h1 style="color: var(--parent)">COMMANDER HUB</h1>
+        <button
+          type="button"
+          class="close-x"
+          id="btn-close-commander-x"
+          aria-label="Close Commander"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="setting-row">
+        <h3>PLAYERS</h3>
+        <div style="display: grid; gap: 10px">
+          <button class="win-btn" id="btn-player-1" type="button">
+            1 PLAYER
+          </button>
+          <button class="win-btn" id="btn-player-2" type="button">
+            2 PLAYERS
+          </button>
+          <button class="win-btn" id="btn-player-3" type="button">
+            3 PLAYERS
+          </button>
+          <button class="win-btn" id="btn-player-4" type="button">
+            4 PLAYERS
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <h3>ACTIVE PLAYER</h3>
+        <div style="display: flex; gap: 10px">
+          <button
+            type="button"
+            class="win-btn"
+            style="background: var(--kylan); color: white"
+            id="btn-hp-k"
+          >
+            PLAYER 1
+          </button>
+          <button
+            type="button"
+            class="win-btn"
+            style="background: var(--piper); color: #000"
+            id="btn-hp-p"
+          >
+            PLAYER 2
+          </button>
+        </div>
+        <button type="button" class="win-btn" id="btn-swap">
+          SWAP FIRST TWO PLAYERS
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="win-btn"
+        id="btn-close-commander"
+        style="background: #222; color: #fff; margin-top: 16px"
+      >
+        EXIT HUB
+      </button>
+    </div>
+
+    <div id="home-modal" class="full-modal">
+      <div class="modal-header">
+        <h2 style="color: var(--gold)">🏠 HOME BASE LOG</h2>
+        <button
+          type="button"
+          class="close-x"
+          id="btn-home-close-x"
+          aria-label="Close Home"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div
+        id="home-summary"
+        style="text-align: left; margin: 15px 0; font-family: monospace"
+      ></div>
+      <div id="home-list" style="text-align: left"></div>
+
+      <button
+        class="win-btn"
+        id="btn-home-close"
+        style="background: #222; color: white"
+      >
+        CLOSE
+      </button>
+    </div>
+
+    <div id="settings-modal" class="full-modal">
+      <div class="modal-header">
+        <h2 style="color: var(--gold)">SYSTEM CONFIG</h2>
+        <button
+          type="button"
+          class="close-x"
+          id="btn-close-settings-x"
+          aria-label="Close Settings"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="settings-card">
+        <h3>CHARACTER SELECT</h3>
+        <select id="char-select">
+          <option value="hero_duo" selected>Hero Duo</option>
+          <option value="ninja">Ninja Scout</option>
+          <option value="wizard">Wizard Guide</option>
+          <option value="robot">Robo Ranger</option>
+          <option value="pirate">Pirate Captain</option>
+        </select>
+      </div>
+
+      <div class="settings-card">
+        <h3>CLASSIC TIER</h3>
+        <select id="tier-mode">
+          <option value="kid">KIDS</option>
+          <option value="teen">TEEN</option>
+          <option value="adult">ADULT</option>
+          <option value="auto">AUTO</option>
+        </select>
+        <div class="settings-mini">
+          Adult case mode ignores this and uses dossier flow.
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h3>GAMEPLAY</h3>
+        <div class="case-label">Enter Radius</div>
+        <strong><span id="radius-label">35</span>m</strong>
+        <input
+          type="range"
+          min="10"
+          max="80"
+          step="5"
+          id="enter-radius"
+          value="35"
+        />
+      </div>
+
+      <div class="settings-card">
+        <h3>DISPLAY</h3>
+        <div class="case-label">Map Zoom Buttons</div>
+        <strong><span id="zoomui-label">OFF</span></strong>
+        <button
+          class="win-btn"
+          id="btn-zoom-ui"
+          style="background: #333; color: #fff"
+        >
+          TOGGLE ZOOM UI
+        </button>
+        <button class="win-btn" id="btn-night">NIGHT VISION</button>
+      </div>
+
+      <div class="settings-card">
+        <h3>AUDIO</h3>
+        <div class="case-label">Voice Pitch</div>
+        <strong><span id="pitch-label">1</span>x</strong>
+        <input
+          type="range"
+          min="0.5"
+          max="1.5"
+          step="0.1"
+          id="v-pitch"
+          value="1"
+        />
+
+        <div class="case-label" style="margin-top: 12px">Voice Rate</div>
+        <strong><span id="rate-label">1</span>x</strong>
+        <input
+          type="range"
+          min="0.6"
+          max="1.4"
+          step="0.1"
+          id="v-rate"
+          value="1"
+        />
+
+        <div class="case-label" style="margin-top: 12px">Voice Volume</div>
+        <strong><span id="sfx-label">80</span>%</strong>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          id="sfx-vol"
+          value="80"
+        />
+      </div>
+
+      <button class="win-btn" id="btn-test">TEST SYSTEMS</button>
+      <button class="win-btn" id="btn-close-settings">CLOSE</button>
+    </div>
+
+    <div id="quest-modal" class="full-modal">
+      <h1 id="q-name" style="color: var(--gold)">ZONE</h1>
+
+      <div id="mode-banner" class="zone-banner" style="display: none"></div>
+      <div id="boss-banner" class="boss-banner" style="display: none"></div>
+
+      <div
+        id="quest-status"
+        style="margin: 10px 0; font-size: 13px; color: #fff"
+      >
+        STATUS: —
+      </div>
+
+      <div id="classic-mission-wrap" class="classic-only">
+        <button
+          class="win-btn"
+          id="btn-ar-open"
+          style="
+            background: #111;
+            color: var(--gold);
+            border: 2px solid var(--gold);
+          "
+        >
+          AR VERIFY (SCAN)
+        </button>
+
+        <div class="mission-grid" style="margin-top: 15px">
+          <div class="m-tile" data-mode="quiz"><span>❓</span>QUIZ</div>
+          <div class="m-tile" data-mode="battle"><span>⚔️</span>BATTLE</div>
+          <div class="m-tile" data-mode="history"><span>📜</span>HISTORY</div>
+          <div class="m-tile" data-mode="logic"><span>🧩</span>LOGIC</div>
+          <div class="m-tile" data-mode="speed"><span>⚡</span>SPEED</div>
+          <div class="m-tile" data-mode="health"><span>🏃</span>HEALTH</div>
+          <div class="m-tile" data-mode="activity"><span>🎯</span>ACTIVITY</div>
+          <div class="m-tile" data-mode="family"><span>👨‍👩‍👧</span>FAMILY</div>
+        </div>
+      </div>
+
+      <div id="adult-investigation-wrap" class="adult-only">
+        <div class="case-card">
+          <h3>CASE PANEL</h3>
+          <div class="case-mini">
+            Open the case, inspect evidence, review clue, then AR verify hotspot
+            proof.
+          </div>
+        </div>
+
+        <div class="adult-action-grid">
+          <button class="adult-action" id="adult-read-case" type="button">
+            <span>📖</span>READ CASE
+          </button>
+          <button class="adult-action" id="adult-view-evidence" type="button">
+            <span>🧾</span>EVIDENCE
+          </button>
+          <button class="adult-action" id="adult-view-clue" type="button">
+            <span>🔍</span>CLUE
+          </button>
+          <button class="adult-action" id="adult-ar-verify" type="button">
+            <span>📷</span>AR VERIFY
+          </button>
+        </div>
+      </div>
+
+      <button
+        class="win-btn"
+        style="background: #222; color: white"
+        id="btn-close-quest"
+      >
+        CLOSE
+      </button>
+    </div>
+
+    <div id="ar-modal" class="full-modal">
+      <h1 style="color: var(--gold)">AR VERIFY</h1>
+      <p id="ar-hint" style="opacity: 0.9">
+        Scan the hotspot and confirm if you can see the clue area.
+      </p>
+
+      <div class="case-block">
+        <div class="case-label">AR READOUT</div>
+        <div id="ar-readout" class="case-body">Heading: --</div>
+      </div>
+
+      <video
+        id="ar-video"
+        autoplay
+        playsinline
+        muted
+        style="
+          width: 100%;
+          border-radius: 18px;
+          border: 2px solid #333;
+          background: #000;
+          margin-top: 12px;
+        "
+      ></video>
+
+      <div style="display: flex; gap: 10px; margin-top: 12px">
+        <button
+          class="win-btn"
+          id="btn-ar-stop"
+          style="background: #333; color: #fff"
+        >
+          STOP
+        </button>
+        <button
+          class="win-btn"
+          id="btn-ar-manual"
+          style="background: var(--gold); color: #000"
+        >
+          I FOUND THE HOTSPOT
+        </button>
+      </div>
+
+      <button
+        class="win-btn"
+        id="btn-ar-close"
+        style="background: #222; color: #fff; margin-top: 15px"
+      >
+        CLOSE
+      </button>
+    </div>
+
+    <div id="task-modal" class="full-modal">
+      <h1 id="task-title" style="color: var(--gold)">MISSION</h1>
+
+      <div
+        style="
+          border: 3px solid var(--gold);
+          padding: 20px;
+          border-radius: 20px;
+          margin: 25px 0;
+          background: rgba(255, 255, 255, 0.05);
+          text-align: left;
+        "
+      >
+        <div id="task-block-story" class="case-block hidden">
+          <div class="case-label">WHAT HAPPENED</div>
+          <div id="task-story" class="case-body"></div>
+        </div>
+
+        <div id="task-block-evidence" class="case-block hidden">
+          <div class="case-label">EVIDENCE</div>
+          <div id="task-evidence" class="case-body"></div>
+        </div>
+
+        <div id="task-block-clue" class="case-block hidden">
+          <div class="case-label">CLUE</div>
+          <div id="task-clue" class="case-body"></div>
+        </div>
+
+        <p id="task-desc" style="font-size: 1.1rem; font-weight: bold"></p>
+
+        <div id="task-options" style="margin-top: 14px"></div>
+
+        <div
+          id="task-feedback"
+          style="
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--neon);
+            display: none;
+          "
+        >
+          Correct
+        </div>
+      </div>
+
+      <button
+        class="win-btn"
+        id="btn-task-close"
+        style="background: #222; color: #fff"
+      >
+        CLOSE
+      </button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="./app.js"></script>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./service-worker.js")
+            .catch((err) => console.error("SW registration failed:", err));
+        });
+      }
+    </script>
+  </body>
+</html>
