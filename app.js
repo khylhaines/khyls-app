@@ -51,7 +51,7 @@ const CHARACTER_ICONS = {
   robot: "🤖",
   pirate: "🏴‍☠️",
   monk: "monk.jpg",
-  khylan: "khylan.jpg",
+  khylan: "kylan.jpg",
   piper: "piper.jpg",
 };
 
