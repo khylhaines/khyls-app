@@ -50,6 +50,9 @@ const CHARACTER_ICONS = {
   wizard: "🧙",
   robot: "🤖",
   pirate: "🏴‍☠️",
+  monk: "monk.jpg",
+  khylan: "khylan.jpg",
+  piper: "piper.jpg",
 };
 
 /* ============================
@@ -277,16 +280,41 @@ function getModeStart() {
 
 function createHeroIcon() {
   const char = state.settings.character || "hero_duo";
-  const emoji = CHARACTER_ICONS[char] || "🧭";
+  const value = CHARACTER_ICONS[char] || "🧭";
 
+  // IF IMAGE
+  if (value.endsWith(".jpg") || value.endsWith(".png")) {
+    return L.divIcon({
+      className: "marker-logo",
+      html: `
+        <div style="
+          width:52px;
+          height:52px;
+          border-radius:50%;
+          overflow:hidden;
+          border:2px solid #ffd54a;
+          box-shadow:0 4px 12px rgba(0,0,0,0.6);
+        ">
+          <img src="${value}" style="
+            width:100%;
+            height:100%;
+            object-fit:cover;
+          ">
+        </div>
+      `,
+      iconSize: [52, 52],
+      iconAnchor: [26, 26],
+    });
+  }
+
+  // OTHERWISE EMOJI (OLD SYSTEM STILL WORKS)
   return L.divIcon({
     className: "marker-logo",
-    html: `<div style="font-size:40px;line-height:1;">${emoji}</div>`,
+    html: `<div style="font-size:40px;">${value}</div>`,
     iconSize: [44, 44],
     iconAnchor: [22, 22],
   });
 }
-
 function createPinIcon(pin) {
   return L.divIcon({
     className: "marker-logo",
