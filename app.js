@@ -2,11 +2,12 @@ import { PINS } from "./pins.js";
 import { getQA } from "./qa.js";
 import { ADULT_PINS } from "./adult_pins.js";
 import { ADULT_CONTENT } from "./adult_content.js";
+import { applyReward } from "./progression.js";
 import { getRandomMystery } from "./mysteries.js";
 
 const $ = (id) => document.getElementById(id);
 
-const SAVE_KEY = "bq_world_v9";
+const SAVE_KEY = "bq_world_v10";
 
 const DEFAULT_STATE = {
   players: [
@@ -23,6 +24,13 @@ const DEFAULT_STATE = {
   tierMode: "kid", // kid | teen | adult | auto
 
   unlockedMysteries: [],
+  completedMissionKeys: [],
+  ownedShopItems: [],
+  consumables: {
+    hint_basic: 0,
+    replay_token: 0,
+    double_reward: 0,
+  },
 
   settings: {
     radius: 35,
@@ -43,6 +51,8 @@ let currentPin = null;
 let currentTask = null;
 let nightVisionOn = false;
 let locationWatchId = null;
+let speechEnabled = true;
+let speechVoice = null;
 
 const CHARACTER_ICONS = {
   hero_duo: "🧭",
@@ -55,12 +65,76 @@ const CHARACTER_ICONS = {
   piper: "piper.jpg",
 };
 
+const SHOP_ITEMS = [
+  {
+    id: "hint_basic",
+    icon: "💡",
+    name: "Hint Token",
+    cost: 50,
+    type: "consumable",
+    desc: "Stored hint token for future help screens.",
+  },
+  {
+    id: "replay_token",
+    icon: "🔁",
+    name: "Replay Token",
+    cost: 80,
+    type: "consumable",
+    desc: "Lets you replay a completed mission without paying the replay coin penalty.",
+  },
+  {
+    id: "double_reward",
+    icon: "✨",
+    name: "Double Reward",
+    cost: 120,
+    type: "consumable",
+    desc: "Stored booster for a future reward pass.",
+  },
+  {
+    id: "ghost_badge",
+    icon: "👻",
+    name: "Ghost Badge",
+    cost: 80,
+    type: "badge",
+    desc: "Permanent collectible badge for spooky missions.",
+  },
+  {
+    id: "history_badge",
+    icon: "📜",
+    name: "History Badge",
+    cost: 80,
+    type: "badge",
+    desc: "Permanent collectible badge for history runs.",
+  },
+  {
+    id: "park_badge",
+    icon: "🌳",
+    name: "Park Badge",
+    cost: 90,
+    type: "badge",
+    desc: "Permanent collectible badge for Barrow Park progress.",
+  },
+  {
+    id: "abbey_badge",
+    icon: "⛪",
+    name: "Abbey Badge",
+    cost: 90,
+    type: "badge",
+    desc: "Permanent collectible badge for Abbey progress.",
+  },
+  {
+    id: "dock_badge",
+    icon: "⚓",
+    name: "Dock Badge",
+    cost: 90,
+    type: "badge",
+    desc: "Permanent collectible badge for dock and maritime questing.",
+  },
+];
+
 /* ============================
    SPEECH / NARRATOR
 ============================ */
-let speechEnabled = true;
-let speechVoice = null;
-
 function loadVoices() {
   const voices = window.speechSynthesis?.getVoices?.() || [];
   speechVoice =
@@ -104,6 +178,26 @@ function speakOptions(options = []) {
   speakText(lines.join(". "));
 }
 
+function speakCurrentQuestionOnly() {
+  const q = currentTask?.question;
+  if (!q) return;
+
+  if (q.speech) {
+    speakText(q.speech);
+    return;
+  }
+
+  if (q.q) {
+    speakText(q.q);
+  }
+}
+
+function speakCurrentAnswersOnly() {
+  const q = currentTask?.question;
+  if (!q?.options?.length) return;
+  speakOptions(q.options);
+}
+
 /* ============================
    SAVE / STATE
 ============================ */
@@ -128,6 +222,16 @@ function loadState() {
       unlockedMysteries: Array.isArray(parsed.unlockedMysteries)
         ? parsed.unlockedMysteries
         : [],
+      completedMissionKeys: Array.isArray(parsed.completedMissionKeys)
+        ? parsed.completedMissionKeys
+        : [],
+      ownedShopItems: Array.isArray(parsed.ownedShopItems)
+        ? parsed.ownedShopItems
+        : [],
+      consumables: {
+        ...structuredClone(DEFAULT_STATE.consumables),
+        ...(parsed.consumables || {}),
+      },
     };
   } catch {
     return structuredClone(DEFAULT_STATE);
@@ -159,6 +263,7 @@ function setActivePlayer(id) {
   state.activePlayerId = id;
   saveState();
   renderHUD();
+  renderShop();
 }
 
 function setPlayerCount(count) {
@@ -170,14 +275,17 @@ function setPlayerCount(count) {
   state.activePlayerId = active.id;
   saveState();
   renderHUD();
+  renderShop();
 }
 
 function updateCoins(playerId, amount) {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return;
   player.coins += amount;
+  if (player.coins < 0) player.coins = 0;
   saveState();
   renderHUD();
+  renderShop();
 }
 
 function renderHUD() {
@@ -204,6 +312,38 @@ function renderHUD() {
     $("hp-p-tag").className =
       active?.id === p2.id ? "hp-status hp-on" : "hp-status hp-off";
   }
+}
+
+/* ============================
+   TOP STATUS BAR
+============================ */
+function updateStatusBar() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+
+  if ($("status-time")) $("status-time").innerText = `${hh}:${mm}`;
+  if ($("status-title")) {
+    $("status-title").innerText =
+      state.activePack === "adult"
+        ? "BARROW QUEST • CASE MODE"
+        : state.mapMode === "park"
+        ? "BARROW QUEST • PARK"
+        : state.mapMode === "abbey"
+        ? "BARROW QUEST • ABBEY"
+        : "BARROW QUEST • FULL MAP";
+  }
+
+  if ($("status-battery")) $("status-battery").innerText = "🔋 100%";
+  if ($("status-msg")) {
+    const count = state.unlockedMysteries?.length || 0;
+    $("status-msg").innerText = count > 0 ? `✉️ ${count}` : "✉️";
+  }
+}
+
+function startStatusClock() {
+  updateStatusBar();
+  setInterval(updateStatusBar, 15000);
 }
 
 /* ============================
@@ -282,7 +422,6 @@ function createHeroIcon() {
   const char = state.settings.character || "hero_duo";
   const value = CHARACTER_ICONS[char] || "🧭";
 
-  // IF IMAGE
   if (value.endsWith(".jpg") || value.endsWith(".png")) {
     return L.divIcon({
       className: "marker-logo",
@@ -307,7 +446,6 @@ function createHeroIcon() {
     });
   }
 
-  // OTHERWISE EMOJI (OLD SYSTEM STILL WORKS)
   return L.divIcon({
     className: "marker-logo",
     html: `<div style="font-size:40px;">${value}</div>`,
@@ -315,6 +453,7 @@ function createHeroIcon() {
     iconAnchor: [22, 22],
   });
 }
+
 function createPinIcon(pin) {
   return L.divIcon({
     className: "marker-logo",
@@ -398,6 +537,116 @@ function setTaskBlock(id, bodyId, text) {
   }
 }
 
+function getMissionKey(pin, question, mode) {
+  const pinId = pin?.id || "unknown_pin";
+  const qId =
+    question?.meta?.questionId ||
+    question?.id ||
+    question?.q ||
+    question?.title ||
+    "unknown_q";
+  return `${pinId}__${mode}__${String(qId)}`;
+}
+
+function hasCompletedMission(key) {
+  return state.completedMissionKeys.includes(key);
+}
+
+function completeMission(key) {
+  if (!key) return;
+  if (!hasCompletedMission(key)) {
+    state.completedMissionKeys.push(key);
+    saveState();
+  }
+}
+
+function isOwnedItem(itemId) {
+  return state.ownedShopItems.includes(itemId);
+}
+
+function addOwnedItem(itemId) {
+  if (!isOwnedItem(itemId)) {
+    state.ownedShopItems.push(itemId);
+  }
+}
+
+function addConsumable(itemId, amount = 1) {
+  state.consumables[itemId] = Number(state.consumables[itemId] || 0) + amount;
+}
+
+function consumeConsumable(itemId, amount = 1) {
+  const current = Number(state.consumables[itemId] || 0);
+  if (current < amount) return false;
+  state.consumables[itemId] = current - amount;
+  return true;
+}
+
+function getRandomClassicModeForPin(pin) {
+  const zone = String(pin?.zone || pin?.set || "").toLowerCase();
+  const type = String(pin?.type || "").toLowerCase();
+  const tier = getEffectiveTier();
+
+  if (
+    [
+      "quiz",
+      "history",
+      "logic",
+      "activity",
+      "family",
+      "battle",
+      "speed",
+      "ghost",
+      "boss",
+      "discovery",
+    ].includes(type)
+  ) {
+    return type;
+  }
+
+  let pool = ["quiz", "history", "logic", "activity"];
+
+  if (
+    state.mapMode === "park" ||
+    zone.includes("park") ||
+    zone.includes("nature")
+  ) {
+    pool = ["activity", "speed", "family", "quiz", "logic", "discovery"];
+  } else if (state.mapMode === "abbey" || zone.includes("abbey")) {
+    pool = ["history", "logic", "ghost", "quiz", "discovery", "activity"];
+  } else if (
+    zone.includes("dock") ||
+    zone.includes("industrial") ||
+    zone.includes("memorial") ||
+    zone.includes("civic") ||
+    zone.includes("town")
+  ) {
+    pool = ["quiz", "history", "logic", "activity", "battle", "speed", "ghost"];
+  }
+
+  if (tier === "kid") {
+    pool.push("activity", "family");
+  } else if (tier === "teen") {
+    pool.push("speed", "battle", "ghost");
+  } else {
+    pool.push("history", "logic", "ghost");
+  }
+
+  const unique = [...new Set(pool)];
+  return unique[Math.floor(Math.random() * unique.length)] || "quiz";
+}
+
+function showShopFeedback(text, good = true) {
+  const box = $("shop-feedback");
+  if (!box) return;
+
+  box.style.display = "block";
+  box.style.borderColor = good
+    ? "rgba(0,255,170,0.25)"
+    : "rgba(255,80,80,0.25)";
+  box.style.color = good ? "var(--neon)" : "#ff8b8b";
+  box.innerText = text;
+}
+
 /* ============================
    MAP
 ============================ */
@@ -437,6 +686,7 @@ function resetMap() {
   currentPin = null;
 
   initMap();
+  updateStatusBar();
 }
 
 function renderPins() {
@@ -496,6 +746,7 @@ function distanceInMeters(aLat, aLng, bLat, bLng) {
 function startLocationWatch() {
   if (!navigator.geolocation || !map) {
     updateCaptureText("GPS NOT AVAILABLE");
+    if ($("status-gps")) $("status-gps").innerText = "📍 OFF";
     return;
   }
 
@@ -505,6 +756,7 @@ function startLocationWatch() {
       const lng = pos.coords.longitude;
 
       heroMarker?.setLatLng([lat, lng]);
+      if ($("status-gps")) $("status-gps").innerText = "📍 ON";
 
       const pins = getCurrentPins();
       const radius = Number(state.settings.radius || 35);
@@ -546,6 +798,7 @@ function startLocationWatch() {
     },
     () => {
       updateCaptureText("GPS ERROR");
+      if ($("status-gps")) $("status-gps").innerText = "📍 ERR";
     },
     {
       enableHighAccuracy: true,
@@ -571,9 +824,11 @@ function openMissionMenu() {
         ? `STATUS: CASE MODE • ${String(
             state.activeAdultCategory || "GENERAL"
           ).toUpperCase()}`
-        : `STATUS: ${state.mapMode.toUpperCase()} • ${String(
-            currentPin.type || "quiz"
-          ).toUpperCase()}`;
+        : `STATUS: ${state.mapMode.toUpperCase()} • ${
+            currentPin.type
+              ? String(currentPin.type).toUpperCase()
+              : "MIXED MISSION"
+          }`;
   }
 
   if ($("mode-banner")) {
@@ -607,7 +862,10 @@ function openMissionMenu() {
     return;
   }
 
-  const primaryMode = normaliseClassicModeFromPin(currentPin);
+  const primaryMode =
+    currentPin.type && currentPin.type !== "start"
+      ? normaliseClassicModeFromPin(currentPin)
+      : getRandomClassicModeForPin(currentPin);
 
   if (primaryMode) {
     openTask(primaryMode);
@@ -618,7 +876,7 @@ function openMissionMenu() {
   showModal("quest-modal");
 }
 
-function openTask(mode) {
+function openTask(mode, forceReplay = false) {
   if (!currentPin) return;
 
   const tier = getEffectiveTier();
@@ -702,10 +960,52 @@ function openTask(mode) {
     });
   }
 
+  const missionKey = getMissionKey(currentPin, task, mode);
+  const alreadyDone = hasCompletedMission(missionKey);
+
+  if (!forceReplay && alreadyDone && state.activePack !== "adult") {
+    const replayCost = 40;
+    const active = getActivePlayer();
+
+    let usedToken = false;
+    if (consumeConsumable("replay_token", 1)) {
+      usedToken = true;
+      saveState();
+    } else if ((active?.coins || 0) >= replayCost) {
+      updateCoins(active.id, -replayCost);
+    } else {
+      currentTask = {
+        mode,
+        pin: currentPin,
+        question: {
+          title: `${mode.toUpperCase()} @ ${currentPin.n}`,
+          desc: `This mission is already completed.\n\nReplay costs ${replayCost} coins or 1 Replay Token.\n\nOpen the shop if you want more replay tokens.`,
+          options: [],
+          meta: { informational: true },
+          speech: `This mission is already completed. Replay costs ${replayCost} coins or one replay token.`,
+        },
+        missionKey,
+      };
+
+      if ($("task-title"))
+        $("task-title").innerText = `${mode.toUpperCase()} @ ${currentPin.n}`;
+      if ($("task-desc")) $("task-desc").innerText = currentTask.question.desc;
+      renderTaskOptions(currentTask.question);
+      showModal("task-modal");
+      speakText(currentTask.question.speech);
+      return;
+    }
+
+    if (usedToken) {
+      showShopFeedback("Replay Token used for mission replay.", true);
+    }
+  }
+
   currentTask = {
     mode,
     pin: currentPin,
     question: task,
+    missionKey,
   };
 
   if ($("task-title")) {
@@ -725,19 +1025,15 @@ function openTask(mode) {
   setTaskBlock("task-block-clue", "task-clue", task?.clue || "");
 
   renderTaskOptions(task);
+  showModal("task-modal");
 
   if (task?.speech) {
     speakText(task.speech);
   } else if (task?.q) {
     speakText(task.q);
-    if (Array.isArray(task?.options) && task.options.length) {
-      setTimeout(() => speakOptions(task.options), 700);
-    }
   } else {
     speakText("No mission found.");
   }
-
-  showModal("task-modal");
 }
 
 function renderTaskOptions(question) {
@@ -784,6 +1080,7 @@ function unlockMystery(id) {
   if (!hasUnlockedMystery(num)) {
     state.unlockedMysteries.push(num);
     saveState();
+    updateStatusBar();
   }
 }
 
@@ -796,6 +1093,146 @@ function maybeUnlockMystery() {
 
   unlockMystery(mystery.id);
   return mystery;
+}
+
+/* ============================
+   SHOP
+============================ */
+function renderShop() {
+  const summary = $("shop-summary");
+  const list = $("shop-list");
+  const owned = $("shop-owned");
+  const active = getActivePlayer();
+
+  if (!summary || !list || !owned) return;
+
+  const coins = active?.coins || 0;
+
+  summary.innerHTML = `
+    <div style="padding:12px;border:1px solid #333;border-radius:16px;background:#111;">
+      <div style="font-size:15px;font-weight:900;color:var(--gold);">
+        ${active?.name || "Player"} LOADOUT
+      </div>
+      <div style="margin-top:8px;font-size:14px;">
+        Coins: <strong>${coins} 🪙</strong>
+      </div>
+      <div style="margin-top:6px;font-size:12px;opacity:.85;">
+        Replay Tokens: ${Number(state.consumables.replay_token || 0)} •
+        Hint Tokens: ${Number(state.consumables.hint_basic || 0)} •
+        Double Rewards: ${Number(state.consumables.double_reward || 0)}
+      </div>
+    </div>
+  `;
+
+  list.innerHTML = SHOP_ITEMS.map((item) => {
+    const ownedBadge = item.type === "badge" && isOwnedItem(item.id);
+    const disabled = ownedBadge || coins < item.cost;
+
+    return `
+      <div class="shop-item-card">
+        <div class="shop-item-top">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="shop-item-icon">${item.icon}</div>
+            <div>
+              <div style="font-weight:900;">${item.name}</div>
+              <div style="font-size:12px;opacity:.85;margin-top:4px;">
+                ${item.desc}
+              </div>
+            </div>
+          </div>
+          ${
+            ownedBadge
+              ? `<div class="shop-owned-tag">OWNED</div>`
+              : `<div class="shop-owned-tag">${item.cost} 🪙</div>`
+          }
+        </div>
+
+        <button
+          class="win-btn shop-buy-btn"
+          data-shop-id="${item.id}"
+          ${disabled ? "disabled" : ""}
+          style="margin-top:12px;"
+        >
+          ${
+            ownedBadge
+              ? "COLLECTED"
+              : coins < item.cost
+              ? "NOT ENOUGH COINS"
+              : "BUY"
+          }
+        </button>
+      </div>
+    `;
+  }).join("");
+
+  const ownedBits = [];
+
+  state.ownedShopItems.forEach((id) => {
+    const item = SHOP_ITEMS.find((x) => x.id === id);
+    if (item) {
+      ownedBits.push(
+        `<div class="inventory-pill">${item.icon} ${item.name}</div>`
+      );
+    }
+  });
+
+  Object.entries(state.consumables || {}).forEach(([id, qty]) => {
+    if (!qty) return;
+    const item = SHOP_ITEMS.find((x) => x.id === id);
+    if (item) {
+      ownedBits.push(
+        `<div class="inventory-pill">${item.icon} ${item.name} × ${qty}</div>`
+      );
+    }
+  });
+
+  owned.innerHTML = ownedBits.length
+    ? `<div class="inventory-pill-wrap">${ownedBits.join("")}</div>`
+    : `<div style="opacity:.8;">Nothing owned yet.</div>`;
+
+  document.querySelectorAll(".shop-buy-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const itemId = btn.dataset.shopId;
+      buyShopItem(itemId);
+    });
+  });
+}
+
+function buyShopItem(itemId) {
+  const active = getActivePlayer();
+  if (!active) return;
+
+  const item = SHOP_ITEMS.find((x) => x.id === itemId);
+  if (!item) return;
+
+  if (item.type === "badge" && isOwnedItem(item.id)) {
+    showShopFeedback(`${item.name} is already owned.`, false);
+    return;
+  }
+
+  if ((active.coins || 0) < item.cost) {
+    showShopFeedback(`Not enough coins for ${item.name}.`, false);
+    speakText(`Not enough coins for ${item.name}.`);
+    return;
+  }
+
+  updateCoins(active.id, -item.cost);
+
+  if (item.type === "badge") {
+    addOwnedItem(item.id);
+  } else {
+    addConsumable(item.id, 1);
+  }
+
+  saveState();
+  renderShop();
+
+  showShopFeedback(
+    `Purchased: ${item.name}\n\n${item.desc}\n\nYour reward has been added to inventory.`,
+    true
+  );
+
+  speakText(`${item.name} purchased.`);
 }
 
 /* ============================
@@ -814,7 +1251,6 @@ function answerMission(index) {
   }
 
   const correct = index === q.answer;
-
   feedback.style.display = "block";
 
   if (!correct) {
@@ -825,18 +1261,27 @@ function answerMission(index) {
 
     feedback.style.color = "#ff6b6b";
     feedback.innerText = `Wrong answer.\nCorrect answer: ${correctAnswer}`;
-
     speakText(`Wrong answer. The correct answer is ${correctAnswer}.`);
     return;
   }
 
   const active = getActivePlayer();
-  const reward =
-    Number(q?.meta?.rewardCoins) || (state.activePack === "adult" ? 40 : 25);
 
-  if (active && reward > 0) {
-    updateCoins(active.id, reward);
+  const rewardResult = applyReward({
+    mode: currentTask.mode,
+    correct: true,
+  });
+
+  const rewardCoins =
+    Number(rewardResult?.coins || 0) ||
+    Number(q?.meta?.rewardCoins || 0) ||
+    (state.activePack === "adult" ? 40 : 25);
+
+  if (active && rewardCoins > 0) {
+    updateCoins(active.id, rewardCoins);
   }
+
+  completeMission(currentTask.missionKey);
 
   const mystery = maybeUnlockMystery();
 
@@ -844,23 +1289,23 @@ function answerMission(index) {
 
   if (mystery) {
     feedback.innerText =
-      `Correct! +${reward} coins\n\n` +
+      `Correct! +${rewardCoins} coins\n\n` +
       `BONUS MYSTERY UNLOCKED\n` +
       `${mystery.icon || "❓"} ${mystery.title}\n\n` +
       `${mystery.story}\n\n` +
       `${mystery.evidence || ""}`;
 
     speakText(
-      `Correct. ${reward} coins awarded. Bonus mystery unlocked. ${
+      `Correct. ${rewardCoins} coins awarded. Bonus mystery unlocked. ${
         mystery.title
       }. ${mystery.story}. ${mystery.evidence || ""}`
     );
   } else {
     feedback.innerText =
-      `Correct! +${reward} coins\n\n` + `${q.fact || "Mission complete."}`;
+      `Correct! +${rewardCoins} coins\n\n` + `${q.fact || "Mission complete."}`;
 
     speakText(
-      `Correct. ${reward} coins awarded. ${q.fact || "Mission complete."}`
+      `Correct. ${rewardCoins} coins awarded. ${q.fact || "Mission complete."}`
     );
   }
 }
@@ -892,13 +1337,15 @@ function renderHomeLog() {
 
   const pins = getCurrentPins();
   const mysteryCount = state.unlockedMysteries?.length || 0;
+  const completedCount = state.completedMissionKeys?.length || 0;
 
   summary.innerText =
     `Pins loaded: ${pins.length} • ` +
     `Pack: ${state.activePack} • ` +
     `Mode: ${state.mapMode} • ` +
     `Tier: ${getEffectiveTier()} • ` +
-    `Mysteries unlocked: ${mysteryCount}`;
+    `Mysteries unlocked: ${mysteryCount} • ` +
+    `Completed missions: ${completedCount}`;
 
   const mysteryBlock = mysteryCount
     ? `
@@ -976,36 +1423,36 @@ function wireButtons() {
     closeModal("start-modal")
   );
 
-  $("btn-home")?.addEventListener("click", () => {
-    // reset active gameplay
+  $("btn-home-top")?.addEventListener("click", () => {
     currentPin = null;
     currentTask = null;
 
-    // hide action button
     const actionBtn = $("action-trigger");
     if (actionBtn) actionBtn.style.display = "none";
 
-    // reset game mode back to default home
     state.activePack = "classic";
     state.activeAdultCategory = null;
     state.mapMode = "core";
 
-    saveState?.();
-
-    // reset map cleanly
-    if (typeof resetMap === "function") {
-      resetMap();
-    }
-
-    // show your START / HOME screen
-    showModal?.("start-modal");
+    saveState();
+    resetMap();
+    updateStartButtons();
+    updateStatusBar();
+    showModal("start-modal");
+    speakText("Home.");
   });
 
-  $("btn-home-close")?.addEventListener("click", () =>
-    closeModal("home-modal")
+  $("btn-shop")?.addEventListener("click", () => {
+    renderShop();
+    showModal("shop-modal");
+    speakText("Quest shop opened.");
+  });
+
+  $("btn-shop-close")?.addEventListener("click", () =>
+    closeModal("shop-modal")
   );
-  $("btn-home-close-x")?.addEventListener("click", () =>
-    closeModal("home-modal")
+  $("btn-shop-close-x")?.addEventListener("click", () =>
+    closeModal("shop-modal")
   );
 
   $("btn-settings")?.addEventListener("click", () => {
@@ -1043,6 +1490,14 @@ function wireButtons() {
   $("btn-task-close")?.addEventListener("click", () =>
     closeModal("task-modal")
   );
+
+  $("btn-read-question")?.addEventListener("click", () => {
+    speakCurrentQuestionOnly();
+  });
+
+  $("btn-read-answers")?.addEventListener("click", () => {
+    speakCurrentAnswersOnly();
+  });
 
   $("action-trigger")?.addEventListener("click", openMissionMenu);
 
@@ -1174,6 +1629,7 @@ function wireButtons() {
       enabled[1].name = tmp;
       saveState();
       renderHUD();
+      renderShop();
       speakText("Players swapped.");
     }
   });
@@ -1241,6 +1697,8 @@ function boot() {
     applySettingsToUI();
     updateStartButtons();
     showQuestLayoutForPack();
+    renderHomeLog();
+    renderShop();
     wireButtons();
 
     loadVoices();
@@ -1248,7 +1706,9 @@ function boot() {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
 
+    startStatusClock();
     initMap();
+
     console.log("App loaded");
   } catch (err) {
     console.error("BOOT ERROR:", err);
