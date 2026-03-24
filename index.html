@@ -158,10 +158,194 @@
       .hidden {
         display: none !important;
       }
+
+      .top-status-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 54px;
+        z-index: 2001;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.92) 0%,
+          rgba(0, 0, 0, 0.68) 100%
+        );
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .status-left,
+      .status-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-center {
+        font-size: 12px;
+        letter-spacing: 1px;
+        font-weight: 800;
+        color: var(--gold, #ffd54a);
+        text-align: center;
+        opacity: 0.95;
+      }
+
+      .status-chip {
+        min-width: 28px;
+        height: 28px;
+        padding: 0 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.08);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #fff;
+      }
+
+      .top-home-btn {
+        position: fixed;
+        top: 62px;
+        left: 12px;
+        z-index: 2001;
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        border: 1px solid #333;
+        background: rgba(17, 17, 17, 0.92);
+        color: #fff;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      }
+
+      #coin-hud {
+        top: 122px !important;
+      }
+
+      #action-trigger {
+        bottom: 110px !important;
+        z-index: 1998;
+      }
+
+      .hud-dock {
+        z-index: 1999;
+      }
+
+      .shop-grid {
+        display: grid;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .shop-item-card {
+        border: 1px solid #333;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 18px;
+        padding: 14px;
+        text-align: left;
+      }
+
+      .shop-item-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .shop-item-icon {
+        font-size: 28px;
+      }
+
+      .shop-owned-tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        background: rgba(255, 215, 0, 0.08);
+        color: var(--gold, #ffd54a);
+      }
+
+      .shop-buy-btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .shop-section-title {
+        margin: 16px 0 8px;
+        font-size: 13px;
+        letter-spacing: 1px;
+        opacity: 0.9;
+        color: var(--gold, #ffd54a);
+      }
+
+      .inventory-pill-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .inventory-pill {
+        border: 1px solid #333;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 999px;
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      .task-speech-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+
+      .task-speech-btn {
+        border: 1px solid #333;
+        background: #111;
+        color: #fff;
+        border-radius: 12px;
+        padding: 10px 12px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .task-speech-btn.gold {
+        color: #000;
+        background: var(--gold, #ffd54a);
+        border-color: rgba(255, 215, 0, 0.35);
+      }
     </style>
   </head>
 
   <body>
+    <div class="top-status-bar">
+      <div class="status-left">
+        <div class="status-chip" id="status-time">18:00</div>
+        <div class="status-chip" id="status-signal">📶</div>
+        <div class="status-chip" id="status-gps">📍</div>
+      </div>
+
+      <div class="status-center" id="status-title">BARROW QUEST</div>
+
+      <div class="status-right">
+        <div class="status-chip" id="status-msg">✉️</div>
+        <div class="status-chip" id="status-battery">🔋 100%</div>
+      </div>
+    </div>
+
+    <button id="btn-home-top" class="top-home-btn" aria-label="Home">🏠</button>
+
     <div id="coin-hud">
       <div style="color: var(--kylan)">
         P1: <span id="h-k">Player 1: 0 🪙</span>
@@ -187,7 +371,7 @@
     <button id="action-trigger" aria-label="Action">⚡</button>
 
     <div class="hud-dock" aria-label="Bottom Controls">
-      <button id="btn-home" class="hud-btn" aria-label="Home">🏠</button>
+      <button id="btn-shop" class="hud-btn" aria-label="Shop">🛒</button>
       <button id="btn-commander" class="hud-btn" aria-label="Commander">
         🎮
       </button>
@@ -219,8 +403,8 @@
             <button class="pill" id="pill-teen" type="button">TEEN</button>
           </div>
           <div class="start-mini">
-            Adventure mode uses quiz, battle, logic, speed, activity, family and
-            more.
+            Adventure mode now rolls mixed missions: quiz, logic, activity,
+            speed, family and more.
           </div>
         </div>
 
@@ -252,7 +436,7 @@
           </div>
           <div class="start-mini">
             Case mode uses story, evidence, clue and AR verify instead of the
-            adventure grid.
+            classic mission grid.
           </div>
         </div>
 
@@ -375,6 +559,49 @@
       </button>
     </div>
 
+    <div id="shop-modal" class="full-modal">
+      <div class="modal-header">
+        <h2 style="color: var(--gold)">🛒 QUEST SHOP</h2>
+        <button
+          type="button"
+          class="close-x"
+          id="btn-shop-close-x"
+          aria-label="Close Shop"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div id="shop-summary"></div>
+
+      <div class="shop-section-title">ITEMS</div>
+      <div id="shop-list" class="shop-grid"></div>
+
+      <div class="shop-section-title">INVENTORY / BADGES</div>
+      <div id="shop-owned"></div>
+
+      <div
+        id="shop-feedback"
+        style="
+          display: none;
+          margin-top: 14px;
+          padding: 12px;
+          border-radius: 14px;
+          border: 1px solid #333;
+          background: rgba(255, 255, 255, 0.04);
+          text-align: left;
+        "
+      ></div>
+
+      <button
+        class="win-btn"
+        id="btn-shop-close"
+        style="background: #222; color: white; margin-top: 14px"
+      >
+        CLOSE
+      </button>
+    </div>
+
     <div id="settings-modal" class="full-modal">
       <div class="modal-header">
         <h2 style="color: var(--gold)">SYSTEM CONFIG</h2>
@@ -397,8 +624,8 @@
           <option value="robot">Robo Ranger</option>
           <option value="pirate">Pirate Captain</option>
           <option value="monk">Monk</option>
-  <option value="kylan">Kylan</option>
-  <option value="piper">Piper</option>
+          <option value="kylan">Kylan</option>
+          <option value="piper">Piper</option>
         </select>
       </div>
 
@@ -515,9 +742,9 @@
           <div class="m-tile" data-mode="history"><span>📜</span>HISTORY</div>
           <div class="m-tile" data-mode="logic"><span>🧩</span>LOGIC</div>
           <div class="m-tile" data-mode="speed"><span>⚡</span>SPEED</div>
-          <div class="m-tile" data-mode="health"><span>🏃</span>HEALTH</div>
           <div class="m-tile" data-mode="activity"><span>🎯</span>ACTIVITY</div>
           <div class="m-tile" data-mode="family"><span>👨‍👩‍👧</span>FAMILY</div>
+          <div class="m-tile" data-mode="ghost"><span>👻</span>GHOST</div>
         </div>
       </div>
 
@@ -636,6 +863,19 @@
 
         <p id="task-desc" style="font-size: 1.1rem; font-weight: bold"></p>
 
+        <div class="task-speech-row">
+          <button
+            class="task-speech-btn gold"
+            id="btn-read-question"
+            type="button"
+          >
+            🔊 READ QUESTION
+          </button>
+          <button class="task-speech-btn" id="btn-read-answers" type="button">
+            🔈 READ ANSWERS
+          </button>
+        </div>
+
         <div id="task-options" style="margin-top: 14px"></div>
 
         <div
@@ -645,6 +885,7 @@
             font-size: 13px;
             color: var(--neon);
             display: none;
+            white-space: pre-wrap;
           "
         >
           Correct
