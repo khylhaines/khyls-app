@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -19,6 +20,150 @@
     <link rel="stylesheet" href="./styles.css" />
 
     <style>
+      :root {
+        --gold: #ffd54a;
+        --neon: #4dff9e;
+        --danger: #ff6b6b;
+        --panel: rgba(8, 10, 16, 0.9);
+        --panel2: rgba(255, 255, 255, 0.06);
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        color: #fff;
+        font-family: Arial, Helvetica, sans-serif;
+        overflow: hidden;
+      }
+
+      #map {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+      }
+
+      .top-appbar {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        z-index: 1200;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        pointer-events: none;
+      }
+
+      .top-left,
+      .top-center,
+      .top-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        pointer-events: auto;
+      }
+
+      .top-pill {
+        min-height: 44px;
+        border-radius: 14px;
+        border: 1px solid #333;
+        background: rgba(10, 10, 14, 0.92);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 14px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
+
+      .icon-btn {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        border: 1px solid #333;
+        background: rgba(10, 10, 14, 0.94);
+        color: #fff;
+        cursor: pointer;
+        font-size: 20px;
+      }
+
+      .status-stack {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-chip {
+        min-width: 74px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 1px solid #333;
+        background: rgba(10, 10, 14, 0.92);
+      }
+
+      .status-chip strong {
+        display: block;
+        font-size: 14px;
+        color: var(--gold);
+      }
+
+      .hud-dock {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        z-index: 1200;
+        display: flex;
+        gap: 12px;
+      }
+
+      .hud-btn {
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+        border: 1px solid #333;
+        background: rgba(10, 10, 14, 0.94);
+        color: #fff;
+        font-size: 22px;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
+
+      #action-trigger {
+        position: fixed;
+        right: 16px;
+        bottom: 94px;
+        z-index: 1200;
+        width: 62px;
+        height: 62px;
+        border: 2px solid var(--gold);
+        border-radius: 18px;
+        background: #111;
+        color: var(--gold);
+        font-size: 28px;
+        cursor: pointer;
+        display: none;
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+      }
+
+      .full-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        background: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(6px);
+        overflow-y: auto;
+        padding: 18px 16px 120px;
+        box-sizing: border-box;
+        display: none;
+      }
+
       .modal-header {
         display: flex;
         align-items: center;
@@ -28,7 +173,8 @@
       }
 
       .modal-header h1,
-      .modal-header h2 {
+      .modal-header h2,
+      .modal-header h3 {
         margin: 0;
       }
 
@@ -40,23 +186,27 @@
         background: #111;
         color: #fff;
         font-size: 20px;
-        line-height: 44px;
-        text-align: center;
         cursor: pointer;
       }
 
-      .start-grid {
+      .start-grid,
+      .shop-grid {
         display: grid;
         gap: 12px;
-        margin-top: 14px;
+      }
+
+      .start-grid {
+        grid-template-columns: 1fr;
       }
 
       .start-card,
       .settings-card,
       .setting-row,
-      .case-card {
+      .case-card,
+      .shop-card,
+      .inventory-card {
         border: 1px solid #333;
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(255, 255, 255, 0.05);
         border-radius: 18px;
         padding: 14px;
         text-align: left;
@@ -65,33 +215,35 @@
       .start-card h3,
       .settings-card h3,
       .setting-row h3,
-      .case-card h3 {
+      .case-card h3,
+      .shop-card h3,
+      .inventory-card h3 {
         margin: 0 0 10px;
       }
 
       .start-mini,
       .settings-mini,
-      .case-mini {
-        opacity: 0.8;
+      .case-mini,
+      .shop-mini {
+        opacity: 0.82;
         font-size: 12px;
         margin-top: 8px;
+        line-height: 1.45;
       }
 
       .pill-row {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
-        justify-content: center;
         margin-top: 10px;
       }
 
       .pill {
         border: 1px solid #333;
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.06);
         border-radius: 999px;
         padding: 10px 14px;
         cursor: pointer;
-        font-family: monospace;
         font-size: 12px;
         color: white;
       }
@@ -115,7 +267,6 @@
         border-radius: 18px;
         font-weight: 900;
         cursor: pointer;
-        user-select: none;
         color: white;
         text-align: center;
       }
@@ -159,210 +310,153 @@
         display: none !important;
       }
 
-      .top-status-bar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 54px;
-        z-index: 2001;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        background: linear-gradient(
-          180deg,
-          rgba(0, 0, 0, 0.92) 0%,
-          rgba(0, 0, 0, 0.68) 100%
-        );
-        backdrop-filter: blur(8px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      }
-
-      .status-left,
-      .status-right {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .status-center {
-        font-size: 12px;
-        letter-spacing: 1px;
+      .win-btn,
+      .mcq-btn {
+        width: 100%;
+        min-height: 48px;
+        border-radius: 14px;
+        border: 1px solid #333;
+        background: var(--gold);
+        color: #000;
         font-weight: 800;
-        color: var(--gold, #ffd54a);
-        text-align: center;
-        opacity: 0.95;
-      }
-
-      .status-chip {
-        min-width: 28px;
-        height: 28px;
-        padding: 0 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        background: rgba(255, 255, 255, 0.08);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        color: #fff;
-      }
-
-      .top-home-btn {
-        position: fixed;
-        top: 62px;
-        left: 12px;
-        z-index: 2001;
-        width: 52px;
-        height: 52px;
-        border-radius: 16px;
-        border: 1px solid #333;
-        background: rgba(17, 17, 17, 0.92);
-        color: #fff;
-        font-size: 24px;
         cursor: pointer;
-        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+        padding: 12px 14px;
+        box-sizing: border-box;
       }
 
-      #coin-hud {
-        top: 122px !important;
-      }
-
-      #action-trigger {
-        bottom: 110px !important;
-        z-index: 1998;
-      }
-
-      .hud-dock {
-        z-index: 1999;
-      }
-
-      .shop-grid {
-        display: grid;
-        gap: 12px;
-        margin-top: 12px;
-      }
-
-      .shop-item-card {
-        border: 1px solid #333;
-        background: rgba(255, 255, 255, 0.04);
-        border-radius: 18px;
-        padding: 14px;
+      .mcq-btn {
+        background: #171717;
+        color: #fff;
+        border: 1px solid #3b3b3b;
         text-align: left;
+      }
+
+      .mission-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .m-tile {
+        border: 1px solid #333;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 14px 10px;
+        text-align: center;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .m-tile span {
+        display: block;
+        font-size: 26px;
+        margin-bottom: 8px;
+      }
+
+      .zone-banner,
+      .boss-banner {
+        white-space: pre-line;
+        border-radius: 16px;
+        padding: 12px 14px;
+        margin: 10px 0;
+        text-align: center;
+        font-weight: 800;
+      }
+
+      .zone-banner {
+        background: rgba(255, 213, 74, 0.1);
+        border: 1px solid rgba(255, 213, 74, 0.35);
+        color: var(--gold);
+      }
+
+      .boss-banner {
+        background: rgba(255, 80, 80, 0.12);
+        border: 1px solid rgba(255, 80, 80, 0.35);
+        color: #ff9090;
+      }
+
+      .shop-item {
+        border: 1px solid #333;
+        border-radius: 16px;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.04);
       }
 
       .shop-item-top {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        gap: 12px;
+        align-items: start;
+        gap: 10px;
       }
 
-      .shop-item-icon {
-        font-size: 28px;
+      .shop-cost {
+        color: var(--gold);
+        font-weight: 800;
       }
 
-      .shop-owned-tag {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+      .owned-tag {
+        display: inline-block;
+        margin-top: 8px;
         padding: 6px 10px;
         border-radius: 999px;
-        font-size: 11px;
-        font-weight: 800;
-        border: 1px solid rgba(255, 215, 0, 0.35);
-        background: rgba(255, 215, 0, 0.08);
-        color: var(--gold, #ffd54a);
-      }
-
-      .shop-buy-btn[disabled] {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .shop-section-title {
-        margin: 16px 0 8px;
-        font-size: 13px;
-        letter-spacing: 1px;
-        opacity: 0.9;
-        color: var(--gold, #ffd54a);
-      }
-
-      .inventory-pill-wrap {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .inventory-pill {
-        border: 1px solid #333;
-        background: rgba(255, 255, 255, 0.06);
-        border-radius: 999px;
-        padding: 8px 10px;
+        border: 1px solid #2f6d4c;
+        background: rgba(77, 255, 158, 0.08);
+        color: var(--neon);
         font-size: 12px;
-      }
-
-      .task-speech-row {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 12px;
-      }
-
-      .task-speech-btn {
-        border: 1px solid #333;
-        background: #111;
-        color: #fff;
-        border-radius: 12px;
-        padding: 10px 12px;
-        cursor: pointer;
         font-weight: 700;
       }
 
-      .task-speech-btn.gold {
-        color: #000;
-        background: var(--gold, #ffd54a);
-        border-color: rgba(255, 215, 0, 0.35);
+      #task-options {
+        display: grid;
+        gap: 10px;
+      }
+
+      .read-answers-btn {
+        margin-top: 12px;
+        background: #222;
+        color: #fff;
+      }
+
+      .night-vision {
+        filter: hue-rotate(70deg) saturate(1.1) brightness(0.75);
+      }
+
+      @media (max-width: 520px) {
+        .status-stack {
+          gap: 6px;
+        }
+
+        .status-chip {
+          min-width: 64px;
+          padding: 8px;
+        }
+
+        .top-pill {
+          padding: 0 10px;
+        }
       }
     </style>
   </head>
 
   <body>
-    <div class="top-status-bar">
-      <div class="status-left">
-        <div class="status-chip" id="status-time">18:00</div>
-        <div class="status-chip" id="status-signal">📶</div>
-        <div class="status-chip" id="status-gps">📍</div>
+    <div class="top-appbar">
+      <div class="top-left">
+        <button id="btn-home" class="icon-btn" aria-label="Home">🏠</button>
       </div>
 
-      <div class="status-center" id="status-title">BARROW QUEST</div>
+      <div class="top-center">
+        <div class="top-pill">BARROW QUEST</div>
+      </div>
 
-      <div class="status-right">
-        <div class="status-chip" id="status-msg">✉️</div>
-        <div class="status-chip" id="status-battery">🔋 100%</div>
-      </div>
-    </div>
-
-    <button id="btn-home-top" class="top-home-btn" aria-label="Home">🏠</button>
-
-    <div id="coin-hud">
-      <div style="color: var(--kylan)">
-        P1: <span id="h-k">Player 1: 0 🪙</span>
-        <span id="hp-k-tag" class="hp-status hp-off">OFF</span>
-      </div>
-      <div style="color: var(--piper)">
-        P2: <span id="h-p">Player 2: 0 🪙</span>
-        <span id="hp-p-tag" class="hp-status hp-off">OFF</span>
-      </div>
-      <div style="color: var(--parent)">
-        P3: <span id="h-me">Player 3: 0 🪙</span>
-      </div>
-      <div
-        id="capture-hud"
-        style="margin-top: 10px; font-size: 12px; color: var(--gold)"
-      >
-        CAPTURE: —
+      <div class="top-right">
+        <div class="status-stack">
+          <div class="status-chip">XP<strong id="top-xp">0</strong></div>
+          <div class="status-chip">
+            TOKENS<strong id="top-tokens">0</strong>
+          </div>
+          <div class="status-chip">COINS<strong id="top-coins">0</strong></div>
+        </div>
+        <button id="btn-shop" class="icon-btn" aria-label="Shop">🛒</button>
       </div>
     </div>
 
@@ -371,7 +465,6 @@
     <button id="action-trigger" aria-label="Action">⚡</button>
 
     <div class="hud-dock" aria-label="Bottom Controls">
-      <button id="btn-shop" class="hud-btn" aria-label="Shop">🛒</button>
       <button id="btn-commander" class="hud-btn" aria-label="Commander">
         🎮
       </button>
@@ -395,21 +488,17 @@
 
       <div class="start-grid">
         <div class="start-card">
-          <h3>🧒 CLASSIC ADVENTURE</h3>
+          <h3>🧒 KIDS</h3>
+          <div class="start-mini">
+            Fun adventure maps, playful tasks, family challenges, respectful
+            landmark moments, and easy-to-follow exploration.
+          </div>
           <div class="pill-row">
             <button class="pill active" id="pill-kids" type="button">
               KIDS
             </button>
             <button class="pill" id="pill-teen" type="button">TEEN</button>
           </div>
-          <div class="start-mini">
-            Adventure mode now rolls mixed missions: quiz, logic, activity,
-            speed, family and more.
-          </div>
-        </div>
-
-        <div class="start-card">
-          <h3>🗺️ ADVENTURE MAPS</h3>
           <div class="pill-row">
             <button class="pill active" id="pill-full" type="button">
               FULL BARROW
@@ -422,7 +511,27 @@
         </div>
 
         <div class="start-card">
-          <h3>🕵️ ADULT CASE MODE</h3>
+          <h3>👥 TEENS</h3>
+          <div class="start-mini">
+            Teen-style mode with stronger challenge energy, sillier missions,
+            more mystery, more movement, and more strategy.
+          </div>
+          <div class="pill-row">
+            <button class="pill" id="pill-team-core" type="button">
+              TEENS MAPS
+            </button>
+            <button class="pill" id="pill-team-mix" type="button">
+              TEENS VIBES
+            </button>
+          </div>
+        </div>
+
+        <div class="start-card">
+          <h3>🕵️ ADULTS</h3>
+          <div class="start-mini">
+            True crime, conspiracy, and history case mode with story, evidence,
+            clue, and AR verify.
+          </div>
           <div class="pill-row">
             <button class="pill" id="pill-truecrime" type="button">
               TRUE CRIME
@@ -434,14 +543,18 @@
               HISTORY
             </button>
           </div>
+        </div>
+
+        <div class="start-card">
+          <h3>🚀 HOW TO PLAY</h3>
           <div class="start-mini">
-            Case mode uses story, evidence, clue and AR verify instead of the
-            classic mission grid.
+            Walk to a live pin, hit the lightning button, complete the mission,
+            earn coins, XP and tokens, unlock mysteries, and use the shop for
+            rewards and collectibles.
           </div>
         </div>
 
         <div class="start-card">
-          <h3>🚀 READY</h3>
           <button class="win-btn" id="btn-start" type="button">
             START ADVENTURE
           </button>
@@ -449,25 +562,17 @@
             class="win-btn"
             id="btn-open-settings"
             type="button"
-            style="background: #222; color: #fff"
+            style="background: #222; color: #fff; margin-top: 10px"
           >
             SETTINGS
           </button>
         </div>
       </div>
-
-      <button
-        class="win-btn"
-        id="btn-start-close"
-        style="background: #222; color: #fff; margin-top: 14px"
-      >
-        CLOSE
-      </button>
     </div>
 
     <div id="commander-hub" class="full-modal">
       <div class="modal-header">
-        <h1 style="color: var(--parent)">COMMANDER HUB</h1>
+        <h1 style="color: var(--gold)">COMMANDER HUB</h1>
         <button
           type="button"
           class="close-x"
@@ -499,24 +604,15 @@
       <div class="setting-row">
         <h3>ACTIVE PLAYER</h3>
         <div style="display: flex; gap: 10px">
-          <button
-            type="button"
-            class="win-btn"
-            style="background: var(--kylan); color: white"
-            id="btn-hp-k"
-          >
-            PLAYER 1
-          </button>
-          <button
-            type="button"
-            class="win-btn"
-            style="background: var(--piper); color: #000"
-            id="btn-hp-p"
-          >
-            PLAYER 2
-          </button>
+          <button class="win-btn" id="btn-hp-k" type="button">PLAYER 1</button>
+          <button class="win-btn" id="btn-hp-p" type="button">PLAYER 2</button>
         </div>
-        <button type="button" class="win-btn" id="btn-swap">
+        <button
+          type="button"
+          class="win-btn"
+          id="btn-swap"
+          style="margin-top: 10px"
+        >
           SWAP FIRST TWO PLAYERS
         </button>
       </div>
@@ -528,77 +624,6 @@
         style="background: #222; color: #fff; margin-top: 16px"
       >
         EXIT HUB
-      </button>
-    </div>
-
-    <div id="home-modal" class="full-modal">
-      <div class="modal-header">
-        <h2 style="color: var(--gold)">🏠 HOME BASE LOG</h2>
-        <button
-          type="button"
-          class="close-x"
-          id="btn-home-close-x"
-          aria-label="Close Home"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div
-        id="home-summary"
-        style="text-align: left; margin: 15px 0; font-family: monospace"
-      ></div>
-      <div id="home-list" style="text-align: left"></div>
-
-      <button
-        class="win-btn"
-        id="btn-home-close"
-        style="background: #222; color: white"
-      >
-        CLOSE
-      </button>
-    </div>
-
-    <div id="shop-modal" class="full-modal">
-      <div class="modal-header">
-        <h2 style="color: var(--gold)">🛒 QUEST SHOP</h2>
-        <button
-          type="button"
-          class="close-x"
-          id="btn-shop-close-x"
-          aria-label="Close Shop"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div id="shop-summary"></div>
-
-      <div class="shop-section-title">ITEMS</div>
-      <div id="shop-list" class="shop-grid"></div>
-
-      <div class="shop-section-title">INVENTORY / BADGES</div>
-      <div id="shop-owned"></div>
-
-      <div
-        id="shop-feedback"
-        style="
-          display: none;
-          margin-top: 14px;
-          padding: 12px;
-          border-radius: 14px;
-          border: 1px solid #333;
-          background: rgba(255, 255, 255, 0.04);
-          text-align: left;
-        "
-      ></div>
-
-      <button
-        class="win-btn"
-        id="btn-shop-close"
-        style="background: #222; color: white; margin-top: 14px"
-      >
-        CLOSE
       </button>
     </div>
 
@@ -637,9 +662,6 @@
           <option value="adult">ADULT</option>
           <option value="auto">AUTO</option>
         </select>
-        <div class="settings-mini">
-          Adult case mode ignores this and uses dossier flow.
-        </div>
       </div>
 
       <div class="settings-card">
@@ -663,11 +685,13 @@
         <button
           class="win-btn"
           id="btn-zoom-ui"
-          style="background: #333; color: #fff"
+          style="background: #333; color: #fff; margin-top: 10px"
         >
           TOGGLE ZOOM UI
         </button>
-        <button class="win-btn" id="btn-night">NIGHT VISION</button>
+        <button class="win-btn" id="btn-night" style="margin-top: 10px">
+          NIGHT VISION
+        </button>
       </div>
 
       <div class="settings-card">
@@ -742,9 +766,9 @@
           <div class="m-tile" data-mode="history"><span>📜</span>HISTORY</div>
           <div class="m-tile" data-mode="logic"><span>🧩</span>LOGIC</div>
           <div class="m-tile" data-mode="speed"><span>⚡</span>SPEED</div>
+          <div class="m-tile" data-mode="health"><span>🏃</span>HEALTH</div>
           <div class="m-tile" data-mode="activity"><span>🎯</span>ACTIVITY</div>
           <div class="m-tile" data-mode="family"><span>👨‍👩‍👧</span>FAMILY</div>
-          <div class="m-tile" data-mode="ghost"><span>👻</span>GHOST</div>
         </div>
       </div>
 
@@ -775,8 +799,142 @@
 
       <button
         class="win-btn"
-        style="background: #222; color: white"
+        style="background: #222; color: white; margin-top: 16px"
         id="btn-close-quest"
+      >
+        CLOSE
+      </button>
+    </div>
+
+    <div id="task-modal" class="full-modal">
+      <h1 id="task-title" style="color: var(--gold)">MISSION</h1>
+
+      <div
+        style="
+          border: 3px solid var(--gold);
+          padding: 20px;
+          border-radius: 20px;
+          margin: 25px 0;
+          background: rgba(255, 255, 255, 0.05);
+          text-align: left;
+        "
+      >
+        <div id="task-block-story" class="case-block hidden">
+          <div class="case-label">WHAT HAPPENED</div>
+          <div id="task-story" class="case-body"></div>
+        </div>
+
+        <div id="task-block-evidence" class="case-block hidden">
+          <div class="case-label">EVIDENCE</div>
+          <div id="task-evidence" class="case-body"></div>
+        </div>
+
+        <div id="task-block-clue" class="case-block hidden">
+          <div class="case-label">CLUE</div>
+          <div id="task-clue" class="case-body"></div>
+        </div>
+
+        <p id="task-desc" style="font-size: 1.1rem; font-weight: bold"></p>
+
+        <button
+          id="btn-read-answers"
+          class="win-btn read-answers-btn hidden"
+          type="button"
+        >
+          READ ANSWERS OUT LOUD
+        </button>
+
+        <div id="task-options" style="margin-top: 14px"></div>
+
+        <div
+          id="task-feedback"
+          style="
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--neon);
+            display: none;
+            white-space: pre-wrap;
+          "
+        >
+          Correct
+        </div>
+      </div>
+
+      <button
+        class="win-btn"
+        id="btn-task-close"
+        style="background: #222; color: #fff"
+      >
+        CLOSE
+      </button>
+    </div>
+
+    <div id="shop-modal" class="full-modal">
+      <div class="modal-header">
+        <h2 style="color: var(--gold)">QUEST SHOP</h2>
+        <button
+          type="button"
+          class="close-x"
+          id="btn-shop-close-x"
+          aria-label="Close Shop"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="shop-grid">
+        <div class="shop-card">
+          <h3>PLAYER STATUS</h3>
+          <div id="shop-summary"></div>
+          <div class="shop-mini">
+            Buy tokens, boosts, and collectible badges. Purchased items are
+            shown below in your inventory.
+          </div>
+        </div>
+
+        <div class="inventory-card">
+          <h3>INVENTORY</h3>
+          <div id="shop-inventory"></div>
+        </div>
+
+        <div class="shop-card">
+          <h3>SHOP ITEMS</h3>
+          <div id="shop-list"></div>
+        </div>
+      </div>
+
+      <button
+        class="win-btn"
+        id="btn-shop-close"
+        style="background: #222; color: #fff; margin-top: 16px"
+      >
+        CLOSE
+      </button>
+    </div>
+
+    <div id="home-modal" class="full-modal">
+      <div class="modal-header">
+        <h2 style="color: var(--gold)">🏠 HOME BASE LOG</h2>
+        <button
+          type="button"
+          class="close-x"
+          id="btn-home-close-x"
+          aria-label="Close Home"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div
+        id="home-summary"
+        style="text-align: left; margin: 15px 0; font-family: monospace"
+      ></div>
+      <div id="home-list" style="text-align: left"></div>
+
+      <button
+        class="win-btn"
+        id="btn-home-close"
+        style="background: #222; color: white"
       >
         CLOSE
       </button>
@@ -828,74 +986,6 @@
         class="win-btn"
         id="btn-ar-close"
         style="background: #222; color: #fff; margin-top: 15px"
-      >
-        CLOSE
-      </button>
-    </div>
-
-    <div id="task-modal" class="full-modal">
-      <h1 id="task-title" style="color: var(--gold)">MISSION</h1>
-
-      <div
-        style="
-          border: 3px solid var(--gold);
-          padding: 20px;
-          border-radius: 20px;
-          margin: 25px 0;
-          background: rgba(255, 255, 255, 0.05);
-          text-align: left;
-        "
-      >
-        <div id="task-block-story" class="case-block hidden">
-          <div class="case-label">WHAT HAPPENED</div>
-          <div id="task-story" class="case-body"></div>
-        </div>
-
-        <div id="task-block-evidence" class="case-block hidden">
-          <div class="case-label">EVIDENCE</div>
-          <div id="task-evidence" class="case-body"></div>
-        </div>
-
-        <div id="task-block-clue" class="case-block hidden">
-          <div class="case-label">CLUE</div>
-          <div id="task-clue" class="case-body"></div>
-        </div>
-
-        <p id="task-desc" style="font-size: 1.1rem; font-weight: bold"></p>
-
-        <div class="task-speech-row">
-          <button
-            class="task-speech-btn gold"
-            id="btn-read-question"
-            type="button"
-          >
-            🔊 READ QUESTION
-          </button>
-          <button class="task-speech-btn" id="btn-read-answers" type="button">
-            🔈 READ ANSWERS
-          </button>
-        </div>
-
-        <div id="task-options" style="margin-top: 14px"></div>
-
-        <div
-          id="task-feedback"
-          style="
-            margin-top: 12px;
-            font-size: 13px;
-            color: var(--neon);
-            display: none;
-            white-space: pre-wrap;
-          "
-        >
-          Correct
-        </div>
-      </div>
-
-      <button
-        class="win-btn"
-        id="btn-task-close"
-        style="background: #222; color: #fff"
       >
         CLOSE
       </button>
