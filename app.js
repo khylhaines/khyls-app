@@ -1,5 +1,5 @@
 import { PINS } from "./pins.js";
-import { getQA } from "./qa.js";
+import { getQA, getPinStartIntro } from "./qa.js";
 import { ADULT_PINS } from "./adult_pins.js";
 import { ADULT_CONTENT } from "./adult_content.js";
 import { applyReward } from "./progression.js";
@@ -95,6 +95,7 @@ let heroMarker = null;
 let activeMarkers = {};
 let currentPin = null;
 let currentTask = null;
+let currentPinIntro = "";
 let nightVisionOn = false;
 let locationWatchId = null;
 let arStream = null;
@@ -253,7 +254,29 @@ function updateCoins(playerId, amount) {
 }
 
 function renderHUD() {
+  const enabled = getEnabledPlayers();
+  const p1 = enabled[0] || { name: "Player 1", coins: 0, id: null };
+  const p2 = enabled[1] || { name: "Player 2", coins: 0, id: null };
+  const p3 = enabled[2] || { name: "Player 3", coins: 0, id: null };
+
+  if ($("h-k")) $("h-k").innerText = `${p1.name}: ${p1.coins} 🪙`;
+  if ($("h-p")) $("h-p").innerText = `${p2.name}: ${p2.coins} 🪙`;
+  if ($("h-me")) $("h-me").innerText = `${p3.name}: ${p3.coins} 🪙`;
+
   const active = getActivePlayer();
+
+  if ($("hp-k-tag")) {
+    $("hp-k-tag").innerText = active?.id === p1.id ? "ACTIVE" : "OFF";
+    $("hp-k-tag").className =
+      active?.id === p1.id ? "hp-status hp-on" : "hp-status hp-off";
+  }
+
+  if ($("hp-p-tag")) {
+    $("hp-p-tag").innerText = active?.id === p2.id ? "ACTIVE" : "OFF";
+    $("hp-p-tag").className =
+      active?.id === p2.id ? "hp-status hp-on" : "hp-status hp-off";
+  }
+
   const coins = active?.coins || 0;
   const xp = Number(state.meta?.xp || 0);
   const tokens = Number(state.meta?.tokens || 0);
@@ -339,10 +362,7 @@ function createHeroIcon() {
   const char = state.settings.character || "hero_duo";
   const value = CHARACTER_ICONS[char] || "🧭";
 
-  if (
-    typeof value === "string" &&
-    (value.endsWith(".jpg") || value.endsWith(".png"))
-  ) {
+  if (value.endsWith(".jpg") || value.endsWith(".png")) {
     return L.divIcon({
       className: "marker-logo",
       html: `
@@ -457,9 +477,75 @@ function setTaskBlock(id, bodyId, text) {
   }
 }
 
-function getTierLabel() {
+function buildFallbackPinIntro(pin, tier = "kid") {
+  if (!pin) return "";
+
+  const name = pin.n || "this place";
+  const zone = String(pin.zone || pin.set || "").toLowerCase();
+  const group = String(pin.qaGroup || "").toLowerCase();
+
+  if (zone.includes("abbey") || group.includes("abbey")) {
+    if (tier === "kid") {
+      return `${name} reached. This place is part of the abbey world, full of old stones, hidden stories, and history from long ago.`;
+    }
+    if (tier === "teen") {
+      return `${name} reached. This part of the map carries abbey atmosphere, older history, and stronger mystery energy.`;
+    }
+    return `${name} reached. This location sits inside the abbey landscape, where memory, ruin, and historical depth shape the experience.`;
+  }
+
+  if (zone.includes("park") || group.includes("park") || zone.includes("nature")) {
+    if (tier === "kid") {
+      return `${name} reached. This is part of your park adventure, with movement, fun, and things to spot around you.`;
+    }
+    if (tier === "teen") {
+      return `${name} reached. This park pin mixes movement, atmosphere, and team challenge energy.`;
+    }
+    return `${name} reached. This location works as a landscape and leisure pin, balancing movement, atmosphere, and public space.`;
+  }
+
+  if (
+    zone.includes("docks") ||
+    group.includes("docks") ||
+    group.includes("submarine") ||
+    group.includes("industry")
+  ) {
+    if (tier === "kid") {
+      return `${name} reached. This place is connected to Barrow’s working history, ships, docks, and big engineering stories.`;
+    }
+    if (tier === "teen") {
+      return `${name} reached. This pin connects to Barrow’s industrial and dockside identity.`;
+    }
+    return `${name} reached. This location sits inside Barrow’s industrial-maritime story, where labour, engineering, and identity come together.`;
+  }
+
+  if (zone.includes("memorial") || group.includes("memorial")) {
+    if (tier === "kid") {
+      return `${name} reached. This is a place to slow down, notice where you are, and show respect.`;
+    }
+    if (tier === "teen") {
+      return `${name} reached. This is one of the map’s memory places, where people and history are remembered in public.`;
+    }
+    return `${name} reached. This is a memory-site, where public space and remembrance are joined together.`;
+  }
+
+  if (tier === "kid") {
+    return `${name} reached. You are at a real Barrow Quest location with its own story, clues, and local history.`;
+  }
+  if (tier === "teen") {
+    return `${name} reached. This is a live pin with local story, atmosphere, and challenge potential.`;
+  }
+  return `${name} reached. This location sits within the wider Barrow map as a point of story, place, and interpretation.`;
+}
+
+function getCurrentPinIntro(pin = currentPin) {
+  if (!pin) return "";
   const tier = getEffectiveTier();
-  return tier === "teen" ? "TEEN" : tier === "adult" ? "ADULT" : "KIDS";
+  return (
+    getPinStartIntro(pin.id, tier) ||
+    buildFallbackPinIntro(pin, tier) ||
+    ""
+  );
 }
 
 /* ============================
@@ -499,6 +585,7 @@ function resetMap() {
   activeMarkers = {};
   heroMarker = null;
   currentPin = null;
+  currentPinIntro = "";
 
   initMap();
 }
@@ -518,6 +605,7 @@ function renderPins() {
 
     marker.on("click", () => {
       currentPin = pin;
+      currentPinIntro = getCurrentPinIntro(pin);
       showActionButton(true);
       updateCaptureText(`${pin.n} • READY`);
       speakText(`${pin.n}. Ready.`);
@@ -584,6 +672,7 @@ function startLocationWatch() {
       }
 
       currentPin = nearby;
+      currentPinIntro = nearby ? getCurrentPinIntro(nearby) : "";
 
       if (nearby) {
         updateCaptureText(`${nearby.n} • READY`);
@@ -599,10 +688,10 @@ function startLocationWatch() {
         } else {
           updateCaptureText(
             state.mapMode === "core"
-              ? `${getTierLabel()} • FULL BARROW`
+              ? "FULL BARROW MAP"
               : state.mapMode === "park"
-              ? `${getTierLabel()} • PARK`
-              : `${getTierLabel()} • ABBEY`
+              ? "PARK ADVENTURE"
+              : "ABBEY QUEST"
           );
         }
         showActionButton(false);
@@ -625,19 +714,25 @@ function startLocationWatch() {
 function openMissionMenu() {
   if (!currentPin) return;
 
+  currentPinIntro = getCurrentPinIntro(currentPin);
   showQuestLayoutForPack();
 
   if ($("q-name")) $("q-name").innerText = currentPin.n;
 
+  const suggestedMode = normaliseClassicModeFromPin(currentPin);
+
   if ($("quest-status")) {
-    $("quest-status").innerText =
-      state.activePack === "adult"
-        ? `STATUS: CASE MODE • ${String(
-            state.activeAdultCategory || "GENERAL"
-          ).toUpperCase()}`
-        : `STATUS: ${getTierLabel()} • ${state.mapMode.toUpperCase()} • ${String(
-            currentPin.type || "quiz"
-          ).toUpperCase()}`;
+    if (state.activePack === "adult") {
+      $("quest-status").innerText =
+        `STATUS: CASE MODE • ${String(
+          state.activeAdultCategory || "GENERAL"
+        ).toUpperCase()}`;
+    } else {
+      $("quest-status").innerText =
+        `STATUS: ${state.mapMode.toUpperCase()} • SUGGESTED: ${String(
+          suggestedMode || "quiz"
+        ).toUpperCase()}\n\n${currentPinIntro || ""}`;
+    }
   }
 
   if ($("mode-banner")) {
@@ -648,10 +743,10 @@ function openMissionMenu() {
     } else {
       $("mode-banner").innerText =
         state.mapMode === "core"
-          ? `${getTierLabel()}\n${currentPin.n}`
+          ? `FULL BARROW\n${currentPin.n}`
           : state.mapMode === "park"
-          ? `${getTierLabel()} PARK\n${currentPin.n}`
-          : `${getTierLabel()} ABBEY\n${currentPin.n}`;
+          ? `PARK\n${currentPin.n}`
+          : `ABBEY\n${currentPin.n}`;
     }
   }
 
@@ -671,14 +766,7 @@ function openMissionMenu() {
     return;
   }
 
-  const primaryMode = normaliseClassicModeFromPin(currentPin);
-
-  if (primaryMode) {
-    openTask(primaryMode);
-    return;
-  }
-
-  speakText(`${currentPin.n}. Quest menu opened.`);
+  speakText(currentPinIntro || `${currentPin.n}. Choose a mission.`);
   showModal("quest-modal");
 }
 
@@ -686,6 +774,7 @@ function openTask(mode) {
   if (!currentPin) return;
 
   const tier = getEffectiveTier();
+  const pinIntro = getCurrentPinIntro(currentPin);
   let task = null;
 
   clearTaskBlocks();
@@ -771,6 +860,7 @@ function openTask(mode) {
     mode,
     pin: currentPin,
     question: task,
+    intro: pinIntro,
   };
 
   if ($("task-title")) {
@@ -785,7 +875,14 @@ function openTask(mode) {
       task?.desc || task?.q || "No mission found for this location.";
   }
 
-  setTaskBlock("task-block-story", "task-story", task?.story || "");
+  const classicIntroStory =
+    state.activePack !== "adult" ? pinIntro || "" : task?.story || "";
+
+  setTaskBlock(
+    "task-block-story",
+    "task-story",
+    state.activePack === "adult" ? task?.story || "" : classicIntroStory
+  );
   setTaskBlock("task-block-evidence", "task-evidence", task?.evidence || "");
   setTaskBlock("task-block-clue", "task-clue", task?.clue || "");
 
@@ -795,6 +892,8 @@ function openTask(mode) {
     speakText(task.speech);
   } else if (task?.q) {
     speakText(task.q);
+  } else if (pinIntro) {
+    speakText(pinIntro);
   } else {
     speakText("No mission found.");
   }
@@ -905,9 +1004,7 @@ function renderShop() {
     </div>
   `;
 
-  const ownedItems = SHOP_ITEMS.filter(
-    (item) => getInventoryCount(item.id) > 0
-  );
+  const ownedItems = SHOP_ITEMS.filter((item) => getInventoryCount(item.id) > 0);
 
   inventory.innerHTML = ownedItems.length
     ? ownedItems
@@ -931,16 +1028,12 @@ function renderShop() {
         <div class="shop-item-top">
           <div>
             <div style="font-weight:bold;">${item.name}</div>
-            <div style="font-size:12px;opacity:.85;margin-top:6px;">${
-              item.desc
-            }</div>
+            <div style="font-size:12px;opacity:.85;margin-top:6px;">${item.desc}</div>
           </div>
           <div class="shop-cost">${item.cost} 🪙</div>
         </div>
         ${owned > 0 ? `<div class="owned-tag">OWNED: ${owned}</div>` : ""}
-        <button class="win-btn shop-buy-btn" data-shop-id="${
-          item.id
-        }" style="margin-top:12px;">
+        <button class="win-btn shop-buy-btn" data-shop-id="${item.id}" style="margin-top:12px;">
           BUY
         </button>
       </div>
@@ -1078,9 +1171,8 @@ function applySettingsToUI() {
   if ($("pitch-label")) $("pitch-label").innerText = state.settings.voicePitch;
   if ($("rate-label")) $("rate-label").innerText = state.settings.voiceRate;
   if ($("sfx-label")) $("sfx-label").innerText = state.settings.sfxVol;
-  if ($("zoomui-label")) {
+  if ($("zoomui-label"))
     $("zoomui-label").innerText = state.settings.zoomUI ? "ON" : "OFF";
-  }
 
   if ($("enter-radius")) $("enter-radius").value = state.settings.radius;
   if ($("v-pitch")) $("v-pitch").value = state.settings.voicePitch;
@@ -1214,6 +1306,9 @@ function stopAR() {
 ============================ */
 function wireButtons() {
   $("btn-start")?.addEventListener("click", () => closeModal("start-modal"));
+  $("btn-start-close")?.addEventListener("click", () =>
+    closeModal("start-modal")
+  );
   $("btn-start-close-x")?.addEventListener("click", () =>
     closeModal("start-modal")
   );
@@ -1221,6 +1316,7 @@ function wireButtons() {
   $("btn-home")?.addEventListener("click", () => {
     currentPin = null;
     currentTask = null;
+    currentPinIntro = "";
 
     const actionBtn = $("action-trigger");
     if (actionBtn) actionBtn.style.display = "none";
@@ -1231,7 +1327,6 @@ function wireButtons() {
 
     saveState();
     updateStartButtons();
-    renderHomeLog();
     resetMap();
     showModal("start-modal");
   });
@@ -1291,6 +1386,13 @@ function wireButtons() {
   $("btn-task-close")?.addEventListener("click", () =>
     closeModal("task-modal")
   );
+
+  $("btn-read-question")?.addEventListener("click", () => {
+    if (!currentTask?.question) return;
+    const q = currentTask.question;
+    if (q?.q) speakText(q.q);
+    else if (q?.desc) speakText(q.desc);
+  });
 
   $("btn-read-answers")?.addEventListener("click", () => {
     if (currentTask?.question?.options?.length) {
