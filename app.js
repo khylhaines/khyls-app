@@ -1,3 +1,4 @@
+
 import { PINS } from "./pins.js";
 import { getQA, getPinStartIntro } from "./qa.js";
 import { ADULT_PINS } from "./adult_pins.js";
@@ -494,7 +495,11 @@ function buildFallbackPinIntro(pin, tier = "kid") {
     return `${name} reached. This location sits inside the abbey landscape, where memory, ruin, and historical depth shape the experience.`;
   }
 
-  if (zone.includes("park") || group.includes("park") || zone.includes("nature")) {
+  if (
+    zone.includes("park") ||
+    group.includes("park") ||
+    zone.includes("nature")
+  ) {
     if (tier === "kid") {
       return `${name} reached. This is part of your park adventure, with movement, fun, and things to spot around you.`;
     }
@@ -542,9 +547,7 @@ function getCurrentPinIntro(pin = currentPin) {
   if (!pin) return "";
   const tier = getEffectiveTier();
   return (
-    getPinStartIntro(pin.id, tier) ||
-    buildFallbackPinIntro(pin, tier) ||
-    ""
+    getPinStartIntro(pin.id, tier) || buildFallbackPinIntro(pin, tier) || ""
   );
 }
 
@@ -723,15 +726,15 @@ function openMissionMenu() {
 
   if ($("quest-status")) {
     if (state.activePack === "adult") {
-      $("quest-status").innerText =
-        `STATUS: CASE MODE • ${String(
-          state.activeAdultCategory || "GENERAL"
-        ).toUpperCase()}`;
+      $("quest-status").innerText = `STATUS: CASE MODE • ${String(
+        state.activeAdultCategory || "GENERAL"
+      ).toUpperCase()}`;
     } else {
-      $("quest-status").innerText =
-        `STATUS: ${state.mapMode.toUpperCase()} • SUGGESTED: ${String(
-          suggestedMode || "quiz"
-        ).toUpperCase()}\n\n${currentPinIntro || ""}`;
+      $(
+        "quest-status"
+      ).innerText = `STATUS: ${state.mapMode.toUpperCase()} • SUGGESTED: ${String(
+        suggestedMode || "quiz"
+      ).toUpperCase()}\n\n${currentPinIntro || ""}`;
     }
   }
 
@@ -1004,7 +1007,9 @@ function renderShop() {
     </div>
   `;
 
-  const ownedItems = SHOP_ITEMS.filter((item) => getInventoryCount(item.id) > 0);
+  const ownedItems = SHOP_ITEMS.filter(
+    (item) => getInventoryCount(item.id) > 0
+  );
 
   inventory.innerHTML = ownedItems.length
     ? ownedItems
@@ -1028,12 +1033,16 @@ function renderShop() {
         <div class="shop-item-top">
           <div>
             <div style="font-weight:bold;">${item.name}</div>
-            <div style="font-size:12px;opacity:.85;margin-top:6px;">${item.desc}</div>
+            <div style="font-size:12px;opacity:.85;margin-top:6px;">${
+              item.desc
+            }</div>
           </div>
           <div class="shop-cost">${item.cost} 🪙</div>
         </div>
         ${owned > 0 ? `<div class="owned-tag">OWNED: ${owned}</div>` : ""}
-        <button class="win-btn shop-buy-btn" data-shop-id="${item.id}" style="margin-top:12px;">
+        <button class="win-btn shop-buy-btn" data-shop-id="${
+          item.id
+        }" style="margin-top:12px;">
           BUY
         </button>
       </div>
