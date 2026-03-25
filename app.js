@@ -24,12 +24,13 @@ const DEFAULT_STATE = {
   tierMode: "kid", // kid | teen | adult | auto
 
   unlockedMysteries: [],
-  completedMissionKeys: [],
-  ownedShopItems: [],
-  consumables: {
-    hint_basic: 0,
-    replay_token: 0,
-    double_reward: 0,
+  completedQuestionIds: [],
+  purchasedItems: [],
+  inventory: {},
+
+  meta: {
+    xp: 0,
+    tokens: 0,
   },
 
   settings: {
@@ -42,6 +43,51 @@ const DEFAULT_STATE = {
   },
 };
 
+const SHOP_ITEMS = [
+  {
+    id: "hint_basic",
+    name: "Hint Token",
+    cost: 50,
+    desc: "Use later for clue help.",
+    type: "consumable",
+  },
+  {
+    id: "double_reward",
+    name: "Double Reward",
+    cost: 120,
+    desc: "Boost your next mission reward.",
+    type: "consumable",
+  },
+  {
+    id: "ghost_badge",
+    name: "Ghost Badge",
+    cost: 80,
+    desc: "Collectible badge for spooky explorers.",
+    type: "badge",
+  },
+  {
+    id: "history_badge",
+    name: "History Badge",
+    cost: 80,
+    desc: "Collectible badge for history hunters.",
+    type: "badge",
+  },
+  {
+    id: "park_badge",
+    name: "Park Badge",
+    cost: 65,
+    desc: "Collectible badge for park explorers.",
+    type: "badge",
+  },
+  {
+    id: "abbey_badge",
+    name: "Abbey Badge",
+    cost: 65,
+    desc: "Collectible badge for abbey runs.",
+    type: "badge",
+  },
+];
+
 let state = loadState();
 
 let map = null;
@@ -51,8 +97,7 @@ let currentPin = null;
 let currentTask = null;
 let nightVisionOn = false;
 let locationWatchId = null;
-let speechEnabled = true;
-let speechVoice = null;
+let arStream = null;
 
 const CHARACTER_ICONS = {
   hero_duo: "🧭",
@@ -65,76 +110,12 @@ const CHARACTER_ICONS = {
   piper: "piper.jpg",
 };
 
-const SHOP_ITEMS = [
-  {
-    id: "hint_basic",
-    icon: "💡",
-    name: "Hint Token",
-    cost: 50,
-    type: "consumable",
-    desc: "Stored hint token for future help screens.",
-  },
-  {
-    id: "replay_token",
-    icon: "🔁",
-    name: "Replay Token",
-    cost: 80,
-    type: "consumable",
-    desc: "Lets you replay a completed mission without paying the replay coin penalty.",
-  },
-  {
-    id: "double_reward",
-    icon: "✨",
-    name: "Double Reward",
-    cost: 120,
-    type: "consumable",
-    desc: "Stored booster for a future reward pass.",
-  },
-  {
-    id: "ghost_badge",
-    icon: "👻",
-    name: "Ghost Badge",
-    cost: 80,
-    type: "badge",
-    desc: "Permanent collectible badge for spooky missions.",
-  },
-  {
-    id: "history_badge",
-    icon: "📜",
-    name: "History Badge",
-    cost: 80,
-    type: "badge",
-    desc: "Permanent collectible badge for history runs.",
-  },
-  {
-    id: "park_badge",
-    icon: "🌳",
-    name: "Park Badge",
-    cost: 90,
-    type: "badge",
-    desc: "Permanent collectible badge for Barrow Park progress.",
-  },
-  {
-    id: "abbey_badge",
-    icon: "⛪",
-    name: "Abbey Badge",
-    cost: 90,
-    type: "badge",
-    desc: "Permanent collectible badge for Abbey progress.",
-  },
-  {
-    id: "dock_badge",
-    icon: "⚓",
-    name: "Dock Badge",
-    cost: 90,
-    type: "badge",
-    desc: "Permanent collectible badge for dock and maritime questing.",
-  },
-];
-
 /* ============================
    SPEECH / NARRATOR
 ============================ */
+let speechEnabled = true;
+let speechVoice = null;
+
 function loadVoices() {
   const voices = window.speechSynthesis?.getVoices?.() || [];
   speechVoice =
@@ -178,26 +159,6 @@ function speakOptions(options = []) {
   speakText(lines.join(". "));
 }
 
-function speakCurrentQuestionOnly() {
-  const q = currentTask?.question;
-  if (!q) return;
-
-  if (q.speech) {
-    speakText(q.speech);
-    return;
-  }
-
-  if (q.q) {
-    speakText(q.q);
-  }
-}
-
-function speakCurrentAnswersOnly() {
-  const q = currentTask?.question;
-  if (!q?.options?.length) return;
-  speakOptions(q.options);
-}
-
 /* ============================
    SAVE / STATE
 ============================ */
@@ -222,15 +183,19 @@ function loadState() {
       unlockedMysteries: Array.isArray(parsed.unlockedMysteries)
         ? parsed.unlockedMysteries
         : [],
-      completedMissionKeys: Array.isArray(parsed.completedMissionKeys)
-        ? parsed.completedMissionKeys
+      completedQuestionIds: Array.isArray(parsed.completedQuestionIds)
+        ? parsed.completedQuestionIds
         : [],
-      ownedShopItems: Array.isArray(parsed.ownedShopItems)
-        ? parsed.ownedShopItems
+      purchasedItems: Array.isArray(parsed.purchasedItems)
+        ? parsed.purchasedItems
         : [],
-      consumables: {
-        ...structuredClone(DEFAULT_STATE.consumables),
-        ...(parsed.consumables || {}),
+      inventory:
+        parsed.inventory && typeof parsed.inventory === "object"
+          ? parsed.inventory
+          : {},
+      meta: {
+        ...structuredClone(DEFAULT_STATE.meta),
+        ...(parsed.meta || {}),
       },
     };
   } catch {
@@ -281,69 +246,21 @@ function setPlayerCount(count) {
 function updateCoins(playerId, amount) {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return;
-  player.coins += amount;
-  if (player.coins < 0) player.coins = 0;
+  player.coins = Math.max(0, Number(player.coins || 0) + Number(amount || 0));
   saveState();
   renderHUD();
   renderShop();
 }
 
 function renderHUD() {
-  const enabled = getEnabledPlayers();
-
-  const p1 = enabled[0] || { name: "Player 1", coins: 0, id: null };
-  const p2 = enabled[1] || { name: "Player 2", coins: 0, id: null };
-  const p3 = enabled[2] || { name: "Player 3", coins: 0, id: null };
-
-  if ($("h-k")) $("h-k").innerText = `${p1.name}: ${p1.coins} 🪙`;
-  if ($("h-p")) $("h-p").innerText = `${p2.name}: ${p2.coins} 🪙`;
-  if ($("h-me")) $("h-me").innerText = `${p3.name}: ${p3.coins} 🪙`;
-
   const active = getActivePlayer();
+  const coins = active?.coins || 0;
+  const xp = Number(state.meta?.xp || 0);
+  const tokens = Number(state.meta?.tokens || 0);
 
-  if ($("hp-k-tag")) {
-    $("hp-k-tag").innerText = active?.id === p1.id ? "ACTIVE" : "OFF";
-    $("hp-k-tag").className =
-      active?.id === p1.id ? "hp-status hp-on" : "hp-status hp-off";
-  }
-
-  if ($("hp-p-tag")) {
-    $("hp-p-tag").innerText = active?.id === p2.id ? "ACTIVE" : "OFF";
-    $("hp-p-tag").className =
-      active?.id === p2.id ? "hp-status hp-on" : "hp-status hp-off";
-  }
-}
-
-/* ============================
-   TOP STATUS BAR
-============================ */
-function updateStatusBar() {
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-
-  if ($("status-time")) $("status-time").innerText = `${hh}:${mm}`;
-  if ($("status-title")) {
-    $("status-title").innerText =
-      state.activePack === "adult"
-        ? "BARROW QUEST • CASE MODE"
-        : state.mapMode === "park"
-        ? "BARROW QUEST • PARK"
-        : state.mapMode === "abbey"
-        ? "BARROW QUEST • ABBEY"
-        : "BARROW QUEST • FULL MAP";
-  }
-
-  if ($("status-battery")) $("status-battery").innerText = "🔋 100%";
-  if ($("status-msg")) {
-    const count = state.unlockedMysteries?.length || 0;
-    $("status-msg").innerText = count > 0 ? `✉️ ${count}` : "✉️";
-  }
-}
-
-function startStatusClock() {
-  updateStatusBar();
-  setInterval(updateStatusBar, 15000);
+  if ($("top-coins")) $("top-coins").innerText = String(coins);
+  if ($("top-xp")) $("top-xp").innerText = String(xp);
+  if ($("top-tokens")) $("top-tokens").innerText = String(tokens);
 }
 
 /* ============================
@@ -422,7 +339,10 @@ function createHeroIcon() {
   const char = state.settings.character || "hero_duo";
   const value = CHARACTER_ICONS[char] || "🧭";
 
-  if (value.endsWith(".jpg") || value.endsWith(".png")) {
+  if (
+    typeof value === "string" &&
+    (value.endsWith(".jpg") || value.endsWith(".png"))
+  ) {
     return L.divIcon({
       className: "marker-logo",
       html: `
@@ -433,12 +353,9 @@ function createHeroIcon() {
           overflow:hidden;
           border:2px solid #ffd54a;
           box-shadow:0 4px 12px rgba(0,0,0,0.6);
+          background:#111;
         ">
-          <img src="${value}" style="
-            width:100%;
-            height:100%;
-            object-fit:cover;
-          ">
+          <img src="${value}" style="width:100%;height:100%;object-fit:cover;">
         </div>
       `,
       iconSize: [52, 52],
@@ -506,7 +423,6 @@ function normaliseClassicModeFromPin(pin) {
   }
 
   if (type === "story") return "history";
-
   return "quiz";
 }
 
@@ -521,6 +437,10 @@ function clearTaskBlocks() {
   if ($("task-story")) $("task-story").innerText = "";
   if ($("task-evidence")) $("task-evidence").innerText = "";
   if ($("task-clue")) $("task-clue").innerText = "";
+
+  if ($("btn-read-answers")) {
+    $("btn-read-answers").classList.add("hidden");
+  }
 }
 
 function setTaskBlock(id, bodyId, text) {
@@ -537,114 +457,9 @@ function setTaskBlock(id, bodyId, text) {
   }
 }
 
-function getMissionKey(pin, question, mode) {
-  const pinId = pin?.id || "unknown_pin";
-  const qId =
-    question?.meta?.questionId ||
-    question?.id ||
-    question?.q ||
-    question?.title ||
-    "unknown_q";
-  return `${pinId}__${mode}__${String(qId)}`;
-}
-
-function hasCompletedMission(key) {
-  return state.completedMissionKeys.includes(key);
-}
-
-function completeMission(key) {
-  if (!key) return;
-  if (!hasCompletedMission(key)) {
-    state.completedMissionKeys.push(key);
-    saveState();
-  }
-}
-
-function isOwnedItem(itemId) {
-  return state.ownedShopItems.includes(itemId);
-}
-
-function addOwnedItem(itemId) {
-  if (!isOwnedItem(itemId)) {
-    state.ownedShopItems.push(itemId);
-  }
-}
-
-function addConsumable(itemId, amount = 1) {
-  state.consumables[itemId] = Number(state.consumables[itemId] || 0) + amount;
-}
-
-function consumeConsumable(itemId, amount = 1) {
-  const current = Number(state.consumables[itemId] || 0);
-  if (current < amount) return false;
-  state.consumables[itemId] = current - amount;
-  return true;
-}
-
-function getRandomClassicModeForPin(pin) {
-  const zone = String(pin?.zone || pin?.set || "").toLowerCase();
-  const type = String(pin?.type || "").toLowerCase();
+function getTierLabel() {
   const tier = getEffectiveTier();
-
-  if (
-    [
-      "quiz",
-      "history",
-      "logic",
-      "activity",
-      "family",
-      "battle",
-      "speed",
-      "ghost",
-      "boss",
-      "discovery",
-    ].includes(type)
-  ) {
-    return type;
-  }
-
-  let pool = ["quiz", "history", "logic", "activity"];
-
-  if (
-    state.mapMode === "park" ||
-    zone.includes("park") ||
-    zone.includes("nature")
-  ) {
-    pool = ["activity", "speed", "family", "quiz", "logic", "discovery"];
-  } else if (state.mapMode === "abbey" || zone.includes("abbey")) {
-    pool = ["history", "logic", "ghost", "quiz", "discovery", "activity"];
-  } else if (
-    zone.includes("dock") ||
-    zone.includes("industrial") ||
-    zone.includes("memorial") ||
-    zone.includes("civic") ||
-    zone.includes("town")
-  ) {
-    pool = ["quiz", "history", "logic", "activity", "battle", "speed", "ghost"];
-  }
-
-  if (tier === "kid") {
-    pool.push("activity", "family");
-  } else if (tier === "teen") {
-    pool.push("speed", "battle", "ghost");
-  } else {
-    pool.push("history", "logic", "ghost");
-  }
-
-  const unique = [...new Set(pool)];
-  return unique[Math.floor(Math.random() * unique.length)] || "quiz";
-}
-
-function showShopFeedback(text, good = true) {
-  const box = $("shop-feedback");
-  if (!box) return;
-
-  box.style.display = "block";
-  box.style.borderColor = good
-    ? "rgba(0,255,170,0.25)"
-    : "rgba(255,80,80,0.25)";
-  box.style.color = good ? "var(--neon)" : "#ff8b8b";
-  box.innerText = text;
+  return tier === "teen" ? "TEEN" : tier === "adult" ? "ADULT" : "KIDS";
 }
 
 /* ============================
@@ -686,7 +501,6 @@ function resetMap() {
   currentPin = null;
 
   initMap();
-  updateStatusBar();
 }
 
 function renderPins() {
@@ -746,7 +560,6 @@ function distanceInMeters(aLat, aLng, bLat, bLng) {
 function startLocationWatch() {
   if (!navigator.geolocation || !map) {
     updateCaptureText("GPS NOT AVAILABLE");
-    if ($("status-gps")) $("status-gps").innerText = "📍 OFF";
     return;
   }
 
@@ -756,7 +569,6 @@ function startLocationWatch() {
       const lng = pos.coords.longitude;
 
       heroMarker?.setLatLng([lat, lng]);
-      if ($("status-gps")) $("status-gps").innerText = "📍 ON";
 
       const pins = getCurrentPins();
       const radius = Number(state.settings.radius || 35);
@@ -787,10 +599,10 @@ function startLocationWatch() {
         } else {
           updateCaptureText(
             state.mapMode === "core"
-              ? "FULL BARROW MAP"
+              ? `${getTierLabel()} • FULL BARROW`
               : state.mapMode === "park"
-              ? "PARK ADVENTURE"
-              : "ABBEY QUEST"
+              ? `${getTierLabel()} • PARK`
+              : `${getTierLabel()} • ABBEY`
           );
         }
         showActionButton(false);
@@ -798,7 +610,6 @@ function startLocationWatch() {
     },
     () => {
       updateCaptureText("GPS ERROR");
-      if ($("status-gps")) $("status-gps").innerText = "📍 ERR";
     },
     {
       enableHighAccuracy: true,
@@ -824,11 +635,9 @@ function openMissionMenu() {
         ? `STATUS: CASE MODE • ${String(
             state.activeAdultCategory || "GENERAL"
           ).toUpperCase()}`
-        : `STATUS: ${state.mapMode.toUpperCase()} • ${
-            currentPin.type
-              ? String(currentPin.type).toUpperCase()
-              : "MIXED MISSION"
-          }`;
+        : `STATUS: ${getTierLabel()} • ${state.mapMode.toUpperCase()} • ${String(
+            currentPin.type || "quiz"
+          ).toUpperCase()}`;
   }
 
   if ($("mode-banner")) {
@@ -839,10 +648,10 @@ function openMissionMenu() {
     } else {
       $("mode-banner").innerText =
         state.mapMode === "core"
-          ? `FULL BARROW\n${currentPin.n}`
+          ? `${getTierLabel()}\n${currentPin.n}`
           : state.mapMode === "park"
-          ? `PARK\n${currentPin.n}`
-          : `ABBEY\n${currentPin.n}`;
+          ? `${getTierLabel()} PARK\n${currentPin.n}`
+          : `${getTierLabel()} ABBEY\n${currentPin.n}`;
     }
   }
 
@@ -862,10 +671,7 @@ function openMissionMenu() {
     return;
   }
 
-  const primaryMode =
-    currentPin.type && currentPin.type !== "start"
-      ? normaliseClassicModeFromPin(currentPin)
-      : getRandomClassicModeForPin(currentPin);
+  const primaryMode = normaliseClassicModeFromPin(currentPin);
 
   if (primaryMode) {
     openTask(primaryMode);
@@ -876,7 +682,7 @@ function openMissionMenu() {
   showModal("quest-modal");
 }
 
-function openTask(mode, forceReplay = false) {
+function openTask(mode) {
   if (!currentPin) return;
 
   const tier = getEffectiveTier();
@@ -957,55 +763,14 @@ function openTask(mode, forceReplay = false) {
       tier,
       zone: currentPin.set || currentPin.zone || state.mapMode,
       salt: Date.now(),
+      recentQuestionIds: state.completedQuestionIds || [],
     });
-  }
-
-  const missionKey = getMissionKey(currentPin, task, mode);
-  const alreadyDone = hasCompletedMission(missionKey);
-
-  if (!forceReplay && alreadyDone && state.activePack !== "adult") {
-    const replayCost = 40;
-    const active = getActivePlayer();
-
-    let usedToken = false;
-    if (consumeConsumable("replay_token", 1)) {
-      usedToken = true;
-      saveState();
-    } else if ((active?.coins || 0) >= replayCost) {
-      updateCoins(active.id, -replayCost);
-    } else {
-      currentTask = {
-        mode,
-        pin: currentPin,
-        question: {
-          title: `${mode.toUpperCase()} @ ${currentPin.n}`,
-          desc: `This mission is already completed.\n\nReplay costs ${replayCost} coins or 1 Replay Token.\n\nOpen the shop if you want more replay tokens.`,
-          options: [],
-          meta: { informational: true },
-          speech: `This mission is already completed. Replay costs ${replayCost} coins or one replay token.`,
-        },
-        missionKey,
-      };
-
-      if ($("task-title"))
-        $("task-title").innerText = `${mode.toUpperCase()} @ ${currentPin.n}`;
-      if ($("task-desc")) $("task-desc").innerText = currentTask.question.desc;
-      renderTaskOptions(currentTask.question);
-      showModal("task-modal");
-      speakText(currentTask.question.speech);
-      return;
-    }
-
-    if (usedToken) {
-      showShopFeedback("Replay Token used for mission replay.", true);
-    }
   }
 
   currentTask = {
     mode,
     pin: currentPin,
     question: task,
-    missionKey,
   };
 
   if ($("task-title")) {
@@ -1025,7 +790,6 @@ function openTask(mode, forceReplay = false) {
   setTaskBlock("task-block-clue", "task-clue", task?.clue || "");
 
   renderTaskOptions(task);
-  showModal("task-modal");
 
   if (task?.speech) {
     speakText(task.speech);
@@ -1034,16 +798,20 @@ function openTask(mode, forceReplay = false) {
   } else {
     speakText("No mission found.");
   }
+
+  showModal("task-modal");
 }
 
 function renderTaskOptions(question) {
   const wrap = $("task-options");
+  const readBtn = $("btn-read-answers");
   if (!wrap) return;
 
   wrap.innerHTML = "";
 
   if (!question?.options?.length) {
     wrap.style.display = "none";
+    if (readBtn) readBtn.classList.add("hidden");
     if ($("task-feedback")) {
       $("task-feedback").style.display = "none";
       $("task-feedback").innerText = "";
@@ -1060,6 +828,10 @@ function renderTaskOptions(question) {
     btn.addEventListener("click", () => answerMission(index));
     wrap.appendChild(btn);
   });
+
+  if (readBtn) {
+    readBtn.classList.remove("hidden");
+  }
 
   if ($("task-feedback")) {
     $("task-feedback").style.display = "none";
@@ -1080,7 +852,6 @@ function unlockMystery(id) {
   if (!hasUnlockedMystery(num)) {
     state.unlockedMysteries.push(num);
     saveState();
-    updateStatusBar();
   }
 }
 
@@ -1098,97 +869,83 @@ function maybeUnlockMystery() {
 /* ============================
    SHOP
 ============================ */
+function getInventoryCount(itemId) {
+  return Number(state.inventory?.[itemId] || 0);
+}
+
+function markPurchased(itemId) {
+  if (!state.purchasedItems.includes(itemId)) {
+    state.purchasedItems.push(itemId);
+  }
+}
+
+function addInventory(itemId, qty = 1) {
+  state.inventory[itemId] = getInventoryCount(itemId) + qty;
+  markPurchased(itemId);
+}
+
 function renderShop() {
   const summary = $("shop-summary");
   const list = $("shop-list");
-  const owned = $("shop-owned");
+  const inventory = $("shop-inventory");
   const active = getActivePlayer();
 
-  if (!summary || !list || !owned) return;
+  if (!summary || !list || !inventory) return;
 
   const coins = active?.coins || 0;
+  const xp = Number(state.meta?.xp || 0);
+  const tokens = Number(state.meta?.tokens || 0);
 
   summary.innerHTML = `
-    <div style="padding:12px;border:1px solid #333;border-radius:16px;background:#111;">
-      <div style="font-size:15px;font-weight:900;color:var(--gold);">
-        ${active?.name || "Player"} LOADOUT
-      </div>
-      <div style="margin-top:8px;font-size:14px;">
-        Coins: <strong>${coins} 🪙</strong>
-      </div>
-      <div style="margin-top:6px;font-size:12px;opacity:.85;">
-        Replay Tokens: ${Number(state.consumables.replay_token || 0)} •
-        Hint Tokens: ${Number(state.consumables.hint_basic || 0)} •
-        Double Rewards: ${Number(state.consumables.double_reward || 0)}
-      </div>
+    <div style="padding:10px;border:1px solid #333;border-radius:12px;background:#111;">
+      <strong>${active?.name || "Player"}</strong><br>
+      Coins: ${coins} 🪙<br>
+      XP: ${xp}<br>
+      Tokens: ${tokens}
     </div>
   `;
 
-  list.innerHTML = SHOP_ITEMS.map((item) => {
-    const ownedBadge = item.type === "badge" && isOwnedItem(item.id);
-    const disabled = ownedBadge || coins < item.cost;
+  const ownedItems = SHOP_ITEMS.filter(
+    (item) => getInventoryCount(item.id) > 0
+  );
 
-    return `
-      <div class="shop-item-card">
-        <div class="shop-item-top">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div class="shop-item-icon">${item.icon}</div>
-            <div>
-              <div style="font-weight:900;">${item.name}</div>
-              <div style="font-size:12px;opacity:.85;margin-top:4px;">
-                ${item.desc}
-              </div>
-            </div>
-          </div>
-          ${
-            ownedBadge
-              ? `<div class="shop-owned-tag">OWNED</div>`
-              : `<div class="shop-owned-tag">${item.cost} 🪙</div>`
-          }
+  inventory.innerHTML = ownedItems.length
+    ? ownedItems
+        .map(
+          (item) => `
+        <div style="border:1px solid #333;border-radius:14px;padding:12px;background:#111;margin-bottom:10px;">
+          <div style="font-weight:bold;">${item.name}</div>
+          <div style="font-size:12px;opacity:.82;margin-top:6px;">Owned: ${getInventoryCount(
+            item.id
+          )}</div>
         </div>
+      `
+        )
+        .join("")
+    : `<div style="opacity:.8;">No purchases yet.</div>`;
 
-        <button
-          class="win-btn shop-buy-btn"
-          data-shop-id="${item.id}"
-          ${disabled ? "disabled" : ""}
-          style="margin-top:12px;"
-        >
-          ${
-            ownedBadge
-              ? "COLLECTED"
-              : coins < item.cost
-              ? "NOT ENOUGH COINS"
-              : "BUY"
-          }
+  list.innerHTML = SHOP_ITEMS.map((item) => {
+    const owned = getInventoryCount(item.id);
+    return `
+      <div class="shop-item">
+        <div class="shop-item-top">
+          <div>
+            <div style="font-weight:bold;">${item.name}</div>
+            <div style="font-size:12px;opacity:.85;margin-top:6px;">${
+              item.desc
+            }</div>
+          </div>
+          <div class="shop-cost">${item.cost} 🪙</div>
+        </div>
+        ${owned > 0 ? `<div class="owned-tag">OWNED: ${owned}</div>` : ""}
+        <button class="win-btn shop-buy-btn" data-shop-id="${
+          item.id
+        }" style="margin-top:12px;">
+          BUY
         </button>
       </div>
     `;
   }).join("");
-
-  const ownedBits = [];
-
-  state.ownedShopItems.forEach((id) => {
-    const item = SHOP_ITEMS.find((x) => x.id === id);
-    if (item) {
-      ownedBits.push(
-        `<div class="inventory-pill">${item.icon} ${item.name}</div>`
-      );
-    }
-  });
-
-  Object.entries(state.consumables || {}).forEach(([id, qty]) => {
-    if (!qty) return;
-    const item = SHOP_ITEMS.find((x) => x.id === id);
-    if (item) {
-      ownedBits.push(
-        `<div class="inventory-pill">${item.icon} ${item.name} × ${qty}</div>`
-      );
-    }
-  });
-
-  owned.innerHTML = ownedBits.length
-    ? `<div class="inventory-pill-wrap">${ownedBits.join("")}</div>`
-    : `<div style="opacity:.8;">Nothing owned yet.</div>`;
 
   document.querySelectorAll(".shop-buy-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1199,45 +956,39 @@ function renderShop() {
 }
 
 function buyShopItem(itemId) {
-  const active = getActivePlayer();
-  if (!active) return;
-
   const item = SHOP_ITEMS.find((x) => x.id === itemId);
-  if (!item) return;
-
-  if (item.type === "badge" && isOwnedItem(item.id)) {
-    showShopFeedback(`${item.name} is already owned.`, false);
-    return;
-  }
+  const active = getActivePlayer();
+  if (!item || !active) return;
 
   if ((active.coins || 0) < item.cost) {
-    showShopFeedback(`Not enough coins for ${item.name}.`, false);
-    speakText(`Not enough coins for ${item.name}.`);
+    speakText("Not enough coins.");
+    alert("Not enough coins.");
     return;
   }
 
   updateCoins(active.id, -item.cost);
-
-  if (item.type === "badge") {
-    addOwnedItem(item.id);
-  } else {
-    addConsumable(item.id, 1);
-  }
-
+  addInventory(item.id, 1);
   saveState();
+  renderHUD();
   renderShop();
 
-  showShopFeedback(
-    `Purchased: ${item.name}\n\n${item.desc}\n\nYour reward has been added to inventory.`,
-    true
-  );
-
   speakText(`${item.name} purchased.`);
+  alert(`${item.name} purchased and added to inventory.`);
 }
 
 /* ============================
    ANSWERS / REWARDS
 ============================ */
+function rememberQuestion(questionId) {
+  if (!questionId) return;
+  if (!state.completedQuestionIds.includes(questionId)) {
+    state.completedQuestionIds.push(questionId);
+    if (state.completedQuestionIds.length > 300) {
+      state.completedQuestionIds = state.completedQuestionIds.slice(-300);
+    }
+  }
+}
+
 function answerMission(index) {
   if (!currentTask) return;
 
@@ -1266,46 +1017,55 @@ function answerMission(index) {
   }
 
   const active = getActivePlayer();
-
   const rewardResult = applyReward({
     mode: currentTask.mode,
     correct: true,
-  });
+  }) || { coins: 25, xp: 0, tokens: 0 };
 
-  const rewardCoins =
-    Number(rewardResult?.coins || 0) ||
-    Number(q?.meta?.rewardCoins || 0) ||
-    (state.activePack === "adult" ? 40 : 25);
+  const rewardCoins = Number(rewardResult.coins || 0);
+  const rewardXp = Number(rewardResult.xp || 0);
+  const rewardTokens = Number(rewardResult.tokens || 0);
 
-  if (active && rewardCoins > 0) {
+  if (active && rewardCoins) {
     updateCoins(active.id, rewardCoins);
   }
 
-  completeMission(currentTask.missionKey);
+  state.meta.xp = Number(state.meta.xp || 0) + rewardXp;
+  state.meta.tokens = Number(state.meta.tokens || 0) + rewardTokens;
+
+  const questionId = q?.meta?.questionId || q?.id || null;
+  rememberQuestion(questionId);
 
   const mystery = maybeUnlockMystery();
+
+  saveState();
+  renderHUD();
+  renderShop();
 
   feedback.style.color = "var(--neon)";
 
   if (mystery) {
     feedback.innerText =
-      `Correct! +${rewardCoins} coins\n\n` +
+      `Correct! +${rewardCoins} coins +${rewardXp} XP +${rewardTokens} tokens\n\n` +
       `BONUS MYSTERY UNLOCKED\n` +
       `${mystery.icon || "❓"} ${mystery.title}\n\n` +
       `${mystery.story}\n\n` +
       `${mystery.evidence || ""}`;
 
     speakText(
-      `Correct. ${rewardCoins} coins awarded. Bonus mystery unlocked. ${
+      `Correct. ${rewardCoins} coins awarded. ${rewardXp} experience. ${rewardTokens} tokens. Bonus mystery unlocked. ${
         mystery.title
       }. ${mystery.story}. ${mystery.evidence || ""}`
     );
   } else {
     feedback.innerText =
-      `Correct! +${rewardCoins} coins\n\n` + `${q.fact || "Mission complete."}`;
+      `Correct! +${rewardCoins} coins +${rewardXp} XP +${rewardTokens} tokens\n\n` +
+      `${q.fact || "Mission complete."}`;
 
     speakText(
-      `Correct. ${rewardCoins} coins awarded. ${q.fact || "Mission complete."}`
+      `Correct. ${rewardCoins} coins awarded. ${rewardXp} experience. ${rewardTokens} tokens. ${
+        q.fact || "Mission complete."
+      }`
     );
   }
 }
@@ -1318,8 +1078,9 @@ function applySettingsToUI() {
   if ($("pitch-label")) $("pitch-label").innerText = state.settings.voicePitch;
   if ($("rate-label")) $("rate-label").innerText = state.settings.voiceRate;
   if ($("sfx-label")) $("sfx-label").innerText = state.settings.sfxVol;
-  if ($("zoomui-label"))
+  if ($("zoomui-label")) {
     $("zoomui-label").innerText = state.settings.zoomUI ? "ON" : "OFF";
+  }
 
   if ($("enter-radius")) $("enter-radius").value = state.settings.radius;
   if ($("v-pitch")) $("v-pitch").value = state.settings.voicePitch;
@@ -1337,7 +1098,7 @@ function renderHomeLog() {
 
   const pins = getCurrentPins();
   const mysteryCount = state.unlockedMysteries?.length || 0;
-  const completedCount = state.completedMissionKeys?.length || 0;
+  const completedCount = state.completedQuestionIds?.length || 0;
 
   summary.innerText =
     `Pins loaded: ${pins.length} • ` +
@@ -1345,7 +1106,7 @@ function renderHomeLog() {
     `Mode: ${state.mapMode} • ` +
     `Tier: ${getEffectiveTier()} • ` +
     `Mysteries unlocked: ${mysteryCount} • ` +
-    `Completed missions: ${completedCount}`;
+    `Completed prompts tracked: ${completedCount}`;
 
   const mysteryBlock = mysteryCount
     ? `
@@ -1412,18 +1173,52 @@ function updateStartButtons() {
 }
 
 /* ============================
+   AR
+============================ */
+async function openAR() {
+  showModal("ar-modal");
+
+  if ($("ar-readout")) {
+    $("ar-readout").innerText = currentPin
+      ? `Scanning around ${currentPin.n}`
+      : "Scanning...";
+  }
+
+  const video = $("ar-video");
+  if (!video || !navigator.mediaDevices?.getUserMedia) return;
+
+  try {
+    arStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false,
+    });
+    video.srcObject = arStream;
+  } catch (err) {
+    console.warn("AR camera failed:", err);
+    if ($("ar-readout")) $("ar-readout").innerText = "Camera access failed.";
+  }
+}
+
+function stopAR() {
+  const video = $("ar-video");
+  if (video && video.srcObject) {
+    const tracks = video.srcObject.getTracks();
+    tracks.forEach((track) => track.stop());
+    video.srcObject = null;
+  }
+  arStream = null;
+}
+
+/* ============================
    BUTTONS
 ============================ */
 function wireButtons() {
   $("btn-start")?.addEventListener("click", () => closeModal("start-modal"));
-  $("btn-start-close")?.addEventListener("click", () =>
-    closeModal("start-modal")
-  );
   $("btn-start-close-x")?.addEventListener("click", () =>
     closeModal("start-modal")
   );
 
-  $("btn-home-top")?.addEventListener("click", () => {
+  $("btn-home")?.addEventListener("click", () => {
     currentPin = null;
     currentTask = null;
 
@@ -1435,17 +1230,16 @@ function wireButtons() {
     state.mapMode = "core";
 
     saveState();
-    resetMap();
     updateStartButtons();
-    updateStatusBar();
+    renderHomeLog();
+    resetMap();
     showModal("start-modal");
-    speakText("Home.");
   });
 
   $("btn-shop")?.addEventListener("click", () => {
     renderShop();
     showModal("shop-modal");
-    speakText("Quest shop opened.");
+    speakText("Shop opened.");
   });
 
   $("btn-shop-close")?.addEventListener("click", () =>
@@ -1453,6 +1247,13 @@ function wireButtons() {
   );
   $("btn-shop-close-x")?.addEventListener("click", () =>
     closeModal("shop-modal")
+  );
+
+  $("btn-home-close")?.addEventListener("click", () =>
+    closeModal("home-modal")
+  );
+  $("btn-home-close-x")?.addEventListener("click", () =>
+    closeModal("home-modal")
   );
 
   $("btn-settings")?.addEventListener("click", () => {
@@ -1491,12 +1292,10 @@ function wireButtons() {
     closeModal("task-modal")
   );
 
-  $("btn-read-question")?.addEventListener("click", () => {
-    speakCurrentQuestionOnly();
-  });
-
   $("btn-read-answers")?.addEventListener("click", () => {
-    speakCurrentAnswersOnly();
+    if (currentTask?.question?.options?.length) {
+      speakOptions(currentTask.question.options);
+    }
   });
 
   $("action-trigger")?.addEventListener("click", openMissionMenu);
@@ -1582,6 +1381,10 @@ function wireButtons() {
       const mode = tile.dataset.mode;
       if (!mode) return;
       closeModal("quest-modal");
+      if (mode === "health") {
+        openTask("activity");
+        return;
+      }
       openTask(mode);
     });
   });
@@ -1686,6 +1489,19 @@ function wireButtons() {
     applySettingsToUI();
     speakText(`Character changed to ${e.target.value}`);
   });
+
+  $("btn-ar-open")?.addEventListener("click", openAR);
+  $("btn-ar-stop")?.addEventListener("click", stopAR);
+  $("btn-ar-close")?.addEventListener("click", () => {
+    stopAR();
+    closeModal("ar-modal");
+  });
+  $("btn-ar-manual")?.addEventListener("click", () => {
+    stopAR();
+    closeModal("ar-modal");
+    speakText("Hotspot verified.");
+    alert("Hotspot verified.");
+  });
 }
 
 /* ============================
@@ -1706,9 +1522,7 @@ function boot() {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
 
-    startStatusClock();
     initMap();
-
     console.log("App loaded");
   } catch (err) {
     console.error("BOOT ERROR:", err);
