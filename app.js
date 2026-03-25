@@ -716,62 +716,76 @@ function startLocationWatch() {
 function openMissionMenu() {
   if (!currentPin) return;
 
-  currentPinIntro = getCurrentPinIntro(currentPin);
   showQuestLayoutForPack();
 
   if ($("q-name")) $("q-name").innerText = currentPin.n;
 
-  const suggestedMode = normaliseClassicModeFromPin(currentPin);
+  const completed = isPinCompleted(currentPin);
 
   if ($("quest-status")) {
-    if (state.activePack === "adult") {
-      $("quest-status").innerText = `STATUS: CASE MODE • ${String(
-        state.activeAdultCategory || "GENERAL"
-      ).toUpperCase()}`;
-    } else {
-      $(
-        "quest-status"
-      ).innerText = `STATUS: ${state.mapMode.toUpperCase()} • SUGGESTED: ${String(
-        suggestedMode || "quiz"
-      ).toUpperCase()}\n\n${currentPinIntro || ""}`;
-    }
+    $("quest-status").innerText =
+      state.activePack === "adult"
+        ? `STATUS: CASE MODE • ${String(
+            state.activeAdultCategory || "GENERAL"
+          ).toUpperCase()}${completed ? " • COMPLETED" : ""}`
+        : `STATUS: ${state.mapMode.toUpperCase()} • ${String(
+            currentPin.type || "quiz"
+          ).toUpperCase()}${completed ? " • COMPLETED" : ""}`;
   }
 
   if ($("mode-banner")) {
     $("mode-banner").style.display = "block";
 
-    if (state.activePack === "adult") {
-      $("mode-banner").innerText = `CASE BRIEFING\n${currentPin.n}`;
-    } else {
-      $("mode-banner").innerText =
-        state.mapMode === "core"
-          ? `FULL BARROW\n${currentPin.n}`
-          : state.mapMode === "park"
-          ? `PARK\n${currentPin.n}`
-          : `ABBEY\n${currentPin.n}`;
-    }
+    const label =
+      state.activePack === "adult"
+        ? "CASE BRIEFING"
+        : state.mapMode === "core"
+        ? "FULL BARROW"
+        : state.mapMode === "park"
+        ? "PARK"
+        : "ABBEY";
+
+    $("mode-banner").innerText = completed
+      ? `${label}\n${currentPin.n}\nCOMPLETED`
+      : `${label}\n${currentPin.n}`;
   }
 
-  if ($("boss-banner")) {
-    const isBoss = currentPin.type === "boss";
-    $("boss-banner").style.display = isBoss ? "block" : "none";
-    $("boss-banner").innerText = isBoss ? "FINAL TRIAL ACTIVE" : "";
-  }
+  // ✅ NEW: show story BEFORE mission
+  let storyText = "";
 
   if (state.activePack === "adult") {
     const content = getAdultContentForPin(currentPin);
-    const briefing =
+    storyText =
       content?.story ||
-      "Case briefing not found for this location yet. Add story content for this adult pin.";
-    speakText(briefing);
-    showModal("quest-modal");
-    return;
+      "Case briefing not found for this location yet.";
+  } else {
+    // use QA system to pull story-style intro
+    const preview = getQA({
+      pinId: currentPin.id,
+      mode: "story",
+      tier: getEffectiveTier(),
+      zone: currentPin.set || state.mapMode,
+      salt: Date.now(),
+      preview: true,
+    });
+
+    storyText =
+      preview?.story ||
+      preview?.q ||
+      `${currentPin.n}. Mission briefing ready.`;
   }
 
-  speakText(currentPinIntro || `${currentPin.n}. Choose a mission.`);
+  // show story on screen
+  if ($("q-story")) {
+    $("q-story").innerText = storyText;
+  }
+
+  // 🔊 speak the story (THIS is what you wanted back)
+  speakText(storyText);
+
+  // ✅ DO NOT auto start mission anymore
   showModal("quest-modal");
 }
-
 function openTask(mode) {
   if (!currentPin) return;
 
