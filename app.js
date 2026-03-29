@@ -1,10 +1,4 @@
-import {
-  getQA,
-  getPinStartIntro,
-  getDefaultAdaptiveProfile,
-  normaliseAdaptiveProfile,
-  updateAdaptiveProfile,
-} from "./qa.js";
+import { getQA } from "./qa.js";
 import { PINS } from "./pins.js";
 import { ADULT_PINS } from "./adult_pins.js";
 import { ADULT_CONTENT } from "./adult_content.js";
