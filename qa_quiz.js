@@ -1069,3 +1069,8 @@ export function getQA(input = {}) {
     tier,
   });
 }
+export const MASTER_QUIZ_BANK = {
+  kid: [],
+  teen: [],
+  adult: [],
+};
