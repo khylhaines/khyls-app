@@ -1,5 +1,4 @@
 import { PINS } from "./pins.js";
-import { MASTER_QUIZ_BANK } from "./qa_quiz.js";
 import {
   RIDDLE_POOL,
   SPEED_POOL,
@@ -1069,6 +1068,7 @@ export function getQA(input = {}) {
     tier,
   });
 }
+
 export const MASTER_QUIZ_BANK = {
   kid: [],
   teen: [],
