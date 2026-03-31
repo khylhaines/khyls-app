@@ -1,1 +1,1582 @@
+/* =========================================================
+   qa_history.js
+   BARROW QUEST HISTORY + START INTROS
+   SAFE SPLIT FROM qa.js
+========================================================= */
 
+function mq(id, difficulty, tags, q, options, answer, fact) {
+  return {
+    id: `mq_${id}`,
+    difficulty,
+    tags,
+    q,
+    options,
+    answer,
+    fact,
+  };
+}
+
+/* =========================================================
+   START INTROS
+========================================================= */
+
+export const PIN_START_INTROS = {
+  home_base_marsh_st: {
+    kid: "Home Base reached. This is where your Barrow Quest begins.",
+    teen:
+      "Home Base reached. This is your reset point before the map opens into bigger stories.",
+    adult:
+      "Home Base reached. This is your point of origin — where every route and decision begins.",
+  },
+
+  cenotaph_core: {
+    kid: "The Cenotaph reached. This is a place to remember brave people and show respect.",
+    teen:
+      "The Cenotaph reached. This landmark is about memory, sacrifice, and respect.",
+    adult:
+      "The Cenotaph reached. You are entering a space of civic remembrance and collective memory.",
+  },
+
+  park_bandstand_core: {
+    kid: "Park Bandstand reached. This is a fun place linked to music and performances.",
+    teen:
+      "Park Bandstand reached. This is a performance space and part of the park’s public life.",
+    adult:
+      "Park Bandstand reached. This pin marks a civic leisure structure built for gathering and performance.",
+  },
+
+  furness_abbey_core: {
+    kid: "Furness Abbey reached. These old ruins are full of mystery and history.",
+    teen:
+      "Furness Abbey reached. This is one of the deepest history pins on the map.",
+    adult:
+      "Furness Abbey reached. You are entering one of the most historically charged sites in the region.",
+  },
+
+  town_hall_clock: {
+    kid: "Town Hall Clock reached. This is one of the most important places in town.",
+    teen:
+      "Town Hall Clock reached. This landmark is part of the town’s civic heartbeat.",
+    adult:
+      "Town Hall Clock reached. You are standing at a civic time-marker and public symbol.",
+  },
+
+  dock_museum_anchor: {
+    kid: "Dock Museum Anchor reached. This area is all about ships and Barrow’s dock history.",
+    teen:
+      "Dock Museum Anchor reached. This pin marks one of the strongest maritime identities on the map.",
+    adult:
+      "Dock Museum Anchor reached. You are stepping into Barrow’s maritime-industrial narrative.",
+  },
+
+  dock_museum_submarine: {
+    kid: "Dock Museum Submarine reached. This is where Barrow’s ship story becomes huge.",
+    teen:
+      "Dock Museum Submarine reached. This landmark connects the town’s past and present through engineering.",
+    adult:
+      "Dock Museum Submarine reached. This is one of the clearest expressions of Barrow’s strategic-industrial identity.",
+  },
+
+  henry_schneider_statue: {
+    kid: "Statue of Henry Schneider reached. This place remembers an important figure in Barrow’s history.",
+    teen:
+      "Statue of Henry Schneider reached. This is a landmark tied to people who helped Barrow grow.",
+    adult:
+      "Statue of Henry Schneider reached. This monument represents industrial change and public memory.",
+  },
+
+  james_ramsden_statue: {
+    kid: "Statue of James Ramsden reached. This pin remembers one of the men linked to Barrow’s growth.",
+    teen:
+      "Statue of James Ramsden reached. This is one of the town’s memory-markers.",
+    adult:
+      "Statue of James Ramsden reached. This monument reflects leadership, ambition, and public memory.",
+  },
+
+  barrow_library: {
+    kid: "Barrow Library reached. This is a place full of stories and facts.",
+    teen:
+      "Barrow Library reached. This pin is about knowledge, memory, and local culture.",
+    adult:
+      "Barrow Library reached. You are entering a civic archive of learning and memory.",
+  },
+
+  custom_house: {
+    kid: "The Custom House reached. This building connects to trade and town history.",
+    teen:
+      "The Custom House reached. This pin is tied to movement, administration, and exchange.",
+    adult:
+      "The Custom House reached. This is a threshold building where trade and civic regulation meet.",
+  },
+
+  emlyn_hughes_statue: {
+    kid: "Emlyn Hughes Statue reached. This pin celebrates a famous footballer from Barrow.",
+    teen:
+      "Emlyn Hughes Statue reached. This landmark shows how towns remember local people with wider fame.",
+    adult:
+      "Emlyn Hughes Statue reached. This monument reflects public memory through sport and civic pride.",
+  },
+
+  salthouse_mills: {
+    kid: "Salthouse Mills reached. This is part of Barrow’s strong working history.",
+    teen:
+      "Salthouse Mills reached. This pin takes you into the industrial side of the map.",
+    adult:
+      "Salthouse Mills reached. This is an industrial memory-site shaped by labour and production.",
+  },
+
+  submarine_memorial: {
+    kid: "Submarine Memorial reached. This place remembers people and work connected to the sea.",
+    teen:
+      "Submarine Memorial reached. This pin links memory with the town’s modern defence identity.",
+    adult:
+      "Submarine Memorial reached. This site binds remembrance to Barrow’s submarine legacy.",
+  },
+
+  walney_bridge_entrance: {
+    kid: "Walney Bridge Entrance reached. This is the crossing point between Barrow and Walney.",
+    teen:
+      "Walney Bridge Entrance reached. This pin is about crossing, transition, and identity.",
+    adult:
+      "Walney Bridge Entrance reached. You are at a threshold structure where geography and identity meet.",
+  },
+
+  earnse_bay: {
+    kid: "Earnse Bay reached. This is a big coastal place with sea air and wide views.",
+    teen:
+      "Earnse Bay reached. This pin opens the map outward into coast and horizon.",
+    adult:
+      "Earnse Bay reached. This is a landscape pin where weather, coast, and scale dominate.",
+  },
+
+  piel_castle: {
+    kid: "Piel Castle reached. This island castle once helped protect the coast.",
+    teen:
+      "Piel Castle reached. This landmark feels separate for a reason — defence and the sea matter here.",
+    adult:
+      "Piel Castle reached. You are entering a defensive coastal site where isolation and strategy converge.",
+  },
+
+  roose_station_platform: {
+    kid: "Roose Station Platform reached. Trains helped connect people and places.",
+    teen:
+      "Roose Station Platform reached. This pin is about movement and route networks.",
+    adult:
+      "Roose Station Platform reached. This site reflects transport infrastructure and everyday movement.",
+  },
+};
+
+/* =========================================================
+   GROUP HISTORY / QUIZ CONTENT
+========================================================= */
+
+export const QA_BY_GROUP = {
+  town_history: {
+    quiz: {
+      kid: [
+        {
+          q: "What kind of place was Barrow before heavy industry?",
+          options: [
+            "A village",
+            "A capital city",
+            "A giant castle",
+            "A theme park",
+          ],
+          answer: 0,
+          fact: "Barrow began as a much smaller settlement before industrial growth.",
+        },
+        {
+          q: "What helped Barrow grow quickly in the 1800s?",
+          options: [
+            "Iron and industry",
+            "Banana farms",
+            "Volcanoes",
+            "Theme parks",
+          ],
+          answer: 0,
+          fact: "Iron, docks, and industry helped Barrow grow fast.",
+        },
+      ],
+      teen: [
+        {
+          q: "What best explains Barrow’s rapid growth?",
+          options: [
+            "Industry, iron, and shipbuilding",
+            "Only farming",
+            "Royal palaces",
+            "Tourism alone",
+          ],
+          answer: 0,
+          fact: "Barrow expanded rapidly through industry and shipbuilding.",
+        },
+        {
+          q: "What kind of history do many central Barrow landmarks share?",
+          options: [
+            "Civic and industrial history",
+            "Jungle history",
+            "Desert history",
+            "Volcanic history",
+          ],
+          answer: 0,
+          fact: "Much of central Barrow reflects civic growth and industrial identity.",
+        },
+      ],
+      adult: [
+        {
+          q: "How should central Barrow’s historic character be described?",
+          options: [
+            "Civic, industrial, and urban",
+            "Purely rural",
+            "Ancient royal",
+            "Only recreational",
+          ],
+          answer: 0,
+          fact: "Central Barrow reflects civic life, industry, and urban development.",
+        },
+        {
+          q: "What ties many town-centre landmarks together?",
+          options: [
+            "Public life, memory, and growth",
+            "Deep sea fishing only",
+            "Airport logistics",
+            "Monastic seclusion",
+          ],
+          answer: 0,
+          fact: "Town-centre landmarks often express public life, memory, and growth.",
+        },
+      ],
+    },
+
+    history: {
+      kid: [
+        {
+          q: "Do town buildings help tell local history?",
+          options: ["Yes", "No", "Only castles do", "Only beaches do"],
+          answer: 0,
+          fact: "Town buildings often help show how a place grew and changed.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why are town landmarks useful in local history?",
+          options: [
+            "They show how public life changed",
+            "They replace maps",
+            "They hide tunnels only",
+            "They grow crops",
+          ],
+          answer: 0,
+          fact: "Town landmarks help show how civic and daily life developed.",
+        },
+      ],
+      adult: [
+        {
+          q: "What do civic landmarks often preserve?",
+          options: [
+            "Public memory and identity",
+            "Only private wealth",
+            "Only transport schedules",
+            "Only military secrets",
+          ],
+          answer: 0,
+          fact: "Civic landmarks often preserve public memory and identity.",
+        },
+      ],
+    },
+  },
+
+  industry_history: {
+    quiz: {
+      kid: [
+        {
+          q: "What kind of work helped Barrow become famous?",
+          options: [
+            "Industry and shipbuilding",
+            "Chocolate making",
+            "Only farming",
+            "Wizard school",
+          ],
+          answer: 0,
+          fact: "Barrow became famous through industry and shipbuilding.",
+        },
+      ],
+      teen: [
+        {
+          q: "What made Barrow important in industrial Britain?",
+          options: [
+            "Shipbuilding and heavy industry",
+            "Only beaches",
+            "Only theatre",
+            "Only farming",
+          ],
+          answer: 0,
+          fact: "Barrow became important through shipbuilding and heavy industry.",
+        },
+      ],
+      adult: [
+        {
+          q: "What does an industrial landmark in Barrow usually point back to?",
+          options: [
+            "Labour, production, and growth",
+            "Monastic prayer only",
+            "Holiday tourism only",
+            "Royal ceremony only",
+          ],
+          answer: 0,
+          fact: "Industrial landmarks in Barrow often point to labour, production, and growth.",
+        },
+      ],
+    },
+
+    history: {
+      kid: [
+        {
+          q: "Did factories and mills change Barrow?",
+          options: ["Yes", "No", "Only a little", "Not at all"],
+          answer: 0,
+          fact: "Factories, mills, and industry changed Barrow in major ways.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why do industrial sites matter historically?",
+          options: [
+            "They show how work shaped the town",
+            "They are only decorative",
+            "They replaced all roads",
+            "They built castles",
+          ],
+          answer: 0,
+          fact: "Industrial sites show how labour and production shaped the town.",
+        },
+      ],
+      adult: [
+        {
+          q: "What is the historic value of industrial sites?",
+          options: [
+            "They preserve the story of labour and transformation",
+            "They exist only for scenery",
+            "They replaced civic life",
+            "They were built mainly for tourism",
+          ],
+          answer: 0,
+          fact: "Industrial sites preserve the story of labour and material transformation.",
+        },
+      ],
+    },
+  },
+
+  statues_memorial: {
+    quiz: {
+      kid: [
+        {
+          q: "Why do towns have statues and memorials?",
+          options: [
+            "To remember people and events",
+            "To hide treasure",
+            "To launch rockets",
+            "To grow food",
+          ],
+          answer: 0,
+          fact: "Statues and memorials help towns remember people and events.",
+        },
+      ],
+      teen: [
+        {
+          q: "What is the main purpose of a memorial or statue?",
+          options: [
+            "Public remembrance",
+            "Road control",
+            "Ticket sales",
+            "Boat repair",
+          ],
+          answer: 0,
+          fact: "Memorials and statues exist to support public remembrance.",
+        },
+      ],
+      adult: [
+        {
+          q: "What do memorials and statues reveal about a town?",
+          options: [
+            "Who and what it chooses to remember",
+            "Its crop yields",
+            "Its underground caves",
+            "Its weather patterns only",
+          ],
+          answer: 0,
+          fact: "Memorials reveal who and what a town chooses to remember publicly.",
+        },
+      ],
+    },
+
+    history: {
+      kid: [
+        {
+          q: "Can statues help tell the story of a town?",
+          options: ["Yes", "No", "Only maps can", "Only shops can"],
+          answer: 0,
+          fact: "Statues can help tell the story of a town and its people.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why are statues part of local history?",
+          options: [
+            "They preserve memory in public space",
+            "They replace schools",
+            "They run transport",
+            "They build factories",
+          ],
+          answer: 0,
+          fact: "Statues preserve memory in public space.",
+        },
+      ],
+      adult: [
+        {
+          q: "What does a public statue most clearly do?",
+          options: [
+            "Turn memory into a visible civic object",
+            "Direct road traffic",
+            "Store official documents",
+            "Control harbour trade",
+          ],
+          answer: 0,
+          fact: "A public statue turns memory into a visible civic object.",
+        },
+      ],
+    },
+  },
+
+  park_history: {
+    quiz: {
+      kid: [
+        {
+          q: "What kind of place is Barrow Park?",
+          options: ["A park", "A harbour", "A factory", "An airport"],
+          answer: 0,
+          fact: "Barrow Park is one of the town’s important green spaces.",
+        },
+        {
+          q: "What can people do in a park?",
+          options: [
+            "Play and relax",
+            "Launch submarines",
+            "Mine iron",
+            "Build factories",
+          ],
+          answer: 0,
+          fact: "Parks are made for play, walking, and shared public time.",
+        },
+      ],
+      teen: [
+        {
+          q: "What makes the park good for quests?",
+          options: [
+            "Open space and landmarks",
+            "Cargo cranes",
+            "Runways",
+            "Only shops",
+          ],
+          answer: 0,
+          fact: "The park works well for quests because of its routes and landmarks.",
+        },
+        {
+          q: "Why do parks matter in towns?",
+          options: [
+            "They create shared public space",
+            "They replace ports",
+            "They power factories",
+            "They store cargo",
+          ],
+          answer: 0,
+          fact: "Parks create shared public space in towns.",
+        },
+      ],
+      adult: [
+        {
+          q: "What public role does a park often serve?",
+          options: [
+            "Leisure, memory, and social space",
+            "Heavy freight movement",
+            "Border control",
+            "Industrial storage",
+          ],
+          answer: 0,
+          fact: "Parks often serve leisure, memory, and social space.",
+        },
+        {
+          q: "What best describes a strong park landmark?",
+          options: [
+            "A civic leisure feature",
+            "A port loading tool",
+            "A private military structure",
+            "A freight yard device",
+          ],
+          answer: 0,
+          fact: "Park landmarks are often civic leisure features within public space.",
+        },
+      ],
+    },
+
+    history: {
+      kid: [
+        {
+          q: "Can a park be an important part of town life?",
+          options: ["Yes", "No", "Only roads matter", "Only factories matter"],
+          answer: 0,
+          fact: "Parks are important because they are shared spaces for the public.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why is a park part of local history?",
+          options: [
+            "It shows how towns value public leisure",
+            "It replaces schools",
+            "It acts like a factory",
+            "It controls the sea",
+          ],
+          answer: 0,
+          fact: "Parks show how towns create space for public leisure and gathering.",
+        },
+      ],
+      adult: [
+        {
+          q: "How should a historic park be understood?",
+          options: [
+            "As designed public space",
+            "As industrial overflow",
+            "As transport-only land",
+            "As unused leftover ground",
+          ],
+          answer: 0,
+          fact: "A historic park should be understood as designed public space.",
+        },
+      ],
+    },
+  },
+
+  park_cenotaph: {
+    quiz: {
+      kid: [
+        {
+          q: "What does the cenotaph honour?",
+          options: [
+            "Those lost in war",
+            "Football winners",
+            "Shop owners",
+            "Bus drivers only",
+          ],
+          answer: 0,
+          fact: "The cenotaph honours those lost in war.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why should a cenotaph be treated respectfully?",
+          options: [
+            "It is a memorial space",
+            "It is a race track",
+            "It is a market lane",
+            "It is a skate zone",
+          ],
+          answer: 0,
+          fact: "A cenotaph is a memorial space for remembrance.",
+        },
+      ],
+      adult: [
+        {
+          q: "What civic purpose does a cenotaph serve?",
+          options: [
+            "Collective remembrance",
+            "Retail promotion",
+            "Cargo storage",
+            "Traffic control",
+          ],
+          answer: 0,
+          fact: "A cenotaph serves collective remembrance.",
+        },
+      ],
+    },
+
+    history: {
+      kid: [
+        {
+          q: "Is the cenotaph a place to remember people?",
+          options: [
+            "Yes",
+            "No",
+            "It is just decoration",
+            "It is only for games",
+          ],
+          answer: 0,
+          fact: "The cenotaph is a place for remembrance.",
+        },
+      ],
+      teen: [
+        {
+          q: "What does the cenotaph show about the town?",
+          options: [
+            "That remembrance matters",
+            "That only shopping matters",
+            "That parks do not matter",
+            "That roads are more important than memory",
+          ],
+          answer: 0,
+          fact: "The cenotaph shows that remembrance matters in public life.",
+        },
+      ],
+      adult: [
+        {
+          q: "Why is the cenotaph historically important?",
+          options: [
+            "It anchors public memory",
+            "It stores old machinery",
+            "It marks a rail junction",
+            "It replaced a church",
+          ],
+          answer: 0,
+          fact: "The cenotaph is historically important because it anchors public memory.",
+        },
+      ],
+    },
+  },
+
+  abbey_history: {
+    quiz: {
+      kid: [
+        {
+          q: "Who lived at Furness Abbey long ago?",
+          options: ["Monks", "Pirates", "Astronauts", "Robots"],
+          answer: 0,
+          fact: "Monks lived and worshipped at Furness Abbey.",
+        },
+        {
+          q: "How old is Furness Abbey?",
+          options: [
+            "20 years",
+            "100 years",
+            "Over 800 years",
+            "Built last week",
+          ],
+          answer: 2,
+          fact: "Furness Abbey was founded in 1123.",
+        },
+      ],
+      teen: [
+        {
+          q: "What kind of place was Furness Abbey?",
+          options: [
+            "A monastery",
+            "A football ground",
+            "A shopping centre",
+            "A train station",
+          ],
+          answer: 0,
+          fact: "Furness Abbey was a monastery.",
+        },
+        {
+          q: "Which king closed many monasteries, including Furness Abbey?",
+          options: ["Henry VIII", "King John", "Charles II", "Alfred"],
+          answer: 0,
+          fact: "Henry VIII dissolved monasteries across England.",
+        },
+      ],
+      adult: [
+        {
+          q: "What was Furness Abbey’s main historic role?",
+          options: [
+            "Religious life and monastic power",
+            "Modern retail",
+            "Air travel",
+            "Submarine launching",
+          ],
+          answer: 0,
+          fact: "The abbey was a major religious and monastic site.",
+        },
+        {
+          q: "What event ended Furness Abbey’s great power?",
+          options: [
+            "The Dissolution of the Monasteries",
+            "A railway merger",
+            "A coastal flood scheme",
+            "A dock expansion",
+          ],
+          answer: 0,
+          fact: "The Dissolution ended its monastic power.",
+        },
+      ],
+    },
+
+    history: {
+      kid: [
+        {
+          q: "Is Furness Abbey very old?",
+          options: ["Yes", "No", "Only 20 years old", "Built last week"],
+          answer: 0,
+          fact: "Furness Abbey is hundreds of years old.",
+        },
+      ],
+      teen: [
+        {
+          q: "What gives the abbey its strong atmosphere?",
+          options: [
+            "Ruins and history",
+            "Airport lights",
+            "Factory smoke",
+            "Shopping signs",
+          ],
+          answer: 0,
+          fact: "Its ruins and long history give it atmosphere.",
+        },
+      ],
+      adult: [
+        {
+          q: "Why is Furness Abbey historically significant?",
+          options: [
+            "It reflects religious power and change",
+            "It was a motorway junction",
+            "It was a cinema complex",
+            "It was a dock gate",
+          ],
+          answer: 0,
+          fact: "Furness Abbey reflects major religious and political change.",
+        },
+      ],
+    },
+  },
+
+  docks_submarines: {
+    quiz: {
+      kid: [
+        {
+          q: "What is Barrow known for building today?",
+          options: [
+            "Submarines",
+            "Chocolate castles",
+            "Flying tractors",
+            "Theme parks",
+          ],
+          answer: 0,
+          fact: "Barrow is known for building submarines.",
+        },
+        {
+          q: "Where can you learn about Barrow’s dock history?",
+          options: ["Dock Museum", "Only the beach", "A farm", "A cinema"],
+          answer: 0,
+          fact: "The Dock Museum helps tell Barrow’s dock and ship story.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why are the docks important to Barrow?",
+          options: [
+            "They connect industry to trade",
+            "They only grow food",
+            "They replace roads",
+            "They train actors",
+          ],
+          answer: 0,
+          fact: "The docks supported shipbuilding, transport, and trade.",
+        },
+        {
+          q: "Why is Barrow internationally known today?",
+          options: [
+            "Submarine building",
+            "Volcano research",
+            "Space launches",
+            "Castle tourism",
+          ],
+          answer: 0,
+          fact: "Barrow remains strongly associated with submarine construction.",
+        },
+      ],
+      adult: [
+        {
+          q: "What gives Barrow continuing national importance?",
+          options: [
+            "Its defence and shipbuilding role",
+            "Its medieval royal court",
+            "Its airport network",
+            "Its mountain agriculture",
+          ],
+          answer: 0,
+          fact: "Barrow remains closely tied to defence manufacturing.",
+        },
+        {
+          q: "Why are the docks historically significant in Barrow?",
+          options: [
+            "They enabled industrial output and connections",
+            "They existed only for sport",
+            "They replaced rail completely",
+            "They were built only for tourism",
+          ],
+          answer: 0,
+          fact: "The docks were critical to industrial transport and shipbuilding.",
+        },
+      ],
+    },
+
+    history: {
+      kid: [
+        {
+          q: "Did ships and docks help Barrow grow?",
+          options: ["Yes", "No", "Only roads did", "Only farms did"],
+          answer: 0,
+          fact: "Ships and docks helped Barrow grow.",
+        },
+      ],
+      teen: [
+        {
+          q: "What does the Dock Museum help preserve?",
+          options: [
+            "Barrow’s maritime and industrial story",
+            "Only football history",
+            "Only farming tools",
+            "Only cinema posters",
+          ],
+          answer: 0,
+          fact: "The Dock Museum preserves maritime and industrial history.",
+        },
+      ],
+      adult: [
+        {
+          q: "What does the Dock Museum most strongly interpret?",
+          options: [
+            "Maritime industry, labour, and identity",
+            "Luxury trade only",
+            "Roman religion only",
+            "Theatre culture only",
+          ],
+          answer: 0,
+          fact: "The museum helps explain how shipbuilding shaped Barrow’s identity.",
+        },
+      ],
+    },
+  },
+
+  islands_nature: {
+    quiz: {
+      kid: [
+        {
+          q: "What connects Walney Island to Barrow?",
+          options: ["Bridge", "Volcano", "Castle wall", "Tunnel under London"],
+          answer: 0,
+          fact: "Walney Bridge connects Walney to Barrow.",
+        },
+        {
+          q: "What can you often enjoy at coastal places like Earnse Bay?",
+          options: [
+            "Views and sea air",
+            "Underground mines",
+            "Skyscrapers",
+            "Desert dunes",
+          ],
+          answer: 0,
+          fact: "Coastal places are known for sea air, views, and changing weather.",
+        },
+      ],
+      teen: [
+        {
+          q: "What is Walney known for as well as its size?",
+          options: [
+            "Wildlife and coastline",
+            "Skyscrapers",
+            "Coal mines",
+            "Underground rail",
+          ],
+          answer: 0,
+          fact: "Walney is known for wildlife, coastline, and birdlife.",
+        },
+        {
+          q: "What kind of place is Piel Castle?",
+          options: [
+            "A coastal defensive castle",
+            "A shopping arcade",
+            "A train depot",
+            "A factory",
+          ],
+          answer: 0,
+          fact: "Piel Castle was built to help protect the coast.",
+        },
+      ],
+      adult: [
+        {
+          q: "How should Walney be understood in relation to Barrow?",
+          options: [
+            "As part of the area’s wider coastal identity",
+            "As an inland district",
+            "As a market tunnel",
+            "As a former abbey court",
+          ],
+          answer: 0,
+          fact: "Walney adds an important coastal and ecological dimension to Barrow’s identity.",
+        },
+        {
+          q: "What does Piel Castle symbolise in the wider landscape?",
+          options: [
+            "Coastal defence and strategic control",
+            "Modern retail expansion",
+            "Agricultural reform",
+            "Airport planning",
+          ],
+          answer: 0,
+          fact: "Piel Castle reflects the need to secure the coast and surrounding waters.",
+        },
+      ],
+    },
+
+    history: {
+      kid: [
+        {
+          q: "Is Walney an island?",
+          options: ["Yes", "No", "Only sometimes", "Only in winter"],
+          answer: 0,
+          fact: "Walney is one of England’s largest islands.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why do island and coast pins feel different from town pins?",
+          options: [
+            "They are shaped by sea and landscape",
+            "They are full of factories only",
+            "They are indoor only",
+            "They have no history",
+          ],
+          answer: 0,
+          fact: "Coastal pins feel different because sea and landscape change the experience.",
+        },
+      ],
+      adult: [
+        {
+          q: "What does a coastal landmark often add to a route?",
+          options: [
+            "Scale, exposure, and atmosphere",
+            "Only traffic noise",
+            "Only retail",
+            "Only street lighting",
+          ],
+          answer: 0,
+          fact: "Coastal landmarks often add scale, exposure, and atmosphere.",
+        },
+      ],
+    },
+  },
+};
+
+/* =========================================================
+   EXACT PIN OVERRIDES
+========================================================= */
+
+export const QA_PIN_OVERRIDES = {
+  home_base_marsh_st: {
+    start: PIN_START_INTROS.home_base_marsh_st,
+  },
+
+  cenotaph_core: {
+    start: PIN_START_INTROS.cenotaph_core,
+    quiz: {
+      kid: [
+        {
+          q: "What does the cenotaph remember?",
+          options: [
+            "War heroes",
+            "Shopping days",
+            "Markets",
+            "Football matches",
+          ],
+          answer: 0,
+          fact: "The cenotaph remembers people lost in war.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why should the cenotaph be treated with respect?",
+          options: [
+            "It is a memorial space",
+            "It is a race track",
+            "It is a market lane",
+            "It is a game zone",
+          ],
+          answer: 0,
+          fact: "The cenotaph is a memorial space for remembrance.",
+        },
+      ],
+      adult: [
+        {
+          q: "What does the cenotaph most strongly represent?",
+          options: [
+            "Collective remembrance",
+            "Retail activity",
+            "Traffic management",
+            "Tourist entertainment",
+          ],
+          answer: 0,
+          fact: "The cenotaph represents collective remembrance.",
+        },
+      ],
+    },
+    history: {
+      kid: [
+        {
+          q: "Is the cenotaph a place to remember people?",
+          options: ["Yes", "No", "Only at night", "Only in summer"],
+          answer: 0,
+          fact: "The cenotaph is a place of remembrance.",
+        },
+      ],
+      teen: [
+        {
+          q: "What does the cenotaph show about the town?",
+          options: [
+            "That remembrance matters",
+            "That only roads matter",
+            "That only sport matters",
+            "That history is unimportant",
+          ],
+          answer: 0,
+          fact: "The cenotaph shows that remembrance matters in public life.",
+        },
+      ],
+      adult: [
+        {
+          q: "Why is the cenotaph historically important?",
+          options: [
+            "It anchors public memory",
+            "It stores cargo",
+            "It marks a shopping route",
+            "It controls town traffic",
+          ],
+          answer: 0,
+          fact: "The cenotaph is historically important because it anchors public memory.",
+        },
+      ],
+    },
+  },
+
+  park_bandstand_core: {
+    start: PIN_START_INTROS.park_bandstand_core,
+    quiz: {
+      kid: [
+        {
+          q: "What is a bandstand mainly used for?",
+          options: [
+            "Music and performances",
+            "Fixing tractors",
+            "Rocket launches",
+            "Fishing boats",
+          ],
+          answer: 0,
+          fact: "Bandstands are used for music and performances.",
+        },
+      ],
+      teen: [
+        {
+          q: "What atmosphere fits a bandstand best?",
+          options: [
+            "Performance and celebration",
+            "Heavy industry",
+            "Freight loading",
+            "Road repair",
+          ],
+          answer: 0,
+          fact: "A bandstand is tied to performance and celebration.",
+        },
+      ],
+      adult: [
+        {
+          q: "What public role does a bandstand often symbolise?",
+          options: [
+            "Shared entertainment and gathering",
+            "Freight shipping",
+            "Border defence",
+            "Industrial storage",
+          ],
+          answer: 0,
+          fact: "Bandstands often symbolise gathering and entertainment.",
+        },
+      ],
+    },
+  },
+
+  furness_abbey_core: {
+    start: PIN_START_INTROS.furness_abbey_core,
+  },
+
+  town_hall_clock: {
+    start: PIN_START_INTROS.town_hall_clock,
+    quiz: {
+      kid: [
+        {
+          q: "What does a town hall clock help people do?",
+          options: [
+            "Know the time",
+            "Bake bread",
+            "Build ships",
+            "Grow flowers",
+          ],
+          answer: 0,
+          fact: "Clock landmarks helped towns run to a shared daily rhythm.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why are clock landmarks important in towns?",
+          options: [
+            "They help organise public life",
+            "They replace libraries",
+            "They launch trains",
+            "They store cargo",
+          ],
+          answer: 0,
+          fact: "Clock landmarks helped structure daily civic life.",
+        },
+      ],
+      adult: [
+        {
+          q: "What does a civic clock most strongly represent?",
+          options: [
+            "Shared public rhythm",
+            "Private wealth only",
+            "Military secrecy",
+            "Agricultural isolation",
+          ],
+          answer: 0,
+          fact: "Civic clocks symbolise order, coordination, and shared urban time.",
+        },
+      ],
+    },
+  },
+
+  barrow_library: {
+    start: PIN_START_INTROS.barrow_library,
+    quiz: {
+      kid: [
+        {
+          q: "What do libraries help people do?",
+          options: [
+            "Learn and read",
+            "Launch rockets",
+            "Fix engines",
+            "Catch fish",
+          ],
+          answer: 0,
+          fact: "Libraries are places of learning, reading, and discovery.",
+        },
+      ],
+      teen: [
+        {
+          q: "Why is a library important in a town?",
+          options: [
+            "It keeps knowledge available to everyone",
+            "It replaces factories",
+            "It controls traffic",
+            "It stores submarines",
+          ],
+          answer: 0,
+          fact: "Libraries are part of the public knowledge system of a town.",
+        },
+      ],
+      adult: [
+        {
+          q: "What does a public library represent in civic life?",
+          options: [
+            "Shared access to knowledge",
+            "Private military planning",
+            "Trade regulation only",
+            "Industrial extraction",
+          ],
+          answer: 0,
+          fact: "A public library represents education, memory, and shared civic access to knowledge.",
+        },
+      ],
+    },
+  },
+
+  james_ramsden_statue: {
+    start: PIN_START_INTROS.james_ramsden_statue,
+  },
+
+  henry_schneider_statue: {
+    start: PIN_START_INTROS.henry_schneider_statue,
+  },
+
+  custom_house: {
+    start: PIN_START_INTROS.custom_house,
+  },
+
+  dock_museum_anchor: {
+    start: PIN_START_INTROS.dock_museum_anchor,
+  },
+
+  dock_museum_submarine: {
+    start: PIN_START_INTROS.dock_museum_submarine,
+  },
+
+  emlyn_hughes_statue: {
+    start: PIN_START_INTROS.emlyn_hughes_statue,
+  },
+
+  salthouse_mills: {
+    start: PIN_START_INTROS.salthouse_mills,
+  },
+
+  submarine_memorial: {
+    start: PIN_START_INTROS.submarine_memorial,
+  },
+
+  walney_bridge_entrance: {
+    start: PIN_START_INTROS.walney_bridge_entrance,
+  },
+
+  earnse_bay: {
+    start: PIN_START_INTROS.earnse_bay,
+  },
+
+  piel_castle: {
+    start: PIN_START_INTROS.piel_castle,
+  },
+
+  roose_station_platform: {
+    start: PIN_START_INTROS.roose_station_platform,
+  },
+
+  abbey_boss: {
+    boss: {
+      kid: [
+        {
+          q: "Final Abbey Trial: Who lived here long ago?",
+          options: ["Monks", "Aliens", "Pirates", "Cheese wizards"],
+          answer: 0,
+          fact: "Monks lived at Furness Abbey for centuries.",
+        },
+      ],
+      teen: [
+        {
+          q: "FINAL BOSS: What event ended the abbey’s power?",
+          options: [
+            "The Dissolution of the Monasteries",
+            "A volcano",
+            "A railway crash",
+            "A football riot",
+          ],
+          answer: 0,
+          fact: "The Dissolution of the Monasteries ended its power.",
+        },
+      ],
+      adult: [
+        {
+          q: "FINAL BOSS: What does Furness Abbey most strongly represent?",
+          options: [
+            "Religious power, memory, and political change",
+            "Modern retail expansion",
+            "Airport growth",
+            "Weapons testing",
+          ],
+          answer: 0,
+          fact: "It represents religious power, memory, and political change.",
+        },
+      ],
+    },
+  },
+
+  park_boss_bandstand: {
+    boss: {
+      kid: [
+        {
+          q: "BOSS: Festival Revival! What is this place linked to?",
+          options: [
+            "Music and performance",
+            "Mining",
+            "Air travel",
+            "Submarine docks",
+          ],
+          answer: 0,
+          fact: "The bandstand is linked to music and public performance.",
+        },
+      ],
+      teen: [
+        {
+          q: "BOSS: Festival Revival! What atmosphere fits this place best?",
+          options: [
+            "Performance and celebration",
+            "Heavy industry",
+            "Silent prayer only",
+            "Airport security",
+          ],
+          answer: 0,
+          fact: "This boss is tied to performance and celebration.",
+        },
+      ],
+      adult: [
+        {
+          q: "BOSS: Festival Revival! What public role does a bandstand often symbolise?",
+          options: [
+            "Shared entertainment and gathering",
+            "Freight shipping",
+            "Border defence",
+            "Agricultural storage",
+          ],
+          answer: 0,
+          fact: "Bandstands often symbolise gathering and entertainment.",
+        },
+      ],
+    },
+  },
+
+  park_boss_cenotaph: {
+    boss: {
+      kid: [
+        {
+          q: "BOSS: Memory Keeper! What does the cenotaph honour?",
+          options: [
+            "Those lost in war",
+            "Football winners",
+            "Train drivers",
+            "Shop owners",
+          ],
+          answer: 0,
+          fact: "The cenotaph honours those lost in war.",
+        },
+      ],
+      teen: [
+        {
+          q: "BOSS: Memory Keeper! Why should this place be treated respectfully?",
+          options: [
+            "It is a memorial space",
+            "It is a car park",
+            "It is a skate zone",
+            "It is a market lane",
+          ],
+          answer: 0,
+          fact: "It is a memorial space for remembrance.",
+        },
+      ],
+      adult: [
+        {
+          q: "BOSS: Memory Keeper! What civic purpose does a cenotaph serve?",
+          options: [
+            "Collective remembrance",
+            "Retail promotion",
+            "Cargo storage",
+            "Ticket inspection",
+          ],
+          answer: 0,
+          fact: "It serves collective remembrance.",
+        },
+      ],
+    },
+  },
+
+  park_boss_skate: {
+    boss: {
+      kid: [
+        {
+          q: "BOSS: Park Champion! What matters most during a challenge?",
+          options: [
+            "Trying your best safely",
+            "Cheating fast",
+            "Giving up",
+            "Ignoring everyone",
+          ],
+          answer: 0,
+          fact: "The best win is doing your best safely.",
+        },
+      ],
+      teen: [
+        {
+          q: "BOSS: Park Champion! What makes a strong challenger?",
+          options: [
+            "Confidence and control",
+            "Chaos only",
+            "Running away",
+            "Breaking rules",
+          ],
+          answer: 0,
+          fact: "A strong challenger shows confidence and control.",
+        },
+      ],
+      adult: [
+        {
+          q: "BOSS: Park Champion! What does challenge mode reward most?",
+          options: [
+            "Skill, movement, and effort",
+            "Noise only",
+            "Stillness only",
+            "Luck alone",
+          ],
+          answer: 0,
+          fact: "Challenge mode rewards effort and skill.",
+        },
+      ],
+    },
+  },
+
+  park_boss_mudman: {
+    boss: {
+      kid: [
+        {
+          q: "BOSS: Mudman Mystery! What best fits a mystery boss?",
+          options: [
+            "Clues and careful thinking",
+            "Only shouting",
+            "Only running",
+            "Only sleeping",
+          ],
+          answer: 0,
+          fact: "Mystery bosses are about clues and thinking.",
+        },
+      ],
+      teen: [
+        {
+          q: "BOSS: Mudman Mystery! What wins a mystery challenge?",
+          options: [
+            "Observation and logic",
+            "Random guessing only",
+            "Ignoring clues",
+            "Walking away",
+          ],
+          answer: 0,
+          fact: "Observation and logic win mystery challenges.",
+        },
+      ],
+      adult: [
+        {
+          q: "BOSS: Mudman Mystery! What makes mystery pins satisfying?",
+          options: [
+            "Pattern, clue, and reveal",
+            "Pure noise",
+            "Fast driving",
+            "Ticket scanning",
+          ],
+          answer: 0,
+          fact: "Mystery works through pattern, clue, and reveal.",
+        },
+      ],
+    },
+  },
+};
+
+/* =========================================================
+   OPTIONAL HISTORY QUIZ BANK
+   kept separate from MASTER_QUIZ_BANK
+========================================================= */
+
+export const HISTORY_MASTER_BANK = {
+  kid: [
+    mq(
+      "h001",
+      20,
+      ["history", "town"],
+      "What helped Barrow grow fast in the 1800s?",
+      ["Iron and industry", "Snowstorms", "Volcanoes", "Castles"],
+      0,
+      "Iron, docks, and industry helped Barrow grow quickly."
+    ),
+    mq(
+      "h002",
+      24,
+      ["history", "abbey"],
+      "Who lived at Furness Abbey long ago?",
+      ["Monks", "Pirates", "Astronauts", "Robots"],
+      0,
+      "Monks lived and worshipped at Furness Abbey."
+    ),
+    mq(
+      "h003",
+      18,
+      ["history", "park"],
+      "What is a bandstand mainly used for?",
+      ["Music and performances", "Mining", "Fishing", "Rocket launches"],
+      0,
+      "Bandstands are used for music and performances."
+    ),
+  ],
+
+  teen: [
+    mq(
+      "h101",
+      130,
+      ["history", "industry"],
+      "What best explains Barrow’s rapid growth?",
+      [
+        "Industry, iron, and shipbuilding",
+        "Only farming",
+        "Royal palaces",
+        "Tourism alone",
+      ],
+      0,
+      "Barrow expanded rapidly through industry and shipbuilding."
+    ),
+    mq(
+      "h102",
+      138,
+      ["history", "abbey"],
+      "Which king closed many monasteries, including Furness Abbey?",
+      ["Henry VIII", "King John", "Charles II", "Alfred"],
+      0,
+      "Henry VIII dissolved monasteries across England."
+    ),
+    mq(
+      "h103",
+      126,
+      ["history", "memorial"],
+      "What is the main purpose of a memorial or statue?",
+      ["Public remembrance", "Road control", "Ticket sales", "Boat repair"],
+      0,
+      "Memorials and statues exist to support public remembrance."
+    ),
+  ],
+
+  adult: [
+    mq(
+      "h201",
+      240,
+      ["history", "civic"],
+      "How should central Barrow’s historic character be described?",
+      [
+        "Civic, industrial, and urban",
+        "Purely rural",
+        "Ancient royal",
+        "Only recreational",
+      ],
+      0,
+      "Central Barrow reflects civic life, industry, and urban development."
+    ),
+    mq(
+      "h202",
+      248,
+      ["history", "abbey"],
+      "What event ended Furness Abbey’s great power?",
+      [
+        "The Dissolution of the Monasteries",
+        "A railway merger",
+        "A coastal flood scheme",
+        "A dock expansion",
+      ],
+      0,
+      "The Dissolution ended its monastic power."
+    ),
+    mq(
+      "h203",
+      236,
+      ["history", "docks"],
+      "Why are the docks historically significant in Barrow?",
+      [
+        "They enabled industrial output and connections",
+        "They existed only for sport",
+        "They replaced rail completely",
+        "They were built only for tourism",
+      ],
+      0,
+      "The docks were critical to industrial transport and shipbuilding."
+    ),
+  ],
+};
+
+export function getHistoryMasterBank(tier = "kid") {
+  return Array.isArray(HISTORY_MASTER_BANK[tier])
+    ? HISTORY_MASTER_BANK[tier]
+    : HISTORY_MASTER_BANK.kid;
+}
