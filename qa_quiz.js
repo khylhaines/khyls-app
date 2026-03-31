@@ -3324,8 +3324,26 @@ export const MASTER_QUIZ_BANK = {
   ],
 };
 
-export function getMasterQuizBank(tier = "kid") {
-  return Array.isArray(MASTER_QUIZ_BANK[tier])
-    ? MASTER_QUIZ_BANK[tier]
-    : MASTER_QUIZ_BANK.kid;
+export function getQuizQuestion(input = {}) {
+  const pool =
+    (typeof QA_QUIZ_BY_GROUP !== "undefined" && QA_QUIZ_BY_GROUP) ||
+    (typeof QUIZ_BY_GROUP !== "undefined" && QUIZ_BY_GROUP) ||
+    null;
+
+  const group = input.group || input.pin?.qaGroup || "";
+  const tier = ["kid", "teen", "adult"].includes(input.tier)
+    ? input.tier
+    : "kid";
+  const salt = Number(input.salt || 0);
+
+  function pickOne(arr) {
+    if (!Array.isArray(arr) || !arr.length) return null;
+    return arr[Math.abs(salt) % arr.length];
+  }
+
+  if (pool && pool[group] && pool[group][tier]) {
+    return pickOne(pool[group][tier]);
+  }
+
+  return null;
 }
