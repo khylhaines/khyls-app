@@ -1,6 +1,6 @@
 /* =========================================================
    qa_history.js
-   BARROW QUEST HISTORY + START INTROS
+   BARROW QUEST HISTORY / START INTROS / HISTORY OVERRIDES
    SAFE SPLIT FROM qa.js
 ========================================================= */
 
@@ -87,8 +87,7 @@ export const PIN_START_INTROS = {
 
   james_ramsden_statue: {
     kid: "Statue of James Ramsden reached. This pin remembers one of the men linked to Barrow’s growth.",
-    teen:
-      "Statue of James Ramsden reached. This is one of the town’s memory-markers.",
+    teen: "Statue of James Ramsden reached. This is one of the town’s memory-markers.",
     adult:
       "Statue of James Ramsden reached. This monument reflects leadership, ambition, and public memory.",
   },
@@ -167,32 +166,22 @@ export const PIN_START_INTROS = {
 };
 
 /* =========================================================
-   GROUP HISTORY / QUIZ CONTENT
+   GROUP HISTORY CONTENT
 ========================================================= */
 
-export const QA_BY_GROUP = {
+export const QA_HISTORY_BY_GROUP = {
   town_history: {
     quiz: {
       kid: [
         {
           q: "What kind of place was Barrow before heavy industry?",
-          options: [
-            "A village",
-            "A capital city",
-            "A giant castle",
-            "A theme park",
-          ],
+          options: ["A village", "A capital city", "A giant castle", "A theme park"],
           answer: 0,
           fact: "Barrow began as a much smaller settlement before industrial growth.",
         },
         {
           q: "What helped Barrow grow quickly in the 1800s?",
-          options: [
-            "Iron and industry",
-            "Banana farms",
-            "Volcanoes",
-            "Theme parks",
-          ],
+          options: ["Iron and industry", "Banana farms", "Volcanoes", "Theme parks"],
           answer: 0,
           fact: "Iron, docks, and industry helped Barrow grow fast.",
         },
@@ -384,12 +373,7 @@ export const QA_BY_GROUP = {
       teen: [
         {
           q: "What is the main purpose of a memorial or statue?",
-          options: [
-            "Public remembrance",
-            "Road control",
-            "Ticket sales",
-            "Boat repair",
-          ],
+          options: ["Public remembrance", "Road control", "Ticket sales", "Boat repair"],
           answer: 0,
           fact: "Memorials and statues exist to support public remembrance.",
         },
@@ -561,12 +545,7 @@ export const QA_BY_GROUP = {
       kid: [
         {
           q: "What does the cenotaph honour?",
-          options: [
-            "Those lost in war",
-            "Football winners",
-            "Shop owners",
-            "Bus drivers only",
-          ],
+          options: ["Those lost in war", "Football winners", "Shop owners", "Bus drivers only"],
           answer: 0,
           fact: "The cenotaph honours those lost in war.",
         },
@@ -603,12 +582,7 @@ export const QA_BY_GROUP = {
       kid: [
         {
           q: "Is the cenotaph a place to remember people?",
-          options: [
-            "Yes",
-            "No",
-            "It is just decoration",
-            "It is only for games",
-          ],
+          options: ["Yes", "No", "It is just decoration", "It is only for games"],
           answer: 0,
           fact: "The cenotaph is a place for remembrance.",
         },
@@ -653,25 +627,15 @@ export const QA_BY_GROUP = {
         },
         {
           q: "How old is Furness Abbey?",
-          options: [
-            "20 years",
-            "100 years",
-            "Over 800 years",
-            "Built last week",
-          ],
+          options: ["20 years", "100 years", "Over 800 years", "Built last week"],
           answer: 2,
-          fact: "Furness Abbey was founded in 1123.",
+          fact: "Furness Abbey was founded in the 12th century.",
         },
       ],
       teen: [
         {
           q: "What kind of place was Furness Abbey?",
-          options: [
-            "A monastery",
-            "A football ground",
-            "A shopping centre",
-            "A train station",
-          ],
+          options: ["A monastery", "A football ground", "A shopping centre", "A train station"],
           answer: 0,
           fact: "Furness Abbey was a monastery.",
         },
@@ -720,12 +684,7 @@ export const QA_BY_GROUP = {
       teen: [
         {
           q: "What gives the abbey its strong atmosphere?",
-          options: [
-            "Ruins and history",
-            "Airport lights",
-            "Factory smoke",
-            "Shopping signs",
-          ],
+          options: ["Ruins and history", "Airport lights", "Factory smoke", "Shopping signs"],
           answer: 0,
           fact: "Its ruins and long history give it atmosphere.",
         },
@@ -751,12 +710,7 @@ export const QA_BY_GROUP = {
       kid: [
         {
           q: "What is Barrow known for building today?",
-          options: [
-            "Submarines",
-            "Chocolate castles",
-            "Flying tractors",
-            "Theme parks",
-          ],
+          options: ["Submarines", "Chocolate castles", "Flying tractors", "Theme parks"],
           answer: 0,
           fact: "Barrow is known for building submarines.",
         },
@@ -866,12 +820,7 @@ export const QA_BY_GROUP = {
         },
         {
           q: "What can you often enjoy at coastal places like Earnse Bay?",
-          options: [
-            "Views and sea air",
-            "Underground mines",
-            "Skyscrapers",
-            "Desert dunes",
-          ],
+          options: ["Views and sea air", "Underground mines", "Skyscrapers", "Desert dunes"],
           answer: 0,
           fact: "Coastal places are known for sea air, views, and changing weather.",
         },
@@ -879,12 +828,7 @@ export const QA_BY_GROUP = {
       teen: [
         {
           q: "What is Walney known for as well as its size?",
-          options: [
-            "Wildlife and coastline",
-            "Skyscrapers",
-            "Coal mines",
-            "Underground rail",
-          ],
+          options: ["Wildlife and coastline", "Skyscrapers", "Coal mines", "Underground rail"],
           answer: 0,
           fact: "Walney is known for wildlife, coastline, and birdlife.",
         },
@@ -966,10 +910,10 @@ export const QA_BY_GROUP = {
 };
 
 /* =========================================================
-   EXACT PIN OVERRIDES
+   HISTORY PIN OVERRIDES
 ========================================================= */
 
-export const QA_PIN_OVERRIDES = {
+export const QA_HISTORY_PIN_OVERRIDES = {
   home_base_marsh_st: {
     start: PIN_START_INTROS.home_base_marsh_st,
   },
@@ -980,12 +924,7 @@ export const QA_PIN_OVERRIDES = {
       kid: [
         {
           q: "What does the cenotaph remember?",
-          options: [
-            "War heroes",
-            "Shopping days",
-            "Markets",
-            "Football matches",
-          ],
+          options: ["War heroes", "Shopping days", "Markets", "Football matches"],
           answer: 0,
           fact: "The cenotaph remembers people lost in war.",
         },
@@ -1061,12 +1000,7 @@ export const QA_PIN_OVERRIDES = {
       kid: [
         {
           q: "What is a bandstand mainly used for?",
-          options: [
-            "Music and performances",
-            "Fixing tractors",
-            "Rocket launches",
-            "Fishing boats",
-          ],
+          options: ["Music and performances", "Fixing tractors", "Rocket launches", "Fishing boats"],
           answer: 0,
           fact: "Bandstands are used for music and performances.",
         },
@@ -1110,12 +1044,7 @@ export const QA_PIN_OVERRIDES = {
       kid: [
         {
           q: "What does a town hall clock help people do?",
-          options: [
-            "Know the time",
-            "Bake bread",
-            "Build ships",
-            "Grow flowers",
-          ],
+          options: ["Know the time", "Bake bread", "Build ships", "Grow flowers"],
           answer: 0,
           fact: "Clock landmarks helped towns run to a shared daily rhythm.",
         },
@@ -1155,12 +1084,7 @@ export const QA_PIN_OVERRIDES = {
       kid: [
         {
           q: "What do libraries help people do?",
-          options: [
-            "Learn and read",
-            "Launch rockets",
-            "Fix engines",
-            "Catch fish",
-          ],
+          options: ["Learn and read", "Launch rockets", "Fix engines", "Catch fish"],
           answer: 0,
           fact: "Libraries are places of learning, reading, and discovery.",
         },
@@ -1241,226 +1165,10 @@ export const QA_PIN_OVERRIDES = {
   roose_station_platform: {
     start: PIN_START_INTROS.roose_station_platform,
   },
-
-  abbey_boss: {
-    boss: {
-      kid: [
-        {
-          q: "Final Abbey Trial: Who lived here long ago?",
-          options: ["Monks", "Aliens", "Pirates", "Cheese wizards"],
-          answer: 0,
-          fact: "Monks lived at Furness Abbey for centuries.",
-        },
-      ],
-      teen: [
-        {
-          q: "FINAL BOSS: What event ended the abbey’s power?",
-          options: [
-            "The Dissolution of the Monasteries",
-            "A volcano",
-            "A railway crash",
-            "A football riot",
-          ],
-          answer: 0,
-          fact: "The Dissolution of the Monasteries ended its power.",
-        },
-      ],
-      adult: [
-        {
-          q: "FINAL BOSS: What does Furness Abbey most strongly represent?",
-          options: [
-            "Religious power, memory, and political change",
-            "Modern retail expansion",
-            "Airport growth",
-            "Weapons testing",
-          ],
-          answer: 0,
-          fact: "It represents religious power, memory, and political change.",
-        },
-      ],
-    },
-  },
-
-  park_boss_bandstand: {
-    boss: {
-      kid: [
-        {
-          q: "BOSS: Festival Revival! What is this place linked to?",
-          options: [
-            "Music and performance",
-            "Mining",
-            "Air travel",
-            "Submarine docks",
-          ],
-          answer: 0,
-          fact: "The bandstand is linked to music and public performance.",
-        },
-      ],
-      teen: [
-        {
-          q: "BOSS: Festival Revival! What atmosphere fits this place best?",
-          options: [
-            "Performance and celebration",
-            "Heavy industry",
-            "Silent prayer only",
-            "Airport security",
-          ],
-          answer: 0,
-          fact: "This boss is tied to performance and celebration.",
-        },
-      ],
-      adult: [
-        {
-          q: "BOSS: Festival Revival! What public role does a bandstand often symbolise?",
-          options: [
-            "Shared entertainment and gathering",
-            "Freight shipping",
-            "Border defence",
-            "Agricultural storage",
-          ],
-          answer: 0,
-          fact: "Bandstands often symbolise gathering and entertainment.",
-        },
-      ],
-    },
-  },
-
-  park_boss_cenotaph: {
-    boss: {
-      kid: [
-        {
-          q: "BOSS: Memory Keeper! What does the cenotaph honour?",
-          options: [
-            "Those lost in war",
-            "Football winners",
-            "Train drivers",
-            "Shop owners",
-          ],
-          answer: 0,
-          fact: "The cenotaph honours those lost in war.",
-        },
-      ],
-      teen: [
-        {
-          q: "BOSS: Memory Keeper! Why should this place be treated respectfully?",
-          options: [
-            "It is a memorial space",
-            "It is a car park",
-            "It is a skate zone",
-            "It is a market lane",
-          ],
-          answer: 0,
-          fact: "It is a memorial space for remembrance.",
-        },
-      ],
-      adult: [
-        {
-          q: "BOSS: Memory Keeper! What civic purpose does a cenotaph serve?",
-          options: [
-            "Collective remembrance",
-            "Retail promotion",
-            "Cargo storage",
-            "Ticket inspection",
-          ],
-          answer: 0,
-          fact: "It serves collective remembrance.",
-        },
-      ],
-    },
-  },
-
-  park_boss_skate: {
-    boss: {
-      kid: [
-        {
-          q: "BOSS: Park Champion! What matters most during a challenge?",
-          options: [
-            "Trying your best safely",
-            "Cheating fast",
-            "Giving up",
-            "Ignoring everyone",
-          ],
-          answer: 0,
-          fact: "The best win is doing your best safely.",
-        },
-      ],
-      teen: [
-        {
-          q: "BOSS: Park Champion! What makes a strong challenger?",
-          options: [
-            "Confidence and control",
-            "Chaos only",
-            "Running away",
-            "Breaking rules",
-          ],
-          answer: 0,
-          fact: "A strong challenger shows confidence and control.",
-        },
-      ],
-      adult: [
-        {
-          q: "BOSS: Park Champion! What does challenge mode reward most?",
-          options: [
-            "Skill, movement, and effort",
-            "Noise only",
-            "Stillness only",
-            "Luck alone",
-          ],
-          answer: 0,
-          fact: "Challenge mode rewards effort and skill.",
-        },
-      ],
-    },
-  },
-
-  park_boss_mudman: {
-    boss: {
-      kid: [
-        {
-          q: "BOSS: Mudman Mystery! What best fits a mystery boss?",
-          options: [
-            "Clues and careful thinking",
-            "Only shouting",
-            "Only running",
-            "Only sleeping",
-          ],
-          answer: 0,
-          fact: "Mystery bosses are about clues and thinking.",
-        },
-      ],
-      teen: [
-        {
-          q: "BOSS: Mudman Mystery! What wins a mystery challenge?",
-          options: [
-            "Observation and logic",
-            "Random guessing only",
-            "Ignoring clues",
-            "Walking away",
-          ],
-          answer: 0,
-          fact: "Observation and logic win mystery challenges.",
-        },
-      ],
-      adult: [
-        {
-          q: "BOSS: Mudman Mystery! What makes mystery pins satisfying?",
-          options: [
-            "Pattern, clue, and reveal",
-            "Pure noise",
-            "Fast driving",
-            "Ticket scanning",
-          ],
-          answer: 0,
-          fact: "Mystery works through pattern, clue, and reveal.",
-        },
-      ],
-    },
-  },
 };
 
 /* =========================================================
-   OPTIONAL HISTORY QUIZ BANK
-   kept separate from MASTER_QUIZ_BANK
+   OPTIONAL HISTORY MASTER BANK
 ========================================================= */
 
 export const HISTORY_MASTER_BANK = {
