@@ -1281,6 +1281,7 @@ export const HISTORY_MASTER_BANK = {
       "The docks were critical to industrial transport and shipbuilding."
     ),
   ],
+ };
 
 export function getHistoryQuestion(input = {}) {
   const pool =
