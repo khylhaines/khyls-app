@@ -1306,5 +1306,4 @@ export function getHistoryQuestion(input = {}) {
 
   return null;
 }   
-};
 
