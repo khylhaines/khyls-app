@@ -601,6 +601,11 @@ export function getLogicQuestion(input = {}) {
     (typeof LOGIC_BY_GROUP !== "undefined" && LOGIC_BY_GROUP) ||
     null;
 
+  const riddles =
+    (typeof RIDDLE_POOL !== "undefined" && RIDDLE_POOL) ||
+    (typeof RIDDLES !== "undefined" && RIDDLES) ||
+    [];
+
   const group = input.group || input.pin?.qaGroup || "";
   const tier = ["kid", "teen", "adult"].includes(input.tier)
     ? input.tier
@@ -612,8 +617,12 @@ export function getLogicQuestion(input = {}) {
     return arr[Math.abs(salt) % arr.length];
   }
 
-  if (pool && pool[group] && pool[group][tier]) {
+  if (pool && pool[group] && Array.isArray(pool[group][tier]) && pool[group][tier].length) {
     return pickOne(pool[group][tier]);
+  }
+
+  if (Array.isArray(riddles) && riddles.length) {
+    return pickOne(riddles);
   }
 
   return null;
