@@ -1421,3 +1421,24 @@ export function getHistoryQuestion(input = {}) {
   return null;
 }   
 
+export function getHistoryReading(input = {}) {
+  const group = input.group || input.pin?.qaGroup || "";
+  const tier = ["kid", "teen", "adult"].includes(input.tier)
+    ? input.tier
+    : "kid";
+  const salt = Number(input.salt || 0);
+
+  const pool =
+    (typeof QA_HISTORY_READING !== "undefined" && QA_HISTORY_READING) || null;
+
+  function pickOne(arr) {
+    if (!Array.isArray(arr) || !arr.length) return null;
+    return arr[Math.abs(salt) % arr.length];
+  }
+
+  if (pool && pool[group] && pool[group][tier]) {
+    return pickOne(pool[group][tier]);
+  }
+
+  return "Take a moment to observe your surroundings.";
+}
