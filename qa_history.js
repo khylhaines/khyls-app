@@ -1289,114 +1289,467 @@ export const HISTORY_MASTER_BANK = {
 
 export const QA_HISTORY_READING = {
 
-  town_history: {
+home_base_marsh_st: {
 
-    kid: [
-      "A long time ago, Barrow was just a small village. There were no big buildings, no docks, and no ships being built.",
-      "Then everything started to change. Iron was discovered, and people began building and working together.",
-      "The town grew quickly, and new streets, buildings, and places appeared where there had once been open land."
-    ],
+  kid: [
+    "Alright… this is where everything starts.",
+    "This is your Home Base.",
+    "Every journey begins somewhere… and this is yours.",
+    "From here, you’ll move out, explore, discover things you didn’t expect.",
+    "But no matter where you go… this is your starting point.",
+    "So take it in… because this is step one."
+  ],
 
-    teen: [
-      "Barrow began as a quiet settlement, but in the 1800s it changed rapidly.",
-      "Iron ore, shipbuilding, and dock construction transformed it into a fast-growing industrial town.",
-      "Many of the buildings you see today are part of that expansion — built when Barrow was becoming one of the most important industrial centres in the region."
-    ],
+  teen: [
+    "This is your starting point — Home Base.",
+    "Every route, every decision, every direction begins here.",
+    "It might seem simple… but starting points matter.",
+    "They set the tone for everything that follows.",
+    "From here, the map opens up.",
+    "And what you do next… is up to you."
+  ],
 
-    adult: [
-      "Barrow-in-Furness represents one of the most rapid industrial transformations in Britain.",
-      "Driven by iron ore, dock construction, and shipbuilding, the town evolved from a rural settlement into a key industrial hub within decades.",
-      "Its layout, architecture, and civic structures still reflect this intense period of expansion, where industry, labour, and urban planning combined to reshape the landscape."
-    ]
-  },
+  adult: [
+    "This is your point of origin.",
+    "Before movement, before choice — there is always a start.",
+    "Home Base anchors everything that follows.",
+    "Every route you take expands outward from here.",
+    "It may seem like just another location… but beginnings carry weight.",
+    "Because once you leave… the experience unfolds, and it doesn’t reverse.",
+    "So this is where it starts."
+  ]
+},
 
-  abbey_history: {
+park_bandstand_core: {
 
-    kid: [
-      "Furness Abbey is very old — much older than anything else around it.",
-      "Long ago, monks lived here. They prayed, worked, and lived together in peace.",
-      "Now it is in ruins, but you can still feel how important it once was."
-    ],
+  kid: [
+    "This place might look calm… but imagine it full of sound.",
+    "Music playing, people watching, everything happening right here.",
+    "That’s what this was built for.",
+    "This is where people came together… to enjoy something.",
+    "So don’t just look at it… picture it alive.",
+    "Because that’s what it was meant to be."
+  ],
 
-    teen: [
-      "Furness Abbey was founded in the 1100s and became one of the most powerful monasteries in the area.",
-      "Monks lived, worked, and worshipped here, controlling land and resources around the region.",
-      "Its power ended when King Henry VIII closed monasteries across England, leaving the ruins you see today."
-    ],
+  teen: [
+    "The bandstand isn’t just a structure — it’s a performance space.",
+    "Music, events, people gathering… this was designed for shared experience.",
+    "Places like this bring energy into public space.",
+    "Even when it’s quiet now, that purpose is still there.",
+    "It’s built for people… not just to look at."
+  ],
 
-    adult: [
-      "Furness Abbey was a major Cistercian monastery founded in the 12th century, holding vast economic and religious influence across the region.",
-      "It controlled land, resources, and local systems of production, operating as both a spiritual and economic centre.",
-      "Its destruction during the Dissolution of the Monasteries under Henry VIII marked a dramatic shift in power — from religious authority to state control — leaving behind the ruins that now define the site."
-    ]
-  },
+  adult: [
+    "The bandstand represents a deliberate space for public gathering and performance.",
+    "It was designed to bring people together — to create shared experience through sound and presence.",
+    "Even in stillness, that purpose remains embedded in the structure.",
+    "It reflects a time when public space was actively shaped for community life.",
+    "Not just movement… but interaction, attention, and connection."
+  ]
+},
 
-  docks_submarines: {
+furness_abbey_core: {
 
-    kid: [
-      "Barrow is famous for building huge ships and submarines.",
-      "The docks are where ships were built and launched into the water.",
-      "This helped the town grow and become important."
-    ],
+  kid: [
+    "Take a look around… this wasn’t always broken like this.",
+    "These walls used to be full of life.",
+    "People lived here… worked here… prayed here.",
+    "This was a powerful place.",
+    "Now it’s quiet… but it still feels important, doesn’t it?",
+    "That’s because history doesn’t just disappear… it stays."
+  ],
 
-    teen: [
-      "The docks played a huge role in Barrow’s growth, connecting industry to the sea.",
-      "Shipbuilding became one of the town’s biggest industries.",
-      "Today, Barrow is still known for building advanced submarines."
-    ],
+  teen: [
+    "Furness Abbey wasn’t just a building — it was a centre of power.",
+    "Monks lived here, worked here, and controlled land around it.",
+    "This place had influence.",
+    "But then everything changed.",
+    "Henry VIII shut monasteries down… and this is what remains.",
+    "What you’re seeing now is what’s left after that shift."
+  ],
 
-    adult: [
-      "Barrow’s dock system enabled large-scale industrial output, linking manufacturing directly to maritime transport.",
-      "Shipbuilding — particularly naval engineering — became central to the town’s identity and economic strength.",
-      "Today, Barrow remains a key location for submarine construction, maintaining its strategic importance on a national and global level."
-    ]
-  },
+  adult: [
+    "You are standing within what was once a dominant religious and economic institution.",
+    "Furness Abbey held power — not only spiritual, but territorial and social.",
+    "It shaped the surrounding landscape and the lives within it.",
+    "Its destruction under Henry VIII was not gradual… it was decisive.",
+    "What remains is not just ruin… but evidence.",
+    "A structure that once held authority, now reduced to form and silence.",
+    "And yet… the weight of what it was still lingers here."
+  ]
+},
 
-  statues_memorial: {
+town_hall_clock: {
 
-    kid: [
-      "Statues help us remember important people.",
-      "They are like markers that tell stories from the past.",
-      "Each statue means something special to the town."
-    ],
+  kid: [
+    "Look up for a second.",
+    "That clock wasn’t just there to look nice.",
+    "People used it to know when to start, stop, and move.",
+    "Before phones… this mattered.",
+    "It helped the whole town stay in time together.",
+    "That’s how important it was."
+  ],
 
-    teen: [
-      "Statues and memorials are built to remember people and events.",
-      "They show what a town values and who it chooses to honour.",
-      "Each one is part of the town’s shared story."
-    ],
+  teen: [
+    "This clock helped organise daily life in the town.",
+    "Before personal devices, people relied on shared time.",
+    "It controlled rhythm — when work started, when things stopped.",
+    "It wasn’t decoration… it was function.",
+    "A visible system everyone followed."
+  ],
 
-    adult: [
-      "Public statues act as physical expressions of collective memory, turning history into visible, lasting form.",
-      "They reveal who a town chooses to commemorate and what narratives it prioritises.",
-      "In doing so, they shape identity, memory, and civic meaning within shared public space."
-    ]
-  },
+  adult: [
+    "This clock represents the regulation of shared time.",
+    "In a growing industrial town, coordination was essential.",
+    "Work, movement, routine — all aligned through visible markers like this.",
+    "It reflects a system where time was not personal… but collective.",
+    "Structured, imposed, and followed.",
+    "An unseen control… made visible."
+  ]
+},
 
-  industry_history: {
+dock_museum_anchor: {
 
-    kid: [
-      "Factories and mills helped Barrow grow.",
-      "People worked hard to build things and make the town bigger.",
-      "This made Barrow famous."
-    ],
+  kid: [
+    "That anchor might look simple… but it’s heavy for a reason.",
+    "It held massive ships in place.",
+    "Ships that travelled far beyond here.",
+    "This town built things that moved across the world.",
+    "And this… is a piece of that story.",
+    "Small part… big meaning."
+  ],
 
-    teen: [
-      "Barrow’s industry shaped how the town developed.",
-      "Factories, mills, and shipyards created jobs and growth.",
-      "This changed both the land and the lives of the people living here."
-    ],
+  teen: [
+    "This anchor connects directly to Barrow’s shipbuilding history.",
+    "It’s not just an object — it represents scale, weight, and movement.",
+    "Ships built here travelled globally.",
+    "And everything starts with components like this.",
+    "It’s a symbol of something much larger."
+  ],
 
-    adult: [
-      "Industrial development in Barrow represents a transformation driven by labour, production, and infrastructure.",
-      "Heavy industry reshaped not only the economy but also the physical and social structure of the town.",
-      "Sites like mills and shipyards remain as markers of this period of intense material and social change."
-    ]
-  }
+  adult: [
+    "This anchor is a fragment — but it represents an entire industrial system.",
+    "Shipbuilding, engineering, and global movement all converge in objects like this.",
+    "It held vessels in place… while those vessels connected this town to the wider world.",
+    "It is both functional and symbolic.",
+    "Weight, stability, and control — embedded in a single form.",
+    "A small object… carrying the scale of an entire industry."
+  ]
+},
 
+cenotaph_core: {
+
+  kid: [
+    "Alright… slow down here.",
+    "This isn’t just another stop… this place means something.",
+    "The Cenotaph is here to remember people who went to war… and never came back.",
+    "Real people. Real lives.",
+    "Families stood here… and they still do.",
+    "So when you’re here… you don’t rush.",
+    "You stand still for a second.",
+    "Because this place… is about respect."
+  ],
+
+  teen: [
+    "Take a moment here — this isn’t just another location on the map.",
+    "The Cenotaph represents people who lost their lives in war.",
+    "Not just history — real individuals, with families, stories, futures that never happened.",
+    "Memorials like this exist so that loss isn’t forgotten.",
+    "That’s why people treat this space differently.",
+    "There’s a weight to it.",
+    "And whether you realise it or not… you feel it when you stand here."
+  ],
+
+  adult: [
+    "Pause here.",
+    "The Cenotaph is not defined by what is present… but by what is absent.",
+    "It represents those who left… and did not return.",
+    "Lives interrupted. Futures removed. Families permanently altered.",
+    "Names carved into stone are only the surface of what this place holds.",
+    "It anchors memory into the physical space of the town.",
+    "Not loudly… but persistently.",
+    "This is not a place to pass through quickly.",
+    "It asks for recognition.",
+    "Because remembrance is not automatic — it is chosen.",
+    "And here… it is held in place."
+  ]
+},
+
+henry_schneider_statue: {
+
+  kid: [
+    "This statue isn’t just someone standing there…",
+    "This is one of the people who helped build Barrow.",
+    "Before all of this… this place was much smaller.",
+    "People like Henry Schneider changed that.",
+    "He helped bring industry here.",
+    "He helped the town grow.",
+    "So when you look at this… you’re looking at someone who changed everything."
+  ],
+
+  teen: [
+    "Henry Schneider played a major role in Barrow’s growth.",
+    "He helped develop industry and bring opportunity into the area.",
+    "Without figures like him, the town wouldn’t have expanded the way it did.",
+    "This statue isn’t just about remembering a person.",
+    "It’s about recognising impact.",
+    "How one individual can influence an entire place."
+  ],
+
+  adult: [
+    "Henry Schneider represents industrial acceleration.",
+    "A figure who didn’t simply exist within Barrow’s growth… but actively drove it.",
+    "His involvement in developing industry helped transform this area from a small settlement into a functioning industrial town.",
+    "This statue marks more than a person — it marks influence.",
+    "The ability of an individual to redirect the trajectory of an entire place.",
+    "But influence is never neutral.",
+    "Growth brings opportunity… but also consequence.",
+    "And this figure sits at the centre of that transformation."
+  ]
+},
+
+james_ramsden_statue: {
+
+  kid: [
+    "This is James Ramsden.",
+    "He didn’t just live here… he helped shape the town.",
+    "He planned things, built things, organised things.",
+    "Without people like him… Barrow wouldn’t look like it does now.",
+    "So this isn’t just a statue…",
+    "It’s someone who helped design the place you’re standing in."
+  ],
+
+  teen: [
+    "James Ramsden was one of the key planners behind Barrow’s development.",
+    "He helped organise how the town grew.",
+    "Not just industry — but layout, structure, direction.",
+    "This statue represents planning, leadership, and control.",
+    "The idea that towns don’t just happen… they’re designed."
+  ],
+
+  adult: [
+    "James Ramsden represents structured development.",
+    "Where Schneider drove industrial force… Ramsden helped shape its direction.",
+    "Planning, infrastructure, organisation — the systems that turn growth into something sustainable.",
+    "This statue reflects intentional design.",
+    "The transformation of land into a functioning town.",
+    "It’s a reminder that places like this are not accidental.",
+    "They are constructed — through decision, authority, and long-term vision."
+  ]
+},
+
+barrow_library: {
+
+  kid: [
+    "This place might be quiet… but it’s powerful.",
+    "Inside here are stories, facts, ideas — loads of them.",
+    "People come here to learn things they didn’t know before.",
+    "It’s not loud like other places…",
+    "But it helps people grow.",
+    "That’s what makes it important."
+  ],
+
+  teen: [
+    "The library is about access to knowledge.",
+    "Not just books — information, learning, discovery.",
+    "It gives people the chance to understand more about the world.",
+    "Places like this don’t stand out loudly…",
+    "But they shape how people think.",
+    "And that matters."
+  ],
+
+  adult: [
+    "The library represents intellectual infrastructure.",
+    "A civic space dedicated to preserving and sharing knowledge.",
+    "Unlike industry, which produces material output… this produces understanding.",
+    "It allows access — not restricted, but open.",
+    "And that accessibility is what gives it power.",
+    "Because informed individuals shape stronger societies.",
+    "Quietly… consistently… over time."
+  ]
+},
+
+custom_house: {
+
+  kid: [
+    "This building had an important job.",
+    "When ships came in… this is where things were checked.",
+    "What came into the town… what left it.",
+    "Nothing just passed through without being noticed.",
+    "This place helped control it all.",
+    "That’s how important it was."
+  ],
+
+  teen: [
+    "The Custom House was part of how trade worked.",
+    "Goods coming through the docks were recorded, checked, and controlled here.",
+    "It wasn’t just about moving things — it was about managing them.",
+    "Money, goods, movement — all tracked.",
+    "This building sat right in the middle of that system."
+  ],
+
+  adult: [
+    "The Custom House operated at the intersection of trade and authority.",
+    "Every item passing through the docks was subject to control — recorded, taxed, regulated.",
+    "It represents the administrative backbone of industrial movement.",
+    "Without systems like this, large-scale trade does not function.",
+    "It is not the visible force of industry…",
+    "But the structure that makes it possible.",
+    "An unseen control layer… embedded within the flow of goods and power."
+  ]
+},
+
+dock_museum_submarine: {
+
+  kid: [
+    "Look at that… it’s massive.",
+    "That’s a submarine.",
+    "And it wasn’t built somewhere far away… it was built right here.",
+    "People from this town helped create something that can travel deep under the sea.",
+    "It’s not just big… it’s powerful.",
+    "And it all connects back to this place."
+  ],
+
+  teen: [
+    "This submarine shows what Barrow is known for today.",
+    "Advanced engineering. Precision. Design at a serious level.",
+    "These aren’t simple machines — they operate deep underwater, in extreme conditions.",
+    "And they’re built here.",
+    "This isn’t just history — this is ongoing relevance.",
+    "Barrow still matters because of this."
+  ],
+
+  adult: [
+    "This submarine represents modern industrial capability at its highest level.",
+    "Designed for endurance, precision, and strategic function beneath the surface.",
+    "Built here, it connects Barrow to national defence and global systems.",
+    "This is not a relic — it is a continuation.",
+    "A direct line from past industry… into present-day relevance.",
+    "Complex, controlled, and engineered for environments most people will never experience."
+  ]
+},
+
+submarine_memorial: {
+
+  kid: [
+    "This place feels different… doesn’t it?",
+    "It’s quieter.",
+    "That’s because it remembers people.",
+    "Not just submarines… not just machines… people.",
+    "People who were part of something bigger.",
+    "So when you’re here… you stop for a second.",
+    "Because this place… matters."
+  ],
+
+  teen: [
+    "This memorial connects Barrow’s engineering to real human lives.",
+    "Behind every submarine, every system… there are people.",
+    "And not all of them came back.",
+    "That’s what this place represents.",
+    "It’s not just about achievement — it’s about cost.",
+    "And that’s why it feels different when you stand here."
+  ],
+
+  adult: [
+    "The Submarine Memorial exists at the intersection of engineering and loss.",
+    "It acknowledges not just the machines built here… but the lives tied to them.",
+    "Service, risk, and consequence — all contained within this space.",
+    "It reframes industrial achievement through a human lens.",
+    "Because progress and sacrifice are often linked.",
+    "And here… that connection is made visible."
+  ]
+},
+
+salthouse_mills: {
+
+  kid: [
+    "This place used to be full of noise.",
+    "Machines running… people working… everything moving.",
+    "It was busy.",
+    "Now it’s quieter.",
+    "But that doesn’t mean it wasn’t important.",
+    "This is part of how the town grew."
+  ],
+
+  teen: [
+    "Salthouse Mills was part of Barrow’s industrial engine.",
+    "Places like this produced goods, created jobs, and kept the town moving.",
+    "It was loud, active, and full of energy.",
+    "But over time… things changed.",
+    "Industry slowed, and places like this became quieter.",
+    "Now it stands as part of that story."
+  ],
+
+  adult: [
+    "Salthouse Mills reflects the full lifecycle of industrial space.",
+    "Once defined by labour, machinery, and continuous output.",
+    "It contributed to the economic force that shaped the town.",
+    "But industry is not static.",
+    "It rises, peaks, and eventually recedes.",
+    "What remains is structure — and memory.",
+    "A physical reminder of production, effort… and transition."
+  ]
+},
+
+walney_bridge_entrance: {
+
+  kid: [
+    "You’re about to cross over.",
+    "From Barrow… to Walney.",
+    "It might not look like much… but it changes things.",
+    "One side feels different to the other.",
+    "So when you cross… notice it.",
+    "Because you’re moving into somewhere new."
+  ],
+
+  teen: [
+    "Walney Bridge is more than just a crossing point.",
+    "It connects two different environments.",
+    "Town on one side… island on the other.",
+    "As you move across, the space opens up.",
+    "It’s a shift — not just in location, but in feeling."
+  ],
+
+  adult: [
+    "Walney Bridge represents transition between distinct spatial identities.",
+    "Urban density gives way to coastal openness.",
+    "Structure shifts into exposure.",
+    "Crossing it is not simply movement — it is a change in environment and perception.",
+    "A boundary, defined not by walls… but by experience."
+  ]
+},
+
+earnse_bay: {
+
+  kid: [
+    "Look out there…",
+    "It just keeps going.",
+    "The sea… the sky… the wind.",
+    "There’s nothing blocking it.",
+    "It feels bigger than everywhere else you’ve been.",
+    "That’s what makes this place special."
+  ],
+
+  teen: [
+    "Earnse Bay changes everything.",
+    "No buildings, no tight streets — just open space.",
+    "Sea, sky, horizon.",
+    "It feels wider… quieter… different.",
+    "Places like this remind you how big everything really is."
+  ],
+
+  adult: [
+    "Earnse Bay introduces scale through openness.",
+    "The built environment disappears, replaced by horizon and exposure.",
+    "Sea and sky dominate, removing boundaries and structure.",
+    "It shifts perception — from contained space to expansive environment.",
+    "Here, control fades… and the natural world takes over."
+  ]
+},
 };
 
-
+   
+ 
 export function getHistoryQuestion(input = {}) {
   const pool =
     (typeof QA_HISTORY_BY_GROUP !== "undefined" && QA_HISTORY_BY_GROUP) ||
