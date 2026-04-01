@@ -3330,6 +3330,11 @@ export function getQuizQuestion(input = {}) {
     (typeof QUIZ_BY_GROUP !== "undefined" && QUIZ_BY_GROUP) ||
     null;
 
+  const master =
+    (typeof MASTER_QUIZ_BANK !== "undefined" && MASTER_QUIZ_BANK) ||
+    (typeof QUIZ_MASTER_BANK !== "undefined" && QUIZ_MASTER_BANK) ||
+    null;
+
   const group = input.group || input.pin?.qaGroup || "";
   const tier = ["kid", "teen", "adult"].includes(input.tier)
     ? input.tier
@@ -3341,8 +3346,12 @@ export function getQuizQuestion(input = {}) {
     return arr[Math.abs(salt) % arr.length];
   }
 
-  if (pool && pool[group] && pool[group][tier]) {
+  if (pool && pool[group] && Array.isArray(pool[group][tier]) && pool[group][tier].length) {
     return pickOne(pool[group][tier]);
+  }
+
+  if (master && Array.isArray(master[tier]) && master[tier].length) {
+    return pickOne(master[tier]);
   }
 
   return null;
