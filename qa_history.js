@@ -1283,6 +1283,120 @@ export const HISTORY_MASTER_BANK = {
   ],
  };
 
+/* =========================================================
+   HISTORY READING SYSTEM (NON-QUIZ — PURE STORY MODE)
+========================================================= */
+
+export const QA_HISTORY_READING = {
+
+  town_history: {
+
+    kid: [
+      "A long time ago, Barrow was just a small village. There were no big buildings, no docks, and no ships being built.",
+      "Then everything started to change. Iron was discovered, and people began building and working together.",
+      "The town grew quickly, and new streets, buildings, and places appeared where there had once been open land."
+    ],
+
+    teen: [
+      "Barrow began as a quiet settlement, but in the 1800s it changed rapidly.",
+      "Iron ore, shipbuilding, and dock construction transformed it into a fast-growing industrial town.",
+      "Many of the buildings you see today are part of that expansion — built when Barrow was becoming one of the most important industrial centres in the region."
+    ],
+
+    adult: [
+      "Barrow-in-Furness represents one of the most rapid industrial transformations in Britain.",
+      "Driven by iron ore, dock construction, and shipbuilding, the town evolved from a rural settlement into a key industrial hub within decades.",
+      "Its layout, architecture, and civic structures still reflect this intense period of expansion, where industry, labour, and urban planning combined to reshape the landscape."
+    ]
+  },
+
+  abbey_history: {
+
+    kid: [
+      "Furness Abbey is very old — much older than anything else around it.",
+      "Long ago, monks lived here. They prayed, worked, and lived together in peace.",
+      "Now it is in ruins, but you can still feel how important it once was."
+    ],
+
+    teen: [
+      "Furness Abbey was founded in the 1100s and became one of the most powerful monasteries in the area.",
+      "Monks lived, worked, and worshipped here, controlling land and resources around the region.",
+      "Its power ended when King Henry VIII closed monasteries across England, leaving the ruins you see today."
+    ],
+
+    adult: [
+      "Furness Abbey was a major Cistercian monastery founded in the 12th century, holding vast economic and religious influence across the region.",
+      "It controlled land, resources, and local systems of production, operating as both a spiritual and economic centre.",
+      "Its destruction during the Dissolution of the Monasteries under Henry VIII marked a dramatic shift in power — from religious authority to state control — leaving behind the ruins that now define the site."
+    ]
+  },
+
+  docks_submarines: {
+
+    kid: [
+      "Barrow is famous for building huge ships and submarines.",
+      "The docks are where ships were built and launched into the water.",
+      "This helped the town grow and become important."
+    ],
+
+    teen: [
+      "The docks played a huge role in Barrow’s growth, connecting industry to the sea.",
+      "Shipbuilding became one of the town’s biggest industries.",
+      "Today, Barrow is still known for building advanced submarines."
+    ],
+
+    adult: [
+      "Barrow’s dock system enabled large-scale industrial output, linking manufacturing directly to maritime transport.",
+      "Shipbuilding — particularly naval engineering — became central to the town’s identity and economic strength.",
+      "Today, Barrow remains a key location for submarine construction, maintaining its strategic importance on a national and global level."
+    ]
+  },
+
+  statues_memorial: {
+
+    kid: [
+      "Statues help us remember important people.",
+      "They are like markers that tell stories from the past.",
+      "Each statue means something special to the town."
+    ],
+
+    teen: [
+      "Statues and memorials are built to remember people and events.",
+      "They show what a town values and who it chooses to honour.",
+      "Each one is part of the town’s shared story."
+    ],
+
+    adult: [
+      "Public statues act as physical expressions of collective memory, turning history into visible, lasting form.",
+      "They reveal who a town chooses to commemorate and what narratives it prioritises.",
+      "In doing so, they shape identity, memory, and civic meaning within shared public space."
+    ]
+  },
+
+  industry_history: {
+
+    kid: [
+      "Factories and mills helped Barrow grow.",
+      "People worked hard to build things and make the town bigger.",
+      "This made Barrow famous."
+    ],
+
+    teen: [
+      "Barrow’s industry shaped how the town developed.",
+      "Factories, mills, and shipyards created jobs and growth.",
+      "This changed both the land and the lives of the people living here."
+    ],
+
+    adult: [
+      "Industrial development in Barrow represents a transformation driven by labour, production, and infrastructure.",
+      "Heavy industry reshaped not only the economy but also the physical and social structure of the town.",
+      "Sites like mills and shipyards remain as markers of this period of intense material and social change."
+    ]
+  }
+
+};
+
+
 export function getHistoryQuestion(input = {}) {
   const pool =
     (typeof QA_HISTORY_BY_GROUP !== "undefined" && QA_HISTORY_BY_GROUP) ||
