@@ -1,6 +1,6 @@
 import { PINS } from "./pins.js";
 import { getQuizQuestion } from "./qa_quiz.js";
-import { getHistoryQuestion } from "./qa_history.js";
+import { getHistoryReading } from "./qa_history.js";
 import {
   RIDDLE_POOL,
   getHistoryMasterBank,
@@ -663,28 +663,28 @@ export function getQA(input = {}) {
     });
   }
 
-  if (mode === "history") {
-    question = getHistoryQuestion({
-      pinId,
-      pin,
-      zone,
-      group,
-      tier,
-      salt: stableSalt,
-      recentIds,
-      recentQuestionIds: recentIds,
-      adaptiveProfile,
-    });
+if (mode === "history") {
+  const text = getHistoryReading({
+    pinId,
+    pin,
+    zone,
+    group,
+    tier,
+    salt: stableSalt
+  });
 
-    if (!question) {
-      question = getHistoryFallbackFromMaster(tier, recentIds, stableSalt);
+  return {
+    id: `history_${pinId || zone}`,
+    q: text,
+    options: ["CONTINUE"],
+    answer: 0,
+    fact: "",
+    meta: {
+      mode: "history",
+      reading: true
     }
-
-    return finaliseQuestion(question, {
-      ...baseContext,
-      source: "qa_history",
-    });
-  }
+  };
+}
 
   if (mode === "activity") {
     question = getActivityQuestion({
