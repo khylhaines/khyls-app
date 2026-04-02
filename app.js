@@ -443,6 +443,7 @@ const DEFAULT_STATE = {
     radius: 35,
     voicePitch: 1,
     voiceRate: 1,
+    voiceName: "",
     sfxVol: 80,
     zoomUI: false,
     character: "hero_duo",
@@ -808,6 +809,36 @@ function loadVoices() {
     null;
 }
 
+function getAvailableSpeechVoices() {
+  try {
+    return window.speechSynthesis?.getVoices?.() || [];
+  } catch {
+    return [];
+  }
+}
+
+function populateVoiceSelect() {
+  const select = $("voice-select");
+  if (!select) return;
+
+  const voices = getAvailableSpeechVoices();
+  select.innerHTML = "";
+
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "Default system voice";
+  select.appendChild(defaultOption);
+
+  voices.forEach((voice) => {
+    const option = document.createElement("option");
+    option.value = voice.name;
+    option.textContent = `${voice.name} (${voice.lang})`;
+    select.appendChild(option);
+  });
+
+  select.value = String(state?.settings?.voiceName || "").trim();
+}
+
 function stopSpeech() {
   try {
     window.speechSynthesis?.cancel();
@@ -828,7 +859,23 @@ function speakText(text, interrupt = true) {
       Math.min(1, Number(state?.settings?.sfxVol || 80) / 100)
     );
 
-    if (speechVoice) utter.voice = speechVoice;
+    const selectedVoiceName = String(state?.settings?.voiceName || "").trim();
+    let chosenVoice = null;
+
+    if (selectedVoiceName) {
+      const voices = getAvailableSpeechVoices();
+      chosenVoice =
+        voices.find((v) => v.name === selectedVoiceName) ||
+        voices.find((v) => v.voiceURI === selectedVoiceName) ||
+        null;
+    }
+
+    if (!chosenVoice && speechVoice) {
+      chosenVoice = speechVoice;
+    }
+
+    if (chosenVoice) utter.voice = chosenVoice;
+
     window.speechSynthesis.speak(utter);
   } catch (err) {
     console.warn("Speech failed:", err);
@@ -4253,6 +4300,7 @@ function applySettingsToUI() {
   if ($("sfx-vol")) $("sfx-vol").value = state.settings.sfxVol;
   if ($("char-select")) $("char-select").value = state.settings.character;
   if ($("tier-mode")) $("tier-mode").value = state.tierMode || "kid";
+  if ($("voice-select")) $("voice-select").value = state.settings.voiceName || "";
 }
 
 function renderHomeLog() {
@@ -4536,9 +4584,17 @@ function wireButtons() {
     speakText("Shop opened.");
   });
 
+  $("voice-select")?.addEventListener("change", (e) => {
+  state.settings.voiceName = String(e.target.value || "");
+  saveState();
+  applySettingsToUI();
+  speakText("Voice updated.");
+  });
+
   $("btn-shop-close")?.addEventListener("click", () =>
     closeModal("shop-modal")
   );
+  
   $("btn-shop-close-x")?.addEventListener("click", () =>
     closeModal("shop-modal")
   );
@@ -4822,104 +4878,6 @@ function wireButtons() {
     saveStateNow(true);
   });
 }
-
-/* ============================
-   SPEECH / NARRATOR
-============================ */
-
-let speechVoice = null;
-
-function getAvailableSpeechVoices() {
-  try {
-    return window.speechSynthesis?.getVoices?.() || [];
-  } catch {
-    return [];
-  }
-}
-
-function populateVoiceSelect() {
-  const select = $("voice-select");
-  if (!select) return;
-
-  const voices = getAvailableSpeechVoices();
-  select.innerHTML = "";
-
-  const defaultOption = document.createElement("option");
-  defaultOption.value = "";
-  defaultOption.textContent = "Default system voice";
-  select.appendChild(defaultOption);
-
-  voices.forEach((voice) => {
-    const option = document.createElement("option");
-    option.value = voice.name;
-    option.textContent = `${voice.name} (${voice.lang})`;
-    select.appendChild(option);
-  });
-
-  select.value = String(state?.settings?.voiceName || "").trim();
-}
-
-function loadVoices() {
-  const voices = window.speechSynthesis?.getVoices?.() || [];
-  speechVoice =
-    voices.find((v) => /en-GB/i.test(v.lang)) ||
-    voices.find((v) => /en/i.test(v.lang)) ||
-    voices[0] ||
-    null;
-
-  populateVoiceSelect();
-}
-
-function stopSpeech() {
-  try {
-    window.speechSynthesis?.cancel();
-  } catch {}
-}
-
-function speakText(text, interrupt = true) {
-  if (!speechEnabled || !("speechSynthesis" in window) || !text) return;
-
-  try {
-    if (interrupt) stopSpeech();
-
-    const utter = new SpeechSynthesisUtterance(String(text));
-    utter.pitch = Number(state?.settings?.voicePitch || 1);
-    utter.rate = Number(state?.settings?.voiceRate || 1);
-    utter.volume = Math.max(
-      0,
-      Math.min(1, Number(state?.settings?.sfxVol || 80) / 100)
-    );
-
-    const selectedVoiceName = String(state?.settings?.voiceName || "").trim();
-    let chosenVoice = null;
-
-    if (selectedVoiceName) {
-      const voices = getAvailableSpeechVoices();
-      chosenVoice =
-        voices.find((v) => v.name === selectedVoiceName) ||
-        voices.find((v) => v.voiceURI === selectedVoiceName) ||
-        null;
-    }
-
-    if (!chosenVoice && speechVoice) {
-      chosenVoice = speechVoice;
-    }
-
-    if (chosenVoice) utter.voice = chosenVoice;
-
-    window.speechSynthesis.speak(utter);
-  } catch (err) {
-    console.warn("Speech failed:", err);
-  }
-}
-
-function speakOptions(options = []) {
-  if (!Array.isArray(options) || !options.length) return;
-  const lines = options.map((opt, i) => `Option ${i + 1}. ${opt}`);
-  speakText(lines.join(". "));
-}
-
-
 
 /* ============================
    BOOT
