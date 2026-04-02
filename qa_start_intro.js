@@ -2201,9 +2201,17 @@ export function getPinStartIntro(pinOrInput = {}, tierArg = "kid") {
     pinId = pinOrInput;
     tier = ["kid", "teen", "adult"].includes(tierArg) ? tierArg : "kid";
   } else {
-    pinId = pinOrInput.pinId || pinOrInput.pin?.id || "";
+    pinId =
+      pinOrInput.pinId ||
+      pinOrInput.id ||
+      pinOrInput.pin?.id ||
+      pinOrInput.pin?.pinId ||
+      "";
+
     tier = ["kid", "teen", "adult"].includes(pinOrInput.tier)
       ? pinOrInput.tier
+      : ["kid", "teen", "adult"].includes(tierArg)
+      ? tierArg
       : "kid";
   }
 
