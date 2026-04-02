@@ -800,16 +800,6 @@ const CLASSIC_MODE_ORDER = [
 let speechEnabled = true;
 let speechVoice = null;
 
-function loadVoices() {
-  const voices = window.speechSynthesis?.getVoices?.() || [];
-  speechVoice =
-    voices.find((v) => /en-GB/i.test(v.lang)) ||
-    voices.find((v) => /en/i.test(v.lang)) ||
-    voices[0] ||
-    null;
-
-  populateVoiceSelect();
-}
 function getAvailableSpeechVoices() {
   try {
     return window.speechSynthesis?.getVoices?.() || [];
@@ -823,6 +813,8 @@ function populateVoiceSelect() {
   if (!select) return;
 
   const voices = getAvailableSpeechVoices();
+  const savedVoiceName = String(state?.settings?.voiceName || "").trim();
+
   select.innerHTML = "";
 
   const defaultOption = document.createElement("option");
@@ -837,7 +829,27 @@ function populateVoiceSelect() {
     select.appendChild(option);
   });
 
-  select.value = String(state?.settings?.voiceName || "").trim();
+  select.value = savedVoiceName || "";
+}
+
+function loadVoices() {
+  const voices = getAvailableSpeechVoices();
+
+  speechVoice =
+    voices.find((v) => /en-GB/i.test(v.lang)) ||
+    voices.find((v) => /en/i.test(v.lang)) ||
+    voices[0] ||
+    null;
+
+  populateVoiceSelect();
+}
+
+function forceLoadVoices() {
+  loadVoices();
+
+  setTimeout(loadVoices, 150);
+  setTimeout(loadVoices, 500);
+  setTimeout(loadVoices, 1000);
 }
 
 function stopSpeech() {
@@ -4888,11 +4900,12 @@ function boot() {
     renderEverything();
     wireButtons();
 
+  forceLoadVoices();
+if ("speechSynthesis" in window) {
+  window.speechSynthesis.onvoiceschanged = () => {
     loadVoices();
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-
+  };
+}
     initMap();
     checkBadgeUnlocksByCaptures();
     saveStateNow(true);
