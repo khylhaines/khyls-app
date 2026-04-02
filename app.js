@@ -4826,7 +4826,7 @@ function wireButtons() {
 /* ============================
    SPEECH / NARRATOR
 ============================ */
-let speechEnabled = true;
+
 let speechVoice = null;
 
 function getAvailableSpeechVoices() {
