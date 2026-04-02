@@ -2193,11 +2193,19 @@ export const PIN_START_INTROS = {
   },
 };
 
-export function getPinStartIntro(input = {}) {
-  const pinId = input.pinId || input.pin?.id || "";
-  const tier = ["kid", "teen", "adult"].includes(input.tier)
-    ? input.tier
-    : "kid";
+export function getPinStartIntro(pinOrInput = {}, tierArg = "kid") {
+  let pinId = "";
+  let tier = "kid";
+
+  if (typeof pinOrInput === "string") {
+    pinId = pinOrInput;
+    tier = ["kid", "teen", "adult"].includes(tierArg) ? tierArg : "kid";
+  } else {
+    pinId = pinOrInput.pinId || pinOrInput.pin?.id || "";
+    tier = ["kid", "teen", "adult"].includes(pinOrInput.tier)
+      ? pinOrInput.tier
+      : "kid";
+  }
 
   if (
     PIN_START_INTROS &&
