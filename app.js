@@ -807,8 +807,9 @@ function loadVoices() {
     voices.find((v) => /en/i.test(v.lang)) ||
     voices[0] ||
     null;
-}
 
+  populateVoiceSelect();
+}
 function getAvailableSpeechVoices() {
   try {
     return window.speechSynthesis?.getVoices?.() || [];
