@@ -288,8 +288,7 @@ const BOSS_DEFS = {
         {
           kind: "puzzle",
           title: "Step Puzzle 1",
-          text:
-            "What came first in Abbey history?",
+          text: "What came first in Abbey history?",
           options: [
             "Its destruction",
             "Its founding",
@@ -358,8 +357,7 @@ const BOSS_DEFS = {
         {
           kind: "puzzle",
           title: "Boss Step 1: Chronology",
-          text:
-            "Choose the correct chronological order.",
+          text: "Choose the correct chronological order.",
           options: [
             "1537 then 1127",
             "1127 then 1537",
