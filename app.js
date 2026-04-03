@@ -3993,7 +3993,9 @@ function renderShop() {
     .join("");
 }
 
-
+// =========================
+// BUY ITEM
+// =========================
 function buyShopItem(itemId) {
   ensureShopDefaults();
 
@@ -4021,6 +4023,7 @@ function buyShopItem(itemId) {
   renderShop();
   refreshAllPinMarkers();
 
+  // auto-equip first time if character
   if (item.slot === "character" && getInventoryCount(item.id) === 1) {
     equipShopItem(item.id);
   }
@@ -4029,26 +4032,43 @@ function buyShopItem(itemId) {
   alert(`${item.name} purchased and added to inventory.`);
 }
 
-window.buyShopItem = buyShopItem;
-window.equipShopItem = equipShopItem;
 
-function isEquippedItem(item) {
+// =========================
+// EQUIP ITEM
+// =========================
+function equipShopItem(itemId) {
+  const item = getShopItemById(itemId);
   if (!item) return false;
+  if (!isEquippableItem(item)) return false;
+  if (getInventoryCount(itemId) < 1) return false;
 
-  if (item.slot === "character") {
-    return state.settings.character === item.id;
-  }
+  const slot = getEquipSlot(item);
 
-  if (item.slot === "trail") {
-    return (state.settings.equippedTrail || "trail_none") === item.id;
-  }
+  if (slot === "character") {
+    state.settings.character = item.id;
 
-  if (item.slot === "mapTheme") {
-    return (state.settings.mapTheme || "map_classic") === item.id;
+    saveState();
+    applySettingsToUI();
+    renderHUD();
+
+    if (heroMarker) {
+      heroMarker.setIcon(createHeroIcon());
+    }
+
+    renderShop();
+    speakText(`${item.name} equipped.`);
+    return true;
   }
 
   return false;
 }
+
+
+// =========================
+// GLOBAL ACCESS (REQUIRED)
+// =========================
+window.buyShopItem = buyShopItem;
+window.equipShopItem = equipShopItem;
 
 
 /* ============================
