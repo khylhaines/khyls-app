@@ -729,6 +729,9 @@ const CHARACTER_ICONS = {
   monk: "monk.jpg",
   khylan: "khylan.jpg",
   piper: "piper.jpg",
+  char_chicken: "🐔",
+  char_frog: "🐸",
+  char_ghost: "👻",
 };
 
 const CLASSIC_MODE_META = {
@@ -3883,15 +3886,78 @@ function addInventory(itemId, qty = 1) {
   markPurchased(itemId);
 }
 
-function renderShop() {
-  const summary = $("shop-summary");
-  const list = $("shop-list");
-  const inventory = $("shop-inventory");
+function renderShopSection(section) {
+  const items = getItemsForSection(section);
 
-  if (!summary || !list || !inventory) return;
+  if (!items.length) return "";
 
-  const coins = state.coins || 0;
-  const inv = state.inventory || {};
+  return `
+    <div class="shop-section">
+      <div class="shop-section-title">${section.title}</div>
+      <div class="shop-section-items">
+        ${items
+          .map((item) => {
+            const owned = getInventoryCount(item.id);
+            const equippable = isEquippableItem(item);
+            const equipped = isEquippedItem(item);
+            const canBuy = owned < 1 || isStackableItem(item);
+            const isCharacter = item.slot === "character";
+
+            return `
+              <div class="shop-item">
+                <div class="shop-item-top">
+                  <div>
+                    <div style="font-weight:bold;">${item.name}</div>
+                    <div style="font-size:12px;opacity:.85;margin-top:6px;">
+                      ${item.desc || ""}
+                    </div>
+                  </div>
+                  <div class="shop-cost">${item.cost} 🪙</div>
+                </div>
+
+                ${
+                  owned > 0
+                    ? `<div class="owned-tag">${
+                        isStackableItem(item) ? `OWNED: ${owned}` : "OWNED"
+                      }</div>`
+                    : ""
+                }
+
+                ${
+                  equipped
+                    ? `<div class="owned-tag" style="border-color:#4c6fff;background:rgba(76,111,255,.12);color:#a9bcff;">EQUIPPED</div>`
+                    : ""
+                }
+
+                <div style="display:grid;gap:8px;margin-top:12px;">
+                  ${
+                    canBuy
+                      ? `<button class="win-btn shop-buy-btn" data-shop-id="${item.id}">
+                           BUY
+                         </button>`
+                      : ""
+                  }
+
+                  ${
+                    equippable && owned > 0 && isCharacter
+                      ? `<button
+                           class="win-btn shop-equip-btn"
+                           data-shop-id="${item.id}"
+                           style="background:${equipped ? "#2a3558" : "#333"};color:#fff;border-color:rgba(255,255,255,0.08);"
+                         >
+                           ${equipped ? "EQUIPPED" : "EQUIP"}
+                         </button>`
+                      : ""
+                  }
+                </div>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
+}
 
   // =========================
   // PLAYER SUMMARY
@@ -3964,8 +4030,58 @@ function renderShop() {
     .join("");
 }
 
+function equipShopItem(itemId) {
+  const item = getShopItemById(itemId);
+  if (!item) return false;
+  if (!isEquippableItem(item)) return false;
+  if (getInventoryCount(itemId) < 1) return false;
+
+  const slot = getEquipSlot(item);
+
+  if (slot === "character") {
+    state.settings.character = item.id;
+    saveState();
+    applySettingsToUI();
+    renderHUD();
+
+    if (heroMarker) {
+      heroMarker.setIcon(createHeroIcon());
+    }
+
+    renderShop();
+    speakText(`${item.name} equipped.`);
+    return true;
+  }
+
+  return false;
+}
+
+window.equipShopItem = equipShopItem;
+
+
+
+function isEquippedItem(item) {
+  if (!item) return false;
+
+  if (item.slot === "character") {
+    return state.settings.character === item.id;
+  }
+
+  if (item.slot === "trail") {
+    return (state.settings.equippedTrail || "trail_none") === item.id;
+  }
+
+  if (item.slot === "mapTheme") {
+    return (state.settings.mapTheme || "map_classic") === item.id;
+  }
+
+  return false;
+}
+
 function buyShopItem(itemId) {
-  const item = SHOP_ITEMS.find((x) => x.id === itemId);
+  ensureShopDefaults();
+
+  const item = getShopItemById(itemId);
   const active = getActivePlayer();
   if (!item || !active) return;
 
@@ -3975,18 +4091,29 @@ function buyShopItem(itemId) {
     return;
   }
 
+  if (!isStackableItem(item) && getInventoryCount(item.id) > 0) {
+    speakText("You already own that item.");
+    alert("You already own that item.");
+    return;
+  }
+
   updateCoins(active.id, -item.cost);
   addInventory(item.id, 1);
+
   saveState();
   renderHUD();
   renderShop();
   refreshAllPinMarkers();
 
+  if (item.slot === "character" && getInventoryCount(item.id) === 1) {
+    equipShopItem(item.id);
+  }
+
   speakText(`${item.name} purchased.`);
   alert(`${item.name} purchased and added to inventory.`);
 }
 
-window.buyShopItem = buyShopItem
+window.buyShopItem = buyShopItem;
 /* ============================
    ANSWERS / REWARDS
 ============================ */
