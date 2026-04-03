@@ -1,51 +1,85 @@
 import { SHOP_ITEMS } from "./shop_items.js";
-import {
-  getPlayer,
-  spendCoins,
-  addItem,
-  ownItem,
-  equipItem
-} from "./player_system.js";
 
-export function renderShop(containerId) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-
-  el.innerHTML = SHOP_ITEMS.map((item) => {
-    const owned = ownItem(item.id);
-
-    return `
-      <div class="shop-item">
-        <div class="shop-item-top">
-          <strong>${item.name}</strong>
-          <span class="shop-cost">${item.price}</span>
-        </div>
-
-        ${
-          owned
-            ? `<button onclick="equip('${item.type}','${item.id}')">EQUIP</button>
-               <div class="owned-tag">OWNED</div>`
-            : `<button onclick="buy('${item.id}')">BUY</button>`
-        }
-      </div>
-    `;
-  }).join("");
+export function getShopItemById(itemId) {
+  return SHOP_ITEMS.find((item) => item.id === itemId) || null;
 }
 
-export function buy(id) {
-  const item = SHOP_ITEMS.find((i) => i.id === id);
-  if (!item) return;
+export function getShopItemsByType(type) {
+  return SHOP_ITEMS.filter((item) => item.type === type);
+}
 
-  if (!spendCoins(item.price)) {
-    alert("Not enough coins");
-    return;
+export function getShopSections() {
+  return [
+    {
+      key: "characters",
+      title: "CHARACTERS",
+      types: ["character"],
+    },
+    {
+      key: "trails",
+      title: "TRAILS",
+      types: ["trail"],
+    },
+    {
+      key: "map",
+      title: "MAP THEMES",
+      types: ["map_theme"],
+    },
+    {
+      key: "boosts",
+      title: "BOOSTS & ITEMS",
+      types: ["consumable", "effect"],
+    },
+    {
+      key: "badges",
+      title: "COLLECTIBLES",
+      types: ["badge"],
+    },
+  ];
+}
+
+export function getItemsForSection(section) {
+  if (!section || !Array.isArray(section.types) || !section.types.length) {
+    return [];
   }
 
-  addItem(item.id);
-  renderShop("shop-list");
+  return SHOP_ITEMS.filter((item) => section.types.includes(item.type));
 }
 
-export function equip(type, id) {
-  equipItem(type, id);
-  renderShop("shop-list");
+export function isStackableItem(item) {
+  return !!item?.stackable;
+}
+
+export function getEquipSlot(item) {
+  return item?.slot || null;
+}
+
+export function isEquippableItem(item) {
+  return !!getEquipSlot(item);
+}
+
+export function getDefaultOwnedItemIds() {
+  return SHOP_ITEMS.filter((item) => item.defaultOwned).map((item) => item.id);
+}
+
+export function ensureDefaultOwnedInventory(inventory = {}, purchasedItems = []) {
+  const safeInventory =
+    inventory && typeof inventory === "object" ? { ...inventory } : {};
+
+  const safePurchased = Array.isArray(purchasedItems) ? [...purchasedItems] : [];
+
+  getDefaultOwnedItemIds().forEach((itemId) => {
+    if (!Number.isFinite(Number(safeInventory[itemId])) || Number(safeInventory[itemId]) < 1) {
+      safeInventory[itemId] = 1;
+    }
+
+    if (!safePurchased.includes(itemId)) {
+      safePurchased.push(itemId);
+    }
+  });
+
+  return {
+    inventory: safeInventory,
+    purchasedItems: safePurchased,
+  };
 }
