@@ -1061,4 +1061,32 @@ input[type="range"] {
   .adult-action-grid {
     grid-template-columns: 1fr;
   }
+  
+.shop-item {
+  border-radius: 18px;
+  padding: 14px;
+  background: linear-gradient(180deg,#1a2336,#0d1320);
+  margin-bottom: 12px;
+}
+
+.shop-item button {
+  margin-top: 10px;
+  width: 100%;
+  background: linear-gradient(180deg,#ffd54a,#ffb800);
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 900;
+}
+
+.shop-cost {
+  color: gold;
+  font-weight: bold;
+}
+
+.owned-tag {
+  margin-top: 8px;
+  color: #00ff88;
+  font-size: 12px;
+}
 }
