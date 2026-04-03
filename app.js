@@ -3986,6 +3986,7 @@ function buyShopItem(itemId) {
   alert(`${item.name} purchased and added to inventory.`);
 }
 
+window.buyShopItem = buyShopItem
 /* ============================
    ANSWERS / REWARDS
 ============================ */
