@@ -10,7 +10,11 @@ import { ADULT_PINS } from "./adult_pins.js";
 import { ADULT_CONTENT } from "./adult_content.js";
 import { applyReward } from "./progression.js";
 import { getRandomMystery } from "./mysteries.js";
-import { renderShopUI } from "./shop_system.js";
+import { renderShop, buy, equip } from "./shop_system.js";
+import { loadPlayer, getPlayer } from "./player_system.js";
+
+window.buy = buy;
+window.equip = equip;
 
 const $ = (id) => document.getElementById(id);
 
