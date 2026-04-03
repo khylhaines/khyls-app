@@ -4507,7 +4507,7 @@ function wireButtons() {
   });
 
   $("btn-shop")?.addEventListener("click", () => {
-  openModal("shop-modal");
+  showModal("shop-modal");
   renderShopUI(state);
   });
   
