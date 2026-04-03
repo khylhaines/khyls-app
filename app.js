@@ -3883,7 +3883,86 @@ function addInventory(itemId, qty = 1) {
   markPurchased(itemId);
 }
 
+function renderShop() {
+  const summary = $("shop-summary");
+  const list = $("shop-list");
+  const inventory = $("shop-inventory");
 
+  if (!summary || !list || !inventory) return;
+
+  const coins = state.coins || 0;
+  const inv = state.inventory || {};
+
+  // =========================
+  // PLAYER SUMMARY
+  // =========================
+  summary.innerHTML = `
+    <div>Coins: <strong>${coins}</strong></div>
+    <div>Items owned: <strong>${Object.keys(inv).length}</strong></div>
+  `;
+
+  // =========================
+  // INVENTORY
+  // =========================
+  const ownedItems = SHOP_ITEMS.filter((item) => inv[item.id]);
+
+  if (ownedItems.length === 0) {
+    inventory.innerHTML = `<div class="shop-mini">No items yet.</div>`;
+  } else {
+    inventory.innerHTML = ownedItems
+      .map(
+        (item) => `
+        <div class="shop-item">
+          <div class="shop-item-top">
+            <strong>${item.name}</strong>
+          </div>
+          <div class="shop-mini">${item.desc}</div>
+        </div>
+      `
+      )
+      .join("");
+  }
+
+  // =========================
+  // SHOP LIST
+  // =========================
+  list.innerHTML = getShopSections()
+    .map((section) => {
+      const items = getItemsForSection(section);
+
+      if (!items.length) return "";
+
+      return `
+        <div class="shop-card">
+          <h3>${section.title}</h3>
+
+          ${items
+            .map((item) => {
+              const owned = inv[item.id];
+
+              return `
+                <div class="shop-item">
+                  <div class="shop-item-top">
+                    <strong>${item.name}</strong>
+                    <span class="shop-cost">${item.cost}</span>
+                  </div>
+
+                  <div class="shop-mini">${item.desc}</div>
+
+                  ${
+                    owned
+                      ? `<div class="owned-tag">OWNED</div>`
+                      : `<button class="win-btn" onclick="buyShopItem('${item.id}')">BUY</button>`
+                  }
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
+      `;
+    })
+    .join("");
+}
 
 function buyShopItem(itemId) {
   const item = SHOP_ITEMS.find((x) => x.id === itemId);
