@@ -4516,10 +4516,11 @@ function wireButtons() {
     showModal("start-modal");
   });
 
-  $("btn-shop")?.addEventListener("click", () => {
-  showModal("shop-modal");
+$("btn-shop")?.addEventListener("click", () => {
   renderShop();
-  });
+  showModal("shop-modal");
+  speakText("Shop opened.");
+});
   
   $("voice-select")?.addEventListener("change", (e) => {
   state.settings.voiceName = String(e.target.value || "");
