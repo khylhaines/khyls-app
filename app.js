@@ -487,57 +487,7 @@ const DEFAULT_STATE = {
   bossProgress: {},
 };
 
-const SHOP_ITEMS = [
-  {
-    id: "hint_basic",
-    name: "Hint Token",
-    cost: 50,
-    desc: "Use later for clue help.",
-    type: "consumable",
-  },
-  {
-    id: "double_reward",
-    name: "Double Reward",
-    cost: 120,
-    desc: "Boost your next mission reward.",
-    type: "consumable",
-  },
-  {
-    id: "ghost_badge",
-    name: "Ghost Badge",
-    cost: 80,
-    desc: "Collectible badge for spooky explorers.",
-    type: "badge",
-  },
-  {
-    id: "history_badge",
-    name: "History Badge",
-    cost: 80,
-    desc: "Collectible badge for history hunters.",
-    type: "badge",
-  },
-  {
-    id: "park_badge",
-    name: "Park Badge",
-    cost: 65,
-    desc: "Collectible badge for park explorers.",
-    type: "badge",
-  },
-  {
-    id: "abbey_badge",
-    name: "Abbey Badge",
-    cost: 65,
-    desc: "Collectible badge for abbey runs.",
-    type: "badge",
-  },
-  {
-    id: "route_glow_pack",
-    name: "Route Glow",
-    cost: 95,
-    desc: "Adds a brighter glow to completed routes.",
-    type: "cosmetic",
-  },
-];
+
 
 /* ============================
    SCRIPTED ABBEY ROUTES
