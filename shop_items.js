@@ -70,7 +70,7 @@ export const SHOP_ITEMS = [
   {
     id: "char_chicken",
     name: "🐔 Dancing Chicken",
-    cost: 420,
+    cost: 20,
     desc: "Ridiculous chicken mode.",
     type: "character",
     slot: "character",
@@ -78,7 +78,7 @@ export const SHOP_ITEMS = [
   {
     id: "char_frog",
     name: "🐸 Frog Mode",
-    cost: 420,
+    cost: 20,
     desc: "Jump around the map as a frog.",
     type: "character",
     slot: "character",
@@ -86,7 +86,7 @@ export const SHOP_ITEMS = [
   {
     id: "char_ghost",
     name: "👻 Ghost Walker",
-    cost: 650,
+    cost: 50,
     desc: "A spooky floating map skin.",
     type: "character",
     slot: "character",
@@ -107,7 +107,7 @@ export const SHOP_ITEMS = [
   {
     id: "trail_fire",
     name: "🔥 Fire Trail",
-    cost: 180,
+    cost: 80,
     desc: "Leaves a hot glowing route.",
     type: "trail",
     slot: "trail",
@@ -115,7 +115,7 @@ export const SHOP_ITEMS = [
   {
     id: "trail_stars",
     name: "✨ Star Trail",
-    cost: 210,
+    cost: 10,
     desc: "Sparkly route trail.",
     type: "trail",
     slot: "trail",
@@ -131,7 +131,7 @@ export const SHOP_ITEMS = [
   {
     id: "trail_slime",
     name: "🟢 Slime Trail",
-    cost: 220,
+    cost: 20,
     desc: "Leaves behind weird slime marks.",
     type: "trail",
     slot: "trail",
@@ -152,7 +152,7 @@ export const SHOP_ITEMS = [
   {
     id: "map_neon",
     name: "🌈 Neon Map",
-    cost: 300,
+    cost: 30,
     desc: "Bright arcade style map theme.",
     type: "map_theme",
     slot: "mapTheme",
@@ -160,7 +160,7 @@ export const SHOP_ITEMS = [
   {
     id: "map_darkops",
     name: "🌑 Dark Ops Map",
-    cost: 380,
+    cost: 80,
     desc: "Dark stealth theme.",
     type: "map_theme",
     slot: "mapTheme",
@@ -180,7 +180,7 @@ export const SHOP_ITEMS = [
   {
     id: "skip_task",
     name: "⏭️ Skip Task",
-    cost: 140,
+    cost: 40,
     desc: "Skip one mission task.",
     type: "consumable",
     stackable: true,
@@ -188,7 +188,7 @@ export const SHOP_ITEMS = [
   {
     id: "double_reward",
     name: "⚡ Double Reward",
-    cost: 120,
+    cost: 20,
     desc: "Boost your next mission reward.",
     type: "consumable",
     stackable: true,
@@ -196,7 +196,7 @@ export const SHOP_ITEMS = [
   {
     id: "speed_boost",
     name: "🏃 Speed Boost",
-    cost: 100,
+    cost: 10,
     desc: "Temporary speed bonus item.",
     type: "consumable",
     stackable: true,
