@@ -3993,31 +3993,6 @@ function renderShop() {
     .join("");
 }
 
-function equipShopItem(itemId) {
-  const item = getShopItemById(itemId);
-  if (!item) return false;
-  if (!isEquippableItem(item)) return false;
-  if (getInventoryCount(itemId) < 1) return false;
-
-  const slot = getEquipSlot(item);
-
-  if (slot === "character") {
-    state.settings.character = item.id;
-    saveState();
-    applySettingsToUI();
-    renderHUD();
-
-    if (heroMarker) {
-      heroMarker.setIcon(createHeroIcon());
-    }
-
-    renderShop();
-    speakText(`${item.name} equipped.`);
-    return true;
-  }
-
-  return false;
-}
 
 function buyShopItem(itemId) {
   ensureShopDefaults();
