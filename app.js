@@ -4508,7 +4508,7 @@ function wireButtons() {
 
   $("btn-shop")?.addEventListener("click", () => {
   showModal("shop-modal");
-  renderShopUI(state);
+  renderShop();
   });
   
   $("voice-select")?.addEventListener("change", (e) => {
