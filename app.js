@@ -4070,6 +4070,24 @@ function equipShopItem(itemId) {
 window.buyShopItem = buyShopItem;
 window.equipShopItem = equipShopItem;
 
+function isEquippedItem(item) {
+  if (!item) return false;
+
+  if (item.slot === "character") {
+    return state.settings.character === item.id;
+  }
+
+  if (item.slot === "trail") {
+    return (state.settings.equippedTrail || "trail_none") === item.id;
+  }
+
+  if (item.slot === "mapTheme") {
+    return (state.settings.mapTheme || "map_classic") === item.id;
+  }
+
+  return false;
+}
+
 
 /* ============================
    ANSWERS / REWARDS
