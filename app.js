@@ -10,6 +10,7 @@ import { ADULT_PINS } from "./adult_pins.js";
 import { ADULT_CONTENT } from "./adult_content.js";
 import { applyReward } from "./progression.js";
 import { getRandomMystery } from "./mysteries.js";
+import { renderShopUI } from "./shop_system.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -4592,11 +4593,10 @@ function wireButtons() {
   });
 
   $("btn-shop")?.addEventListener("click", () => {
-    renderShop();
-    showModal("shop-modal");
-    speakText("Shop opened.");
+  openModal("shop-modal");
+  renderShopUI(state);
   });
-
+  
   $("voice-select")?.addEventListener("change", (e) => {
   state.settings.voiceName = String(e.target.value || "");
   saveState();
