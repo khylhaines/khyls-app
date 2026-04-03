@@ -4032,36 +4032,6 @@ function buyShopItem(itemId) {
 window.buyShopItem = buyShopItem;
 window.equipShopItem = equipShopItem;
 
-function equipShopItem(itemId) {
-  const item = getShopItemById(itemId);
-  if (!item) return false;
-  if (!isEquippableItem(item)) return false;
-  if (getInventoryCount(itemId) < 1) return false;
-
-  const slot = getEquipSlot(item);
-
-  if (slot === "character") {
-    state.settings.character = item.id;
-    saveState();
-    applySettingsToUI();
-    renderHUD();
-
-    if (heroMarker) {
-      heroMarker.setIcon(createHeroIcon());
-    }
-
-    renderShop();
-    speakText(`${item.name} equipped.`);
-    return true;
-  }
-
-  return false;
-}
-
-window.equipShopItem = equipShopItem;
-
-
-
 function isEquippedItem(item) {
   if (!item) return false;
 
@@ -4080,42 +4050,7 @@ function isEquippedItem(item) {
   return false;
 }
 
-function buyShopItem(itemId) {
-  ensureShopDefaults();
 
-  const item = getShopItemById(itemId);
-  const active = getActivePlayer();
-  if (!item || !active) return;
-
-  if ((active.coins || 0) < item.cost) {
-    speakText("Not enough coins.");
-    alert("Not enough coins.");
-    return;
-  }
-
-  if (!isStackableItem(item) && getInventoryCount(item.id) > 0) {
-    speakText("You already own that item.");
-    alert("You already own that item.");
-    return;
-  }
-
-  updateCoins(active.id, -item.cost);
-  addInventory(item.id, 1);
-
-  saveState();
-  renderHUD();
-  renderShop();
-  refreshAllPinMarkers();
-
-  if (item.slot === "character" && getInventoryCount(item.id) === 1) {
-    equipShopItem(item.id);
-  }
-
-  speakText(`${item.name} purchased.`);
-  alert(`${item.name} purchased and added to inventory.`);
-}
-
-window.buyShopItem = buyShopItem;
 /* ============================
    ANSWERS / REWARDS
 ============================ */
