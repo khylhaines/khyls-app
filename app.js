@@ -11,6 +11,16 @@ import { ADULT_CONTENT } from "./adult_content.js";
 import { applyReward } from "./progression.js";
 import { getRandomMystery } from "./mysteries.js";
 import { renderShop, buy, equip } from "./shop_system.js";
+import { SHOP_ITEMS } from "./shop_items.js";
+import {
+  getShopItemById,
+  getShopSections,
+  getItemsForSection,
+  isStackableItem,
+  isEquippableItem,
+  getEquipSlot,
+  ensureDefaultOwnedInventory,
+} from "./shop_system.js";
 import { loadPlayer, getPlayer } from "./player_system.js";
 
 window.buy = buy;
