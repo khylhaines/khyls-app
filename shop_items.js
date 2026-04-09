@@ -1,95 +1,75 @@
-export const SHOP_ITEMS = [
+// shop_items.js
+
+// =========================
+// SHOP DATA
+// =========================
+
+const SHOP_ITEMS = [
   // =========================
   // CHARACTERS
   // =========================
   {
     id: "hero_duo",
-    name: "🧭 Hero Duo",
+    name: "Hero Duo",
+    desc: "The classic explorers of Barrow Quest.",
     cost: 0,
-    desc: "Default adventure marker.",
-    type: "character",
+    section: "characters",
     slot: "character",
-    defaultOwned: true,
+    equippable: true,
   },
   {
     id: "ninja",
-    name: "🥷 Ninja Scout",
-    cost: 220,
-    desc: "Silent and sharp.",
-    type: "character",
+    name: "Ninja Scout",
+    desc: "Fast. Silent. Always watching.",
+    cost: 120,
+    section: "characters",
     slot: "character",
+    equippable: true,
   },
   {
     id: "wizard",
-    name: "🧙 Wizard Guide",
-    cost: 240,
-    desc: "Arcane explorer style.",
-    type: "character",
+    name: "Wizard Guide",
+    desc: "Ancient knowledge flows through you.",
+    cost: 180,
+    section: "characters",
     slot: "character",
+    equippable: true,
   },
   {
     id: "robot",
-    name: "🤖 Robo Ranger",
-    cost: 260,
-    desc: "Mechanical map traveller.",
-    type: "character",
+    name: "Robo Ranger",
+    desc: "Precision tracking unit activated.",
+    cost: 220,
+    section: "characters",
     slot: "character",
+    equippable: true,
   },
   {
     id: "pirate",
-    name: "🏴‍☠️ Pirate Captain",
-    cost: 280,
-    desc: "Treasure hunter mode.",
-    type: "character",
+    name: "Pirate Captain",
+    desc: "Treasure hunter of the docks.",
+    cost: 200,
+    section: "characters",
     slot: "character",
-  },
-  {
-    id: "monk",
-    name: "🛕 Monk",
-    cost: 320,
-    desc: "Abbey traveller skin.",
-    type: "character",
-    slot: "character",
+    equippable: true,
   },
   {
     id: "khylan",
-    name: "🦸 Khylan",
-    cost: 350,
-    desc: "Khylan player skin.",
-    type: "character",
+    name: "Khylan",
+    desc: "Frog-powered legend.",
+    cost: 250,
+    section: "characters",
     slot: "character",
+    equippable: true,
   },
   {
     id: "piper",
-    name: "🦸 Piper",
-    cost: 350,
-    desc: "Piper player skin.",
-    type: "character",
+    name: "Piper",
+    desc: "Superhero of the quest.",
+    cost: 250,
+    section: "characters",
     slot: "character",
-  },
-  {
-    id: "char_chicken",
-    name: "🐔 Dancing Chicken",
-    cost: 20,
-    desc: "Ridiculous chicken mode.",
-    type: "character",
-    slot: "character",
-  },
-  {
-    id: "char_frog",
-    name: "🐸 Frog Mode",
-    cost: 20,
-    desc: "Jump around the map as a frog.",
-    type: "character",
-    slot: "character",
-  },
-  {
-    id: "char_ghost",
-    name: "👻 Ghost Walker",
-    cost: 50,
-    desc: "A spooky floating map skin.",
-    type: "character",
-    slot: "character",
+    equippable: true,
   },
 
   // =========================
@@ -98,163 +78,160 @@ export const SHOP_ITEMS = [
   {
     id: "trail_none",
     name: "No Trail",
+    desc: "Move silently with no trace.",
     cost: 0,
-    desc: "Default clean path.",
-    type: "trail",
+    section: "trails",
     slot: "trail",
-    defaultOwned: true,
-  },
-  {
-    id: "trail_fire",
-    name: "🔥 Fire Trail",
-    cost: 80,
-    desc: "Leaves a hot glowing route.",
-    type: "trail",
-    slot: "trail",
-  },
-  {
-    id: "trail_stars",
-    name: "✨ Star Trail",
-    cost: 10,
-    desc: "Sparkly route trail.",
-    type: "trail",
-    slot: "trail",
+    equippable: true,
   },
   {
     id: "trail_poo",
-    name: "💩 Poo Trail",
-    cost: 160,
-    desc: "Pure chaos behind your route.",
-    type: "trail",
+    name: "Poo Trail",
+    desc: "Leave chaos behind you 💩",
+    cost: 100,
+    section: "trails",
     slot: "trail",
+    equippable: true,
+  },
+  {
+    id: "trail_rainbow",
+    name: "Rainbow Trail",
+    desc: "Spread colour across the map 🌈",
+    cost: 160,
+    section: "trails",
+    slot: "trail",
+    equippable: true,
+  },
+  {
+    id: "trail_fire",
+    name: "Fire Trail",
+    desc: "Burn your path into legend 🔥",
+    cost: 220,
+    section: "trails",
+    slot: "trail",
+    equippable: true,
+  },
+  {
+    id: "trail_stars",
+    name: "Star Trail",
+    desc: "Leave cosmic energy behind ✨",
+    cost: 200,
+    section: "trails",
+    slot: "trail",
+    equippable: true,
   },
   {
     id: "trail_slime",
-    name: "🟢 Slime Trail",
-    cost: 20,
-    desc: "Leaves behind weird slime marks.",
-    type: "trail",
+    name: "Slime Trail",
+    desc: "Sticky… weird… perfect.",
+    cost: 140,
+    section: "trails",
     slot: "trail",
+    equippable: true,
   },
 
   // =========================
   // MAP THEMES
   // =========================
   {
-    id: "map_classic",
-    name: "🗺️ Classic Map",
+    id: "map_default",
+    name: "Standard Map",
+    desc: "Classic explorer view.",
     cost: 0,
-    desc: "Default map theme.",
-    type: "map_theme",
+    section: "map",
     slot: "mapTheme",
-    defaultOwned: true,
+    equippable: true,
   },
   {
-    id: "map_neon",
-    name: "🌈 Neon Map",
-    cost: 30,
-    desc: "Bright arcade style map theme.",
-    type: "map_theme",
+    id: "map_gold",
+    name: "Golden Map",
+    desc: "Everything shines with treasure.",
+    cost: 200,
+    section: "map",
     slot: "mapTheme",
+    equippable: true,
   },
   {
-    id: "map_darkops",
-    name: "🌑 Dark Ops Map",
-    cost: 80,
-    desc: "Dark stealth theme.",
-    type: "map_theme",
+    id: "map_dark",
+    name: "Night Ops Map",
+    desc: "Stealth mode activated.",
+    cost: 180,
+    section: "map",
     slot: "mapTheme",
+    equippable: true,
+  },
+  {
+    id: "map_arcade",
+    name: "Arcade Map",
+    desc: "Bright. Loud. Retro energy.",
+    cost: 220,
+    section: "map",
+    slot: "mapTheme",
+    equippable: true,
   },
 
   // =========================
-  // CONSUMABLES
+  // BOOSTS (NON-EQUIP)
   // =========================
   {
-    id: "hint_basic",
-    name: "💡 Hint Token",
-    cost: 50,
-    desc: "Use later for clue help.",
-    type: "consumable",
-    stackable: true,
-  },
-  {
-    id: "skip_task",
-    name: "⏭️ Skip Task",
-    cost: 40,
-    desc: "Skip one mission task.",
-    type: "consumable",
-    stackable: true,
-  },
-  {
-    id: "double_reward",
-    name: "⚡ Double Reward",
-    cost: 20,
-    desc: "Boost your next mission reward.",
-    type: "consumable",
-    stackable: true,
-  },
-  {
-    id: "speed_boost",
-    name: "🏃 Speed Boost",
-    cost: 10,
-    desc: "Temporary speed bonus item.",
-    type: "consumable",
-    stackable: true,
-  },
-
-  // =========================
-  // EFFECTS
-  // =========================
-  {
-    id: "route_glow_pack",
-    name: "🌟 Route Glow",
-    cost: 95,
-    desc: "Adds a brighter glow to completed routes.",
-    type: "effect",
-    stackable: false,
-  },
-  {
-    id: "confetti_burst",
-    name: "🎉 Confetti Burst",
-    cost: 130,
-    desc: "Celebration effect item.",
-    type: "effect",
-    stackable: true,
-  },
-
-  // =========================
-  // BADGES / COLLECTIBLES
-  // =========================
-  {
-    id: "ghost_badge",
-    name: "👻 Ghost Badge",
+    id: "boost_xp",
+    name: "XP Boost",
+    desc: "Earn extra XP for a short time.",
     cost: 80,
-    desc: "Collectible badge for spooky explorers.",
-    type: "badge",
-    stackable: false,
+    section: "boosts",
+    equippable: false,
   },
   {
-    id: "history_badge",
-    name: "📜 History Badge",
+    id: "boost_coins",
+    name: "Coin Boost",
+    desc: "Increase coin rewards temporarily.",
     cost: 80,
-    desc: "Collectible badge for history hunters.",
-    type: "badge",
-    stackable: false,
+    section: "boosts",
+    equippable: false,
   },
   {
-    id: "park_badge",
-    name: "🌳 Park Badge",
-    cost: 65,
-    desc: "Collectible badge for park explorers.",
-    type: "badge",
-    stackable: false,
-  },
-  {
-    id: "abbey_badge",
-    name: "🏛️ Abbey Badge",
-    cost: 65,
-    desc: "Collectible badge for abbey runs.",
-    type: "badge",
-    stackable: false,
+    id: "hint_token",
+    name: "Hint Token",
+    desc: "Reveal a clue when stuck.",
+    cost: 60,
+    section: "boosts",
+    equippable: false,
   },
 ];
+
+// =========================
+// SECTIONS
+// =========================
+export function getShopSections() {
+  return [
+    { id: "characters", title: "CHARACTERS" },
+    { id: "trails", title: "TRAIL EFFECTS" },
+    { id: "map", title: "MAP STYLES" },
+    { id: "boosts", title: "BOOSTS" },
+  ];
+}
+
+// =========================
+// GET ITEMS BY SECTION
+// =========================
+export function getItemsForSection(section) {
+  return SHOP_ITEMS.filter((i) => i.section === section.id);
+}
+
+// =========================
+// GET SINGLE ITEM
+// =========================
+export function getShopItemById(id) {
+  return SHOP_ITEMS.find((i) => i.id === id);
+}
+
+// =========================
+// EQUIP HELPERS
+// =========================
+export function isEquippableItem(item) {
+  return !!item.equippable;
+}
+
+export function getEquipSlot(item) {
+  return item.slot || null;
+    }
