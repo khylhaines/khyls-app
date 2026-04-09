@@ -2994,7 +2994,7 @@ function ensureShopDefaults() {
   if (!state.inventory) state.inventory = {};
   if (!state.purchasedItems) state.purchasedItems = [];
 
-  const normalised = ensureDefaultOwnedInventory(
+  const normalised = undefined
     state.inventory,
     state.purchasedItems
   );
