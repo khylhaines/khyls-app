@@ -2986,15 +2986,21 @@ function hasValidCoords(pin) {
 }
 
 function ensureShopDefaults() {
-  if (!state) {
-    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  if (!state) return;
+
+  if (!state.inventory || typeof state.inventory !== "object") {
+    state.inventory = {};
   }
 
-  if (!state.settings) state.settings = {};
-  if (!state.inventory) state.inventory = {};
-  if (!state.purchasedItems) state.purchasedItems = [];
+  if (!Array.isArray(state.purchasedItems)) {
+    state.purchasedItems = [];
+  }
 
-  const normalised = undefined
+  if (!state.settings || typeof state.settings !== "object") {
+    state.settings = {};
+  }
+
+  const normalised = ensureDefaultOwnedInventory(
     state.inventory,
     state.purchasedItems
   );
@@ -3005,6 +3011,7 @@ function ensureShopDefaults() {
   if (!state.settings.equippedTrail) state.settings.equippedTrail = "trail_none";
   if (!state.settings.mapTheme) state.settings.mapTheme = "map_classic";
 }
+
 
 
 function getEffectiveTier() {
