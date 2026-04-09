@@ -47,20 +47,28 @@ function formatSectionTitle(section) {
    INVENTORY SYSTEM
 ============================ */
 
-export function ensureDefaultOwnedInventory() {
-  if (!window.state) return;
-
-  if (!state.inventory) {
-    state.inventory = {};
-  }
+export function ensureDefaultOwnedInventory(inventory = {}, purchasedItems = []) {
+  const nextInventory = { ...inventory };
+  const nextPurchasedItems = Array.isArray(purchasedItems)
+    ? [...purchasedItems]
+    : [];
 
   SHOP_ITEMS.forEach((item) => {
     if (item.ownedByDefault) {
-      if (!state.inventory[item.id]) {
-        state.inventory[item.id] = 1;
+      if (!nextInventory[item.id]) {
+        nextInventory[item.id] = 1;
+      }
+
+      if (!nextPurchasedItems.includes(item.id)) {
+        nextPurchasedItems.push(item.id);
       }
     }
   });
+
+  return {
+    inventory: nextInventory,
+    purchasedItems: nextPurchasedItems,
+  };
 }
 
 export function getInventoryCount(itemId) {
