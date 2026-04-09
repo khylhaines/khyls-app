@@ -713,6 +713,15 @@ const ABBEY_ROUTE_DEFS = {
 ============================ */
 let state = loadState();
 
+if (!state) {
+  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
+
+window.state = state;
+
+state.inventory = state.inventory || {};
+state.purchasedItems = state.purchasedItems || [];
+
 let map = null;
 let heroMarker = null;
 let activeMarkers = {};
@@ -724,7 +733,7 @@ let arStream = null;
 
 let trailLayers = [];
 let lastTrailDropAt = 0;
-let lastTrailLatLng = null;;
+let lastTrailLatLng = null;
 
 const CHARACTER_ICONS = {
   hero_duo: "🧭",
@@ -2977,15 +2986,22 @@ function hasValidCoords(pin) {
 }
 
 function ensureShopDefaults() {
-  const normalised = ensureDefaultOwnedInventory(
-    state.inventory || {},
-    state.purchasedItems || []
-  );
-
-  state.inventory = normalised.inventory;
-  state.purchasedItems = normalised.purchasedItems;
+  if (!state) {
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
 
   if (!state.settings) state.settings = {};
+  if (!state.inventory) state.inventory = {};
+  if (!state.purchasedItems) state.purchasedItems = [];
+
+  const normalised = ensureDefaultOwnedInventory(
+    state.inventory,
+    state.purchasedItems
+  );
+
+  state.inventory = normalised.inventory || {};
+  state.purchasedItems = normalised.purchasedItems || [];
+
   if (!state.settings.equippedTrail) state.settings.equippedTrail = "trail_none";
   if (!state.settings.mapTheme) state.settings.mapTheme = "map_classic";
 }
@@ -3516,7 +3532,7 @@ function initMap() {
   }).addTo(map);
 
   heroMarker = L.marker([lat, lng], { icon: createHeroIcon() }).addTo(map); 
-  applytheme();
+  applyMapTheme();
 
   renderPins();
   startLocationWatch();
