@@ -4067,46 +4067,7 @@ function addInventory(itemId, qty = 1) {
   markPurchased(itemId);
 }
 
-function dropTrailAt(lat, lng) {
-  const trail = state.settings.equippedTrail;
-  if (!trail || trail === "trail_none") return;
 
-  const now = Date.now();
-
-  // throttle (avoid spam)
-  if (now - lastTrailDropAt < 1000) return;
-
-  // distance check
-  if (lastTrailLatLng) {
-    const dist = map.distance(lastTrailLatLng, [lat, lng]);
-    if (dist < 5) return;
-  }
-
-  lastTrailDropAt = now;
-  lastTrailLatLng = [lat, lng];
-
-  let emoji = "•";
-
-  if (trail === "trail_poo") emoji = "💩";
-  if (trail === "trail_rainbow") emoji = "🌈";
-
-  const marker = L.marker([lat, lng], {
-    icon: L.divIcon({
-      className: "trail-icon",
-      html: `<div style="font-size:20px;">${emoji}</div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    }),
-  }).addTo(map);
-
-  trailLayers.push(marker);
-
-  // auto remove after 10s
-  setTimeout(() => {
-    map.removeLayer(marker);
-    trailLayers = trailLayers.filter((m) => m !== marker);
-  }, 10000);
-}
 
 function renderShop() {
   const summary = $("shop-summary");
