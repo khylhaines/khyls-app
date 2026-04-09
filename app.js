@@ -458,6 +458,8 @@ const DEFAULT_STATE = {
     sfxVol: 80,
     zoomUI: false,
     character: "hero_duo",
+    equippedTrail: "trail_none",
+    mapTheme: "map_classic",
   },
 
   adultLock: {
@@ -719,6 +721,10 @@ let currentTask = null;
 let nightVisionOn = false;
 let locationWatchId = null;
 let arStream = null;
+
+let trailLayers = [];
+let lastTrailDropAt = 0;
+let lastTrailLatLng = null;;
 
 const CHARACTER_ICONS = {
   hero_duo: "🧭",
@@ -3077,6 +3083,138 @@ function createHeroIcon() {
   });
 }
 
+/* ============================
+   TRAIL SYSTEM
+============================ */
+function getEquippedTrailId() {
+  ensureShopDefaults();
+  return state.settings?.equippedTrail || "trail_none";
+}
+
+function getTrailConfig(trailId) {
+  switch (trailId) {
+    case "trail_poo":
+      return { emoji: "💩", size: 18, lifetime: 9000, stepDistance: 10 };
+    case "trail_rainbow":
+      return { emoji: "🌈", size: 20, lifetime: 10000, stepDistance: 12 };
+    case "trail_fire":
+      return { emoji: "🔥", size: 18, lifetime: 8000, stepDistance: 11 };
+    case "trail_stars":
+      return { emoji: "✨", size: 18, lifetime: 8500, stepDistance: 11 };
+    case "trail_slime":
+      return { emoji: "🟢", size: 14, lifetime: 7000, stepDistance: 10 };
+    case "trail_none":
+    default:
+      return null;
+  }
+}
+
+function createTrailIcon(emoji, size = 18) {
+  return L.divIcon({
+    className: "trail-emoji-icon",
+    html: `
+      <div style="
+        font-size:${size}px;
+        line-height:1;
+        filter: drop-shadow(0 1px 3px rgba(0,0,0,.45));
+        pointer-events:none;
+        user-select:none;
+      ">${emoji}</div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+function clearTrailLayers() {
+  if (!map) {
+    trailLayers = [];
+    return;
+  }
+
+  trailLayers.forEach((layer) => {
+    try {
+      map.removeLayer(layer);
+    } catch {}
+  });
+
+  trailLayers = [];
+  lastTrailLatLng = null;
+  lastTrailDropAt = 0;
+}
+
+function dropTrailAt(lat, lng) {
+  if (!map) return;
+
+  const trailId = getEquippedTrailId();
+  const config = getTrailConfig(trailId);
+  if (!config) return;
+
+  const now = Date.now();
+
+  if (lastTrailLatLng) {
+    const moved = distanceInMeters(
+      lastTrailLatLng.lat,
+      lastTrailLatLng.lng,
+      lat,
+      lng
+    );
+
+    if (moved < config.stepDistance) return;
+  }
+
+  if (now - lastTrailDropAt < 250) return;
+
+  const marker = L.marker([lat, lng], {
+    icon: createTrailIcon(config.emoji, config.size),
+    interactive: false,
+    keyboard: false,
+    zIndexOffset: -1000,
+  }).addTo(map);
+
+  trailLayers.push(marker);
+
+  if (trailLayers.length > 120) {
+    const oldest = trailLayers.shift();
+    try {
+      map.removeLayer(oldest);
+    } catch {}
+  }
+
+  lastTrailDropAt = now;
+  lastTrailLatLng = { lat, lng };
+
+  setTimeout(() => {
+    try {
+      if (map && marker) {
+        map.removeLayer(marker);
+      }
+    } catch {}
+
+    trailLayers = trailLayers.filter((x) => x !== marker);
+  }, config.lifetime);
+}
+
+function applyMapTheme() {
+  if (!map) return;
+
+  const theme = state.settings?.mapTheme || "map_classic";
+  const el = $("map");
+  if (!el) return;
+
+  el.classList.remove("map-theme-classic", "map-theme-dark", "map-theme-neon");
+
+  if (theme === "map_dark") {
+    el.classList.add("map-theme-dark");
+  } else if (theme === "map_neon") {
+    el.classList.add("map-theme-neon");
+  } else {
+    el.classList.add("map-theme-classic");
+  }
+}
+
+
+
 function createPinIcon(pin) {
   const status = getCaptureStatus(pin);
   const icon = pin.i || "📍";
@@ -3377,7 +3515,8 @@ function initMap() {
     maxZoom: 19,
   }).addTo(map);
 
-  heroMarker = L.marker([lat, lng], { icon: createHeroIcon() }).addTo(map);
+  heroMarker = L.marker([lat, lng], { icon: createHeroIcon() }).addTo(map); 
+  applytheme();
 
   renderPins();
   startLocationWatch();
@@ -3399,6 +3538,7 @@ function resetMap() {
   activeMarkers = {};
   heroMarker = null;
   currentPin = null;
+  clearTrailLayers(); 
 
   initMap();
   renderHomeLog();
@@ -3493,6 +3633,7 @@ function startLocationWatch() {
       const lng = pos.coords.longitude;
 
       heroMarker?.setLatLng([lat, lng]);
+      dropTrailAt(lat, lng);
 
       const pins = getCurrentPins();
       const radius = Number(state.settings.radius || 35);
@@ -3921,7 +4062,9 @@ function renderShop() {
       <strong>${active?.name || "Player"}</strong><br>
       Coins: ${coins} 🪙<br>
       XP: ${xp} (Level ${level})<br>
-      Equipped Character: ${state.settings.character || "hero_duo"}
+     Equipped Character: ${state.settings.character || "hero_duo"}<br>
+      Equipped Trail: ${state.settings.equippedTrail || "trail_none"}<br>
+      Map Theme: ${state.settings.mapTheme || "map_classic"}
     </div>
   `;
 
@@ -3973,8 +4116,8 @@ function renderShop() {
                     owned
                       ? `
                         <div class="owned-tag">${equipped ? "EQUIPPED" : "OWNED"}</div>
-                        ${
-                          isCharacter
+                       ${
+                          isEquippableItem(item)
                             ? `<button class="win-btn" onclick="equipShopItem('${item.id}')">
                                  ${equipped ? "EQUIPPED" : "EQUIP"}
                                </button>`
@@ -4037,6 +4180,8 @@ function buyShopItem(itemId) {
 // EQUIP ITEM
 // =========================
 function equipShopItem(itemId) {
+  ensureShopDefaults();
+
   const item = getShopItemById(itemId);
   if (!item) return false;
   if (!isEquippableItem(item)) return false;
@@ -4056,6 +4201,26 @@ function equipShopItem(itemId) {
     }
 
     renderShop();
+    speakText(`${item.name} equipped.`);
+    return true;
+  }
+
+  if (slot === "trail") {
+    state.settings.equippedTrail = item.id;
+
+    saveState();
+    renderShop();
+    clearTrailLayers();
+    speakText(`${item.name} equipped.`);
+    return true;
+  }
+
+  if (slot === "mapTheme") {
+    state.settings.mapTheme = item.id;
+
+    saveState();
+    renderShop();
+    applyMapTheme();
     speakText(`${item.name} equipped.`);
     return true;
   }
@@ -4364,7 +4529,6 @@ function applySettingsToUI() {
   if ($("v-pitch")) $("v-pitch").value = state.settings.voicePitch;
   if ($("v-rate")) $("v-rate").value = state.settings.voiceRate;
   if ($("sfx-vol")) $("sfx-vol").value = state.settings.sfxVol;
-  if ($("char-select")) $("char-select").value = state.settings.character;
   if ($("tier-mode")) $("tier-mode").value = state.tierMode || "kid";
   if ($("voice-select")) $("voice-select").value = state.settings.voiceName || "";
 }
@@ -4919,13 +5083,7 @@ $("btn-shop")?.addEventListener("click", () => {
     applySettingsToUI();
   });
 
-  $("char-select")?.addEventListener("change", (e) => {
-    state.settings.character = e.target.value;
-    saveState();
-    resetMap();
-    applySettingsToUI();
-    speakText(`Character changed to ${e.target.value}`);
-  });
+  
 
   $("btn-ar-open")?.addEventListener("click", openAR);
   $("btn-ar-stop")?.addEventListener("click", stopAR);
