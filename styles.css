@@ -1102,4 +1102,17 @@ input[type="range"] {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
   user-select: none;
 }
+
+ .trail-emoji-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+#map.map-theme-dark {
+  filter: brightness(0.72) contrast(1.08) saturate(0.85);
+}
+
+#map.map-theme-neon {
+  filter: saturate(1.35) contrast(1.08) brightness(1.02);
+} 
 }
