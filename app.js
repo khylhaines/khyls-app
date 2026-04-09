@@ -734,9 +734,7 @@ let lastTrailDropAt = 0;
 let lastTrailLatLng = null;
 let arStream = null;
 
-let trailLayers = [];
-let lastTrailDropAt = 0;
-let lastTrailLatLng = null;
+
 
 const CHARACTER_ICONS = {
   hero_duo: "🧭",
