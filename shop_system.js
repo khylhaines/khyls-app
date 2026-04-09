@@ -1,85 +1,153 @@
 import { SHOP_ITEMS } from "./shop_items.js";
 
+/* ============================
+   INTERNAL HELPERS
+============================ */
+
 export function getShopItemById(itemId) {
   return SHOP_ITEMS.find((item) => item.id === itemId) || null;
 }
 
-export function getShopItemsByType(type) {
-  return SHOP_ITEMS.filter((item) => item.type === type);
-}
-
 export function getShopSections() {
-  return [
-    {
-      key: "characters",
-      title: "CHARACTERS",
-      types: ["character"],
-    },
-    {
-      key: "trails",
-      title: "TRAILS",
-      types: ["trail"],
-    },
-    {
-      key: "map",
-      title: "MAP THEMES",
-      types: ["map_theme"],
-    },
-    {
-      key: "boosts",
-      title: "BOOSTS & ITEMS",
-      types: ["consumable", "effect"],
-    },
-    {
-      key: "badges",
-      title: "COLLECTIBLES",
-      types: ["badge"],
-    },
-  ];
+  const sections = {};
+
+  SHOP_ITEMS.forEach((item) => {
+    if (!sections[item.section]) {
+      sections[item.section] = {
+        id: item.section,
+        title: formatSectionTitle(item.section),
+      };
+    }
+  });
+
+  return Object.values(sections);
 }
 
 export function getItemsForSection(section) {
-  if (!section || !Array.isArray(section.types) || !section.types.length) {
-    return [];
-  }
-
-  return SHOP_ITEMS.filter((item) => section.types.includes(item.type));
+  const id = typeof section === "string" ? section : section.id;
+  return SHOP_ITEMS.filter((item) => item.section === id);
 }
 
+function formatSectionTitle(section) {
+  switch (section) {
+    case "characters":
+      return "Characters";
+    case "trails":
+      return "Trails";
+    case "themes":
+      return "Map Themes";
+    case "boosts":
+      return "Boosts";
+    default:
+      return section;
+  }
+}
+
+/* ============================
+   INVENTORY SYSTEM
+============================ */
+
+export function ensureDefaultOwnedInventory() {
+  if (!window.state) return;
+
+  if (!state.inventory) {
+    state.inventory = {};
+  }
+
+  SHOP_ITEMS.forEach((item) => {
+    if (item.ownedByDefault) {
+      if (!state.inventory[item.id]) {
+        state.inventory[item.id] = 1;
+      }
+    }
+  });
+}
+
+export function getInventoryCount(itemId) {
+  if (!state.inventory) return 0;
+  return state.inventory[itemId] || 0;
+}
+
+export function addToInventory(itemId, amount = 1) {
+  if (!state.inventory) {
+    state.inventory = {};
+  }
+
+  state.inventory[itemId] = (state.inventory[itemId] || 0) + amount;
+}
+
+export function hasItem(itemId) {
+  return getInventoryCount(itemId) > 0;
+}
+
+/* ============================
+   ITEM TYPES
+============================ */
+
 export function isStackableItem(item) {
-  return !!item?.stackable;
+  return item?.stackable === true;
+}
+
+export function isEquippableItem(item) {
+  return (
+    item?.slot === "character" ||
+    item?.slot === "trail" ||
+    item?.slot === "mapTheme"
+  );
 }
 
 export function getEquipSlot(item) {
   return item?.slot || null;
 }
 
-export function isEquippableItem(item) {
-  return !!getEquipSlot(item);
+/* ============================
+   PURCHASE SYSTEM
+============================ */
+
+export function buyShopItem(itemId) {
+  ensureDefaultOwnedInventory();
+
+  const item = getShopItemById(itemId);
+  if (!item) return false;
+
+  const player = window.getPlayer ? getPlayer() : null;
+
+  if (!player) {
+    console.warn("No player system found");
+    return false;
+  }
+
+  const alreadyOwned = hasItem(itemId);
+
+  if (alreadyOwned && !isStackableItem(item)) {
+    alert("Already owned");
+    return false;
+  }
+
+  if (player.coins < item.cost) {
+    alert("Not enough coins");
+    return false;
+  }
+
+  player.coins -= item.cost;
+
+  addToInventory(itemId, 1);
+
+  if (window.saveState) saveState();
+  if (window.renderHUD) renderHUD();
+  if (window.renderShop) renderShop();
+
+  if (window.speakText) {
+    speakText(`${item.name} purchased`);
+  }
+
+  return true;
 }
 
-export function getDefaultOwnedItemIds() {
-  return SHOP_ITEMS.filter((item) => item.defaultOwned).map((item) => item.id);
-}
+/* ============================
+   AUTO INITIALISATION
+============================ */
 
-export function ensureDefaultOwnedInventory(inventory = {}, purchasedItems = []) {
-  const safeInventory =
-    inventory && typeof inventory === "object" ? { ...inventory } : {};
-
-  const safePurchased = Array.isArray(purchasedItems) ? [...purchasedItems] : [];
-
-  getDefaultOwnedItemIds().forEach((itemId) => {
-    if (!Number.isFinite(Number(safeInventory[itemId])) || Number(safeInventory[itemId]) < 1) {
-      safeInventory[itemId] = 1;
-    }
-
-    if (!safePurchased.includes(itemId)) {
-      safePurchased.push(itemId);
-    }
-  });
-
-  return {
-    inventory: safeInventory,
-    purchasedItems: safePurchased,
-  };
+export function initShopSystem() {
+  ensureDefaultOwnedInventory();
 }
