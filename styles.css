@@ -1089,4 +1089,17 @@ input[type="range"] {
   color: #00ff88;
   font-size: 12px;
 }
+
+  .trail-piece {
+  pointer-events: none;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.trail-piece-inner {
+  font-size: 18px;
+  line-height: 18px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+  user-select: none;
+}
 }
