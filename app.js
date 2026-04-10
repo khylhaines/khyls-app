@@ -3118,15 +3118,15 @@ function getEquippedTrailId() {
 function getTrailConfig(trailId) {
   switch (trailId) {
     case "trail_poo":
-      return { emoji: "💩", size: 18, lifetime: 9000, stepDistance: 10 };
+      return { emoji: "💩", size: 18, lifetime: 900000, stepDistance: 10 };
     case "trail_rainbow":
-      return { emoji: "🌈", size: 20, lifetime: 10000, stepDistance: 12 };
+      return { emoji: "🌈", size: 20, lifetime: 1000000, stepDistance: 12 };
     case "trail_fire":
-      return { emoji: "🔥", size: 18, lifetime: 8000, stepDistance: 11 };
+      return { emoji: "🔥", size: 18, lifetime: 800000, stepDistance: 11 };
     case "trail_stars":
-      return { emoji: "✨", size: 18, lifetime: 8500, stepDistance: 11 };
+      return { emoji: "✨", size: 18, lifetime: 850000, stepDistance: 11 };
     case "trail_slime":
-      return { emoji: "🟢", size: 14, lifetime: 7000, stepDistance: 10 };
+      return { emoji: "🟢", size: 14, lifetime: 700000, stepDistance: 10 };
     case "trail_none":
     default:
       return null;
