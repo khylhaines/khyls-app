@@ -3888,122 +3888,109 @@ function renderShop() {
   const level = getLevelFromXP(xp);
 
   summary.innerHTML = `
-    <div style="padding:10px;border:1px solid #333;border-radius:12px;background:#111;">
-      <strong>${active?.name || "Player"}</strong><br>
-      Coins: ${coins} 🪙<br>
-      XP: ${xp} (Level ${level})<br>
-     Equipped Character: ${state.settings.character || "hero_duo"}<br>
-      Equipped Trail: ${state.settings.equippedTrail || "trail_none"}<br>
-      Map Theme: ${state.settings.mapTheme || "map_classic"}
+    <div class="shop-status-card">
+      <div><strong>${active?.name || "Player"}</strong></div>
+      <div>🪙 Coins: ${coins}</div>
+      <div>⭐ XP: ${xp} (Level ${level})</div>
+      <div>🧍 Character: ${state.settings.character || "hero_duo"}</div>
+      <div>✨ Trail: ${state.settings.equippedTrail || "trail_none"}</div>
+      <div>🗺️ Theme: ${state.settings.mapTheme || "map_classic"}</div>
     </div>
   `;
 
-  const ownedItems = SHOP_ITEMS.filter((item) => inv[item.id]);
+  const ownedItems = SHOP_ITEMS.filter((item) => getInventoryCount(item.id) > 0);
 
-  if (ownedItems.length === 0) {
+  if (!ownedItems.length) {
     inventory.innerHTML = `<div class="shop-mini">No items yet.</div>`;
   } else {
-    inventory.innerHTML = ownedItems
-      .map((item) => {
-        const equipped = isEquippedItem(item);
-        return `
-          <div class="shop-item">
-            <div class="shop-item-top">
-              <strong>${item.name}</strong>
-            </div>
-            <div class="shop-mini">${item.desc}</div>
-            <div class="owned-tag">${equipped ? "EQUIPPED" : "OWNED"}</div>
-          </div>
-        `;
-      })
-      .join("");
+    inventory.innerHTML = `
+      <div class="shop-item-grid">
+        ${ownedItems
+          .map((item) => {
+            const equipped = isEquippedItem(item);
+            const emoji = item.icon || "🎁";
+
+            return `
+              <div class="shop-item-tile small owned">
+                <div class="shop-item-icon">${emoji}</div>
+                <div class="shop-item-name">${item.name}</div>
+                <div class="shop-item-meta">${equipped ? "✅ Equipped" : "📦 Owned"}</div>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    `;
   }
 
   list.innerHTML = getShopSections()
-    .map((section) => {
+    .map((section, index) => {
       const items = getItemsForSection(section);
       if (!items.length) return "";
 
+      const sectionId = `shop-section-${index}`;
+
       return `
-        <div class="shop-card">
-          <h3>${section.title}</h3>
-          ${items
-            .map((item) => {
-              const owned = getInventoryCount(item.id);
-              const equipped = isEquippedItem(item);
-              const isCharacter = item.slot === "character";
+        <div class="shop-accordion">
+          <button class="shop-accordion-btn" onclick="toggleShopSection('${sectionId}')">
+            <span>${section.icon || "🛒"} ${section.title}</span>
+            <span id="${sectionId}-arrow">▼</span>
+          </button>
 
-              return `
-                <div class="shop-item">
-                  <div class="shop-item-top">
-                    <strong>${item.name}</strong>
-                    <span class="shop-cost">${item.cost}</span>
+          <div class="shop-accordion-body" id="${sectionId}" style="display:${index === 0 ? "grid" : "none"};">
+            ${items
+              .map((item) => {
+                const owned = getInventoryCount(item.id);
+                const equipped = isEquippedItem(item);
+                const emoji = item.icon || "🎁";
+
+                return `
+                  <div class="shop-item-tile ${equipped ? "equipped" : owned ? "owned" : ""}">
+                    <div class="shop-item-icon">${emoji}</div>
+                    <div class="shop-item-name">${item.name}</div>
+                    <div class="shop-item-desc">${item.desc || ""}</div>
+                    <div class="shop-item-price">🪙 ${item.cost}</div>
+
+                    ${
+                      owned
+                        ? `
+                          <div class="shop-item-state">${equipped ? "✅ EQUIPPED" : "📦 OWNED"}</div>
+                          ${
+                            isEquippableItem(item)
+                              ? `<button class="win-btn shop-item-btn" onclick="equipShopItem('${item.id}')">
+                                   ${equipped ? "EQUIPPED" : "EQUIP"}
+                                 </button>`
+                              : ``
+                          }
+                        `
+                        : `
+                          <button class="win-btn shop-item-btn" onclick="buyShopItem('${item.id}')">
+                            BUY
+                          </button>
+                        `
+                    }
                   </div>
-
-                  <div class="shop-mini">${item.desc}</div>
-
-                  ${
-                    owned
-                      ? `
-                        <div class="owned-tag">${equipped ? "EQUIPPED" : "OWNED"}</div>
-                       ${
-                          isEquippableItem(item)
-                            ? `<button class="win-btn" onclick="equipShopItem('${item.id}')">
-                                 ${equipped ? "EQUIPPED" : "EQUIP"}
-                               </button>`
-                            : ""
-                        }
-                      `
-                      : `<button class="win-btn" onclick="buyShopItem('${item.id}')">BUY</button>`
-                  }
-                </div>
-              `;
-            })
-            .join("")}
+                `;
+              })
+              .join("")}
+          </div>
         </div>
       `;
     })
     .join("");
 }
 
-// =========================
-// BUY ITEM
-// =========================
-function buyShopItem(itemId) {
-  ensureShopDefaults();
+function toggleShopSection(sectionId) {
+  const body = document.getElementById(sectionId);
+  const arrow = document.getElementById(`${sectionId}-arrow`);
+  if (!body || !arrow) return;
 
-  const item = getShopItemById(itemId);
-  const active = getActivePlayer();
-  if (!item || !active) return;
-
-  if ((active.coins || 0) < item.cost) {
-    speakText("Not enough coins.");
-    alert("Not enough coins.");
-    return;
-  }
-
-  if (!isStackableItem(item) && getInventoryCount(item.id) > 0) {
-    speakText("You already own that item.");
-    alert("You already own that item.");
-    return;
-  }
-
-  updateCoins(active.id, -item.cost);
-  addInventory(item.id, 1);
-
-  saveState();
-  renderHUD();
-  renderShop();
-  refreshAllPinMarkers();
-
-  // auto-equip first time if character
-  if (item.slot === "character" && getInventoryCount(item.id) === 1) {
-    equipShopItem(item.id);
-  }
-
-  speakText(`${item.name} purchased.`);
-  alert(`${item.name} purchased and added to inventory.`);
+  const isOpen = body.style.display === "grid";
+  body.style.display = isOpen ? "none" : "grid";
+  arrow.innerText = isOpen ? "▶" : "▼";
 }
+
+window.toggleShopSection = toggleShopSection;
 
 
 // =========================
