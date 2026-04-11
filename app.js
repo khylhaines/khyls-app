@@ -10,7 +10,8 @@ import { ADULT_PINS } from "./adult_pins.js";
 import { ADULT_CONTENT } from "./adult_content.js";
 import { applyReward } from "./progression.js";
 import { getRandomMystery } from "./mysteries.js";
-
+import { createAudioSystem } from "./audio_system.js";
+import { createTrailSystem } from "./trail_system.js";
 import { SHOP_ITEMS } from "./shop_items.js";
 import {
   getShopItemById,
@@ -729,11 +730,9 @@ let currentPin = null;
 let currentTask = null;
 let nightVisionOn = false;
 let locationWatchId = null;
-let trailLayers = [];
-let lastTrailDropAt = 0;
-let lastTrailLatLng = null;
 let arStream = null;
-
+let audioSystem = null;
+let trailSystem = null;
 
 
 const CHARACTER_ICONS = {
