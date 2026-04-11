@@ -773,112 +773,6 @@ const CLASSIC_MODE_ORDER = [
   "discovery",
 ];
 
-/* ============================
-   SPEECH / NARRATOR
-============================ */
-let speechEnabled = true;
-let speechVoice = null;
-
-function getAvailableSpeechVoices() {
-  try {
-    return window.speechSynthesis?.getVoices?.() || [];
-  } catch {
-    return [];
-  }
-}
-
-function populateVoiceSelect() {
-  const select = $("voice-select");
-  if (!select) return;
-
-  const voices = getAvailableSpeechVoices();
-  const savedVoiceName = String(state?.settings?.voiceName || "").trim();
-
-  select.innerHTML = "";
-
-  const defaultOption = document.createElement("option");
-  defaultOption.value = "";
-  defaultOption.textContent = "Default system voice";
-  select.appendChild(defaultOption);
-
-  voices.forEach((voice) => {
-    const option = document.createElement("option");
-    option.value = voice.name;
-    option.textContent = `${voice.name} (${voice.lang})`;
-    select.appendChild(option);
-  });
-
-  select.value = savedVoiceName || "";
-}
-
-function loadVoices() {
-  const voices = getAvailableSpeechVoices();
-
-  speechVoice =
-    voices.find((v) => /en-GB/i.test(v.lang)) ||
-    voices.find((v) => /en/i.test(v.lang)) ||
-    voices[0] ||
-    null;
-
-  populateVoiceSelect();
-}
-
-function forceLoadVoices() {
-  loadVoices();
-
-  setTimeout(loadVoices, 150);
-  setTimeout(loadVoices, 500);
-  setTimeout(loadVoices, 1000);
-}
-
-function stopSpeech() {
-  try {
-    window.speechSynthesis?.cancel();
-  } catch {}
-}
-
-function speakText(text, interrupt = true) {
-  if (!speechEnabled || !("speechSynthesis" in window) || !text) return;
-
-  try {
-    if (interrupt) stopSpeech();
-
-    const utter = new SpeechSynthesisUtterance(String(text));
-    utter.pitch = Number(state?.settings?.voicePitch || 1);
-    utter.rate = Number(state?.settings?.voiceRate || 1);
-    utter.volume = Math.max(
-      0,
-      Math.min(1, Number(state?.settings?.sfxVol || 80) / 100)
-    );
-
-    const selectedVoiceName = String(state?.settings?.voiceName || "").trim();
-    let chosenVoice = null;
-
-    if (selectedVoiceName) {
-      const voices = getAvailableSpeechVoices();
-      chosenVoice =
-        voices.find((v) => v.name === selectedVoiceName) ||
-        voices.find((v) => v.voiceURI === selectedVoiceName) ||
-        null;
-    }
-
-    if (!chosenVoice && speechVoice) {
-      chosenVoice = speechVoice;
-    }
-
-    if (chosenVoice) utter.voice = chosenVoice;
-
-    window.speechSynthesis.speak(utter);
-  } catch (err) {
-    console.warn("Speech failed:", err);
-  }
-}
-
-function speakOptions(options = []) {
-  if (!Array.isArray(options) || !options.length) return;
-  const lines = options.map((opt, i) => `Option ${i + 1}. ${opt}`);
-  speakText(lines.join(". "));
-}
 
 /* ============================
    STATE NORMALISERS
@@ -3106,117 +3000,6 @@ function createHeroIcon() {
   });
 }
 
-/* ============================
-   TRAIL SYSTEM
-============================ */
-function getEquippedTrailId() {
-  ensureShopDefaults();
-  return state.settings?.equippedTrail || "trail_none";
-}
-
-function getTrailConfig(trailId) {
-  switch (trailId) {
-    case "trail_poo":
-      return { emoji: "💩", size: 18, lifetime: 900000, stepDistance: 10 };
-    case "trail_rainbow":
-      return { emoji: "🌈", size: 20, lifetime: 1000000, stepDistance: 12 };
-    case "trail_fire":
-      return { emoji: "🔥", size: 18, lifetime: 800000, stepDistance: 11 };
-    case "trail_stars":
-      return { emoji: "✨", size: 18, lifetime: 850000, stepDistance: 11 };
-    case "trail_slime":
-      return { emoji: "🟢", size: 14, lifetime: 700000, stepDistance: 10 };
-    case "trail_none":
-    default:
-      return null;
-  }
-}
-
-function createTrailIcon(emoji, size = 18) {
-  return L.divIcon({
-    className: "trail-emoji-icon",
-    html: `
-      <div style="
-        font-size:${size}px;
-        line-height:1;
-        filter: drop-shadow(0 1px 3px rgba(0,0,0,.45));
-        pointer-events:none;
-        user-select:none;
-      ">${emoji}</div>
-    `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  });
-}
-
-function clearTrailLayers() {
-  if (!map) {
-    trailLayers = [];
-    return;
-  }
-
-  trailLayers.forEach((layer) => {
-    try {
-      map.removeLayer(layer);
-    } catch {}
-  });
-
-  trailLayers = [];
-  lastTrailLatLng = null;
-  lastTrailDropAt = 0;
-}
-
-function dropTrailAt(lat, lng) {
-  if (!map) return;
-
-  const trailId = getEquippedTrailId();
-  const config = getTrailConfig(trailId);
-  if (!config) return;
-
-  const now = Date.now();
-
-  if (lastTrailLatLng) {
-    const moved = distanceInMeters(
-      lastTrailLatLng.lat,
-      lastTrailLatLng.lng,
-      lat,
-      lng
-    );
-
-    if (moved < config.stepDistance) return;
-  }
-
-  if (now - lastTrailDropAt < 250) return;
-
-  const marker = L.marker([lat, lng], {
-    icon: createTrailIcon(config.emoji, config.size),
-    interactive: false,
-    keyboard: false,
-    zIndexOffset: -1000,
-  }).addTo(map);
-
-  trailLayers.push(marker);
-
-  if (trailLayers.length > 120) {
-    const oldest = trailLayers.shift();
-    try {
-      map.removeLayer(oldest);
-    } catch {}
-  }
-
-  lastTrailDropAt = now;
-  lastTrailLatLng = { lat, lng };
-
-  setTimeout(() => {
-    try {
-      if (map && marker) {
-        map.removeLayer(marker);
-      }
-    } catch {}
-
-    trailLayers = trailLayers.filter((x) => x !== marker);
-  }, config.lifetime);
-}
 
 function applyMapTheme() {
   if (!map) return;
@@ -3522,6 +3305,27 @@ function setTaskBlock(id, bodyId, text) {
     block.classList.add("hidden");
   }
 }
+
+function speakText(text, interrupt = true) {
+  audioSystem?.speakText(text, interrupt);
+}
+
+function speakOptions(options = []) {
+  audioSystem?.speakOptions(options);
+}
+
+function stopSpeech() {
+  audioSystem?.stopSpeech();
+}
+
+function dropTrailAt(lat, lng) {
+  trailSystem?.dropTrailAt(lat, lng);
+}
+
+function clearTrailLayers() {
+  trailSystem?.clearTrailLayers();
+}
+
 
 /* ============================
    MAP
@@ -5129,28 +4933,41 @@ $("btn-shop")?.addEventListener("click", () => {
   });
 }
 
+function setupSystems() {
+  audioSystem = createAudioSystem({
+    getState: () => state,
+  });
+
+  trailSystem = createTrailSystem({
+    getState: () => state,
+    getMap: () => map,
+    distanceInMeters,
+    playTrailSound: (trailId) => audioSystem?.playTrailSound(trailId),
+  });
+}
+
 /* ============================
    BOOT
 ============================ */
 function boot() {
   try {
+    setupSystems();
     renderEverything();
     wireButtons();
 
-  forceLoadVoices();
-if ("speechSynthesis" in window) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    loadVoices();
-  };
-}
+    audioSystem?.forceLoadVoices();
+
     initMap();
     checkBadgeUnlocksByCaptures();
     saveStateNow(true);
+
+    audioSystem?.playWelcomeMessage();
 
     console.log("App loaded");
   } catch (err) {
     console.error("BOOT ERROR:", err);
   }
 }
+
 
 window.addEventListener("DOMContentLoaded", boot);
