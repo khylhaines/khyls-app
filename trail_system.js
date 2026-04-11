@@ -1,121 +1,162 @@
 // trail_system.js
 
-const TRAIL_DROP_DISTANCE_METERS = 6;
-const MAX_TRAIL_POINTS = 60;
+export function createTrailSystem({
+  getState,
+  getMap,
+  distanceInMeters,
+  playTrailSound,
+} = {}) {
+  let trailLayers = [];
+  let lastTrailDropAt = 0;
+  let lastTrailLatLng = null;
 
-let trailLayer = null;
-let trailPoints = [];
-let lastTrailPoint = null;
-
-function toRad(value) {
-  return (value * Math.PI) / 180;
-}
-
-function distanceMeters(a, b) {
-  const R = 6371000;
-
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-
-  const aa =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(a.lat)) *
-      Math.cos(toRad(b.lat)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-
-  const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
-  return R * c;
-}
-
-function getTrailSymbol(trailId) {
-  switch (trailId) {
-    case "trail_poo":
-      return "💩";
-    case "trail_rainbow":
-      return "🌈";
-    case "trail_fire":
-      return "🔥";
-    case "trail_stars":
-      return "✨";
-    case "trail_slime":
-      return "🟢";
-    default:
-      return null;
+  function getStateSafe() {
+    return typeof getState === "function" ? getState() : {};
   }
-}
 
-function makeTrailIcon(symbol) {
-  return L.divIcon({
-    className: "trail-piece",
-    html: `<div class="trail-piece-inner">${symbol}</div>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-  });
-}
+  function getMapSafe() {
+    return typeof getMap === "function" ? getMap() : null;
+  }
 
-function addTrailMarker(lat, lng, trailId) {
-  if (!trailLayer) return;
+  function getTrailLifetimeMs() {
+    const state = getStateSafe();
+    const mode = state?.settings?.trailDuration || "long";
 
-  const symbol = getTrailSymbol(trailId);
-  if (!symbol) return;
+    if (mode === "short") return 10000;
+    if (mode === "long") return 600000;
+    if (mode === "day") return 86400000;
+    if (mode === "permanent") return null;
 
-  const marker = L.marker([lat, lng], {
-    icon: makeTrailIcon(symbol),
-    interactive: false,
-    keyboard: false,
-  }).addTo(trailLayer);
+    return 600000;
+  }
 
-  trailPoints.push(marker);
+  function getEquippedTrailId() {
+    const state = getStateSafe();
+    return state?.settings?.equippedTrail || "trail_none";
+  }
 
-  if (trailPoints.length > MAX_TRAIL_POINTS) {
-    const oldest = trailPoints.shift();
-    if (oldest) {
-      trailLayer.removeLayer(oldest);
+  function getTrailConfig(trailId) {
+    const lifetime = getTrailLifetimeMs();
+
+    switch (trailId) {
+      case "trail_poo":
+        return { emoji: "💩", size: 18, lifetime, stepDistance: 10 };
+      case "trail_rainbow":
+        return { emoji: "🌈", size: 20, lifetime, stepDistance: 12 };
+      case "trail_fire":
+        return { emoji: "🔥", size: 18, lifetime, stepDistance: 11 };
+      case "trail_stars":
+        return { emoji: "✨", size: 18, lifetime, stepDistance: 11 };
+      case "trail_slime":
+        return { emoji: "🟢", size: 14, lifetime, stepDistance: 10 };
+      case "trail_none":
+      default:
+        return null;
     }
   }
-}
 
-export function initTrailSystem(map) {
-  if (!map) return;
-
-  if (trailLayer) {
-    trailLayer.clearLayers();
+  function createTrailIcon(emoji, size = 18) {
+    return L.divIcon({
+      className: "trail-emoji-icon",
+      html: `
+        <div style="
+          font-size:${size}px;
+          line-height:1;
+          filter: drop-shadow(0 1px 3px rgba(0,0,0,.45));
+          pointer-events:none;
+          user-select:none;
+        ">${emoji}</div>
+      `,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
   }
 
-  trailLayer = L.layerGroup().addTo(map);
-  trailPoints = [];
-  lastTrailPoint = null;
-}
+  function clearTrailLayers() {
+    const map = getMapSafe();
 
-export function clearTrailSystem() {
-  if (trailLayer) {
-    trailLayer.clearLayers();
+    if (!map) {
+      trailLayers = [];
+      lastTrailLatLng = null;
+      lastTrailDropAt = 0;
+      return;
+    }
+
+    trailLayers.forEach((layer) => {
+      try {
+        map.removeLayer(layer);
+      } catch {}
+    });
+
+    trailLayers = [];
+    lastTrailLatLng = null;
+    lastTrailDropAt = 0;
   }
 
-  trailPoints = [];
-  lastTrailPoint = null;
-}
+  function dropTrailAt(lat, lng) {
+    const map = getMapSafe();
+    if (!map) return;
 
-export function updateTrailSystem({ lat, lng, equippedTrail }) {
-  if (!trailLayer) return;
-  if (!equippedTrail || equippedTrail === "trail_none") return;
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const trailId = getEquippedTrailId();
+    const config = getTrailConfig(trailId);
+    if (!config) return;
 
-  const current = { lat, lng };
+    const now = Date.now();
 
-  if (!lastTrailPoint) {
-    lastTrailPoint = current;
-    addTrailMarker(lat, lng, equippedTrail);
-    return;
+    if (lastTrailLatLng) {
+      const moved =
+        typeof distanceInMeters === "function"
+          ? distanceInMeters(lastTrailLatLng.lat, lastTrailLatLng.lng, lat, lng)
+          : 0;
+
+      if (moved < config.stepDistance) return;
+    }
+
+    if (now - lastTrailDropAt < 250) return;
+
+    const marker = L.marker([lat, lng], {
+      icon: createTrailIcon(config.emoji, config.size),
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: -1000,
+    }).addTo(map);
+
+    trailLayers.push(marker);
+
+    if (trailLayers.length > 120) {
+      const oldest = trailLayers.shift();
+      try {
+        map.removeLayer(oldest);
+      } catch {}
+    }
+
+    lastTrailDropAt = now;
+    lastTrailLatLng = { lat, lng };
+
+    if (typeof playTrailSound === "function") {
+      playTrailSound(trailId);
+    }
+
+    if (config.lifetime !== null) {
+      setTimeout(() => {
+        try {
+          const liveMap = getMapSafe();
+          if (liveMap && marker) {
+            liveMap.removeLayer(marker);
+          }
+        } catch {}
+
+        trailLayers = trailLayers.filter((x) => x !== marker);
+      }, config.lifetime);
+    }
   }
 
-  const moved = distanceMeters(lastTrailPoint, current);
-
-  if (moved < TRAIL_DROP_DISTANCE_METERS) {
-    return;
-  }
-
-  lastTrailPoint = current;
-  addTrailMarker(lat, lng, equippedTrail);
+  return {
+    getTrailLifetimeMs,
+    getEquippedTrailId,
+    getTrailConfig,
+    createTrailIcon,
+    clearTrailLayers,
+    dropTrailAt,
+  };
 }
