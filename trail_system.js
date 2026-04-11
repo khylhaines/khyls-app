@@ -1,5 +1,3 @@
-// trail_system.js
-
 export function createTrailSystem({
   getState,
   getMap,
