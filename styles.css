@@ -792,6 +792,134 @@ input[type="range"] {
   font-weight: 900;
 }
 
+.shop-status-card {
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 14px;
+  background: #111;
+  line-height: 1.6;
+}
+
+.shop-accordion {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #111;
+  margin-bottom: 12px;
+}
+
+.shop-accordion-btn {
+  width: 100%;
+  background: #181818;
+  color: #fff;
+  border: 0;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.shop-accordion-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+}
+
+.shop-item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.shop-item-tile {
+  background: #181818;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 170px;
+  justify-content: space-between;
+}
+
+.shop-item-tile.owned {
+  border-color: rgba(255, 213, 74, 0.35);
+}
+
+.shop-item-tile.equipped {
+  border-color: #4dff9e;
+  box-shadow: 0 0 0 1px rgba(77,255,158,0.25) inset;
+}
+
+.shop-item-tile.small {
+  min-height: 110px;
+}
+
+.shop-item-icon {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.shop-item-name {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.shop-item-desc {
+  font-size: 11px;
+  color: #bbb;
+  line-height: 1.35;
+}
+
+.shop-item-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.shop-item-state {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ddd;
+}
+
+.shop-item-btn {
+  margin-top: 4px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .shop-accordion-body,
+  .shop-item-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .shop-item-tile {
+    min-height: 160px;
+    padding: 10px;
+  }
+
+  .shop-item-icon {
+    font-size: 26px;
+  }
+
+  .shop-item-name {
+    font-size: 13px;
+  }
+
+  .shop-item-desc {
+    font-size: 10px;
+  }
+}
+
+
+
 .owned-tag {
   display: inline-block;
   margin-top: 8px;
