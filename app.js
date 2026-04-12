@@ -1880,24 +1880,7 @@ function finishBossMission() {
 /* ============================
    ABBEY ROUTE / REBUILD SYSTEM
 ============================ */
-function getAbbeyRebuild() {
-  if (!state.rebuild || typeof state.rebuild !== "object") {
-    state.rebuild = structuredClone(DEFAULT_STATE.rebuild);
-  }
-  if (!state.rebuild.abbey) {
-    state.rebuild.abbey = structuredClone(DEFAULT_STATE.rebuild.abbey);
-  }
-  return state.rebuild.abbey;
-}
 
-function getAbbeyStageFromPoints(points) {
-  const p = Number(points || 0);
-  if (p >= 20) return 4;
-  if (p >= 12) return 3;
-  if (p >= 6) return 2;
-  if (p >= 1) return 1;
-  return 0;
-}
 
 function addAbbeyRebuildPoints(amount) {
   const abbey = getAbbeyRebuild();
