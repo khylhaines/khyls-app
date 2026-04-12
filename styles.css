@@ -774,15 +774,14 @@ input[type="range"] {
   padding: 14px;
 
   background: 
-    linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)),
-    url("./images/gorilla_parrot.png");
+    linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.45)),
+    url("./images/gorilla_parrot.jpg");
 
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 
   box-shadow: var(--shadow);
-}
 }
 
 .shop-item-top {
