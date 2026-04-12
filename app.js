@@ -4132,7 +4132,7 @@ function setupSystems() {
     distanceInMeters,
     playTrailSound: (trailId) => audioSystem?.playTrailSound(trailId),
   });
-}
+
 
 /* ============================
    BOOT
