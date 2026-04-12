@@ -2748,6 +2748,9 @@ function equipShopItem(itemId) {
     return true;
   }
 
+  if (item.id === "char_chicken") {
+  playSound("chickenbuy.mp3");
+}
   return false;
 }
 
