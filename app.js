@@ -2794,6 +2794,7 @@ function equipShopItem(itemId) {
 // =========================
 window.buyShopItem = buyShopItem;
 window.equipShopItem = equipShopItem;
+window.getActivePlayer = getActivePlayer;
 
 function isEquippedItem(item) {
   if (!item) return false;
