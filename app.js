@@ -2718,73 +2718,76 @@ window.toggleShopSection = toggleShopSection;
 // EQUIP ITEM
 // =========================
 function equipShopItem(itemId) {
-  ensureShopDefaults();
-
   const item = getShopItemById(itemId);
   if (!item) return false;
-  if (!isEquippableItem(item)) return false;
-  if (getInventoryCount(itemId) < 1) return false;
 
   const slot = getEquipSlot(item);
 
+  if (!slot) return false;
+
+  // =========================
+  // CHARACTER EQUIP
+  // =========================
   if (slot === "character") {
     state.settings.character = item.id;
 
-    saveState();
-    applySettingsToUI();
-    renderHUD();
+    if (typeof saveState === "function") saveState();
+    if (typeof applySettingsToUI === "function") applySettingsToUI();
+    if (typeof renderHUD === "function") renderHUD();
 
-    if (heroMarker) {
+    if (typeof heroMarker !== "undefined" && heroMarker && typeof createHeroIcon === "function") {
       heroMarker.setIcon(createHeroIcon());
     }
 
-    renderShop();
-    speakText(`${item.name} equipped.`);
+    if (typeof renderShop === "function") renderShop();
+
+    if (typeof speakText === "function") {
+      speakText(`${item.name} equipped.`);
+    }
+
+    // ✅ CHICKEN SOUND
+    if (item.id === "char_chicken") {
+      playSound("chickenbuy.mp3");
+    }
+
     return true;
   }
 
+  // =========================
+  // TRAIL EQUIP
+  // =========================
   if (slot === "trail") {
     state.settings.equippedTrail = item.id;
 
-    saveState();
-    renderShop();
-    clearTrailLayers();
-    speakText(`${item.name} equipped.`);
+    if (typeof saveState === "function") saveState();
+    if (typeof renderHUD === "function") renderHUD();
+    if (typeof renderShop === "function") renderShop();
+
+    if (typeof speakText === "function") {
+      speakText(`${item.name} equipped.`);
+    }
+
     return true;
   }
 
+  // =========================
+  // MAP THEME EQUIP
+  // =========================
   if (slot === "mapTheme") {
     state.settings.mapTheme = item.id;
 
-    saveState();
-    renderShop();
-    applyMapTheme();
-    speakText(`${item.name} equipped.`);
+    if (typeof saveState === "function") saveState();
+    if (typeof renderHUD === "function") renderHUD();
+    if (typeof renderShop === "function") renderShop();
+
+    if (typeof speakText === "function") {
+      speakText(`${item.name} equipped.`);
+    }
+
     return true;
   }
-  
+
   return false;
-}
-
-if (slot === "character") {
-  state.settings.character = item.id;
-
-  saveState();
-  applySettingsToUI();
-  renderHUD();
-
-  if (heroMarker) {
-    heroMarker.setIcon(createHeroIcon());
-  }
-
-  renderShop();
-  speakText(`${item.name} equipped.`);
-
-  if (item.id === "char_chicken") {
-    playSound("chickenbuy.mp3");
-  }
-
-  return true;
 }
 // =========================
 // GLOBAL ACCESS (REQUIRED)
