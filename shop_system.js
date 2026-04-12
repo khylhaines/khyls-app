@@ -13,9 +13,12 @@ export function getShopSections() {
 
   SHOP_ITEMS.forEach((item) => {
     if (!sections[item.section]) {
+      const formatted = formatSectionMeta(item.section);
+
       sections[item.section] = {
         id: item.section,
-        title: formatSectionTitle(item.section),
+        title: formatted.title,
+        icon: formatted.icon,
       };
     }
   });
@@ -28,18 +31,18 @@ export function getItemsForSection(section) {
   return SHOP_ITEMS.filter((item) => item.section === id);
 }
 
-function formatSectionTitle(section) {
+function formatSectionMeta(section) {
   switch (section) {
     case "characters":
-      return "Characters";
+      return { title: "Characters", icon: "🧍" };
     case "trails":
-      return "Trails";
+      return { title: "Trails", icon: "✨" };
     case "themes":
-      return "Map Themes";
+      return { title: "Map Themes", icon: "🗺️" };
     case "boosts":
-      return "Boosts";
+      return { title: "Boosts", icon: "🎁" };
     default:
-      return section;
+      return { title: section, icon: "🛒" };
   }
 }
 
