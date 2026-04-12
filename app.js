@@ -8,6 +8,7 @@ import {
 import { PINS } from "./pins.js";
 import { ADULT_PINS } from "./adult_pins.js";
 import { ADULT_CONTENT } from "./adult_content.js";
+import { createAbbeySystem } from "./abbey_system.js";
 import { applyReward } from "./progression.js";
 import { getRandomMystery } from "./mysteries.js";
 import { createAudioSystem } from "./audio_system.js";
@@ -215,12 +216,7 @@ const PIN_REWARD_IMAGES = {
   },
 };
 
-const ABBEY_ROUTE_APPROACH_PIN_IDS = [
-  "abbey_valley_view",
-  "abbey_gate",
-  "abbey_church",
-  "abbey_boss",
-];
+
 
 const BOSS_MODE_PIN_IDS = ["abbey_boss"];
 
@@ -489,226 +485,6 @@ const DEFAULT_STATE = {
 
 
 
-/* ============================
-   SCRIPTED ABBEY ROUTES
-============================ */
-const ABBEY_ROUTE_DEFS = {
-  investigate: {
-    id: "investigate",
-    title: "Investigate the Monk Paths",
-    intro:
-      "Not all paths to the Abbey were visible. Some were used quietly by those who protected knowledge.",
-    steps: [
-      {
-        title: "The Hidden Path",
-        desc: "Why would a hidden path be important here?",
-        storyCategory: "place",
-        story:
-          "Not all paths to the Abbey were visible.\nSome were used only by those who needed to move quietly… and without notice.",
-        options: [
-          "For private movement and protected knowledge",
-          "For horse racing",
-          "For public trading",
-        ],
-        answer: 0,
-        fact:
-          "You’ve stepped onto the monks’ route. Hidden movement mattered here.",
-        clue: { value: "2", importance: "high", saveLabel: "Hidden Path = 2" },
-        rebuild: 2,
-        reward: { coins: 22, xp: 12 },
-      },
-      {
-        title: "Control and Structure",
-        desc: "What would monks value most in a place like this?",
-        storyCategory: "purpose",
-        story:
-          "The Abbey was not chaos.\nEvery movement… every path… had purpose.",
-        options: ["Order and routine", "Speed", "Noise"],
-        answer: 0,
-        fact:
-          "The Abbey worked because everything followed structure and routine.",
-        rebuild: 2,
-        reward: { coins: 24, xp: 14 },
-      },
-      {
-        title: "Work and Life",
-        desc: "What would monks likely be doing here each day?",
-        storyCategory: "people",
-        story:
-          "These paths were not just for prayer.\nThey carried workers, supplies… and daily life.",
-        options: ["Farming and labour", "Fighting", "Public trading"],
-        answer: 0,
-        fact:
-          "Work and worship were connected here. The Abbey was lived, not just visited.",
-        clue: {
-          value: "4",
-          importance: "low",
-          saveLabel: "Work and Worship = 4",
-        },
-        rebuild: 3,
-        reward: { coins: 28, xp: 16 },
-      },
-      {
-        title: "The Purpose",
-        desc: "What were these routes truly protecting?",
-        storyCategory: "loss",
-        story:
-          "The hidden paths were not built to hide.\nThey were built to protect what mattered.",
-        options: ["Knowledge and structure", "Food", "Money"],
-        answer: 0,
-        fact: "You are beginning to see the Abbey as it once was.",
-        clue: {
-          value: "6",
-          importance: "high",
-          saveLabel: "Protected Knowledge = 6",
-        },
-        rebuild: 5,
-        reward: { coins: 36, xp: 22 },
-        routeComplete: true,
-      },
-    ],
-  },
-
-  explore: {
-    id: "explore",
-    title: "Explore the Outer Grounds",
-    intro:
-      "Some truths are found by looking, walking, and noticing what others pass by.",
-    steps: [
-      {
-        title: "Outer Ground Marker",
-        desc: "What kind of place does this feel like?",
-        storyCategory: "place",
-        story:
-          "The outer grounds gave first impressions.\nWhat you notice here shapes what comes next.",
-        options: ["Open historic space", "Busy market", "Modern street"],
-        answer: 0,
-        fact: "You’ve marked the first outer landmark.",
-        rebuild: 1,
-        reward: { coins: 18, xp: 10 },
-      },
-      {
-        title: "Walking the Edge",
-        desc: "What matters most when exploring a place like this?",
-        storyCategory: "people",
-        story:
-          "The fastest walkers miss things.\nThe best explorers notice what remains.",
-        options: ["Looking carefully", "Rushing", "Ignoring details"],
-        answer: 0,
-        fact: "Exploration reveals what the eye almost misses.",
-        clue: {
-          value: "3",
-          importance: "low",
-          saveLabel: "Outer Edge = 3",
-        },
-        rebuild: 2,
-        reward: { coins: 20, xp: 12 },
-      },
-      {
-        title: "A Place Revealed",
-        desc: "What gives this place its meaning?",
-        storyCategory: "restoration",
-        story:
-          "The Abbey is more than stone.\nIt is memory, place, and what people carried into it.",
-        options: ["Its history and people", "Its speed", "Its noise"],
-        answer: 0,
-        fact: "You’ve restored part of the Abbey’s outer story.",
-        rebuild: 3,
-        reward: { coins: 24, xp: 14 },
-        routeComplete: true,
-      },
-    ],
-  },
-
-  advance: {
-    id: "advance",
-    title: "Advance Toward the Core",
-    intro:
-      "You’ve followed the outer paths. Now you step closer to the heart of the Abbey.",
-    steps: [
-      {
-        title: "Path Forward",
-        desc: "To move forward… you need to prove you understand the Abbey.",
-        storyCategory: "purpose",
-        story:
-          "You’ve followed the outer paths.\nNow you step closer to the heart of the Abbey.",
-        options: [
-          "Military defence",
-          "Worship, work, and community",
-          "Trade hub",
-        ],
-        answer: 1,
-        fact: "Path forward unlocked.",
-        rebuild: 2,
-        reward: { coins: 24, xp: 14 },
-      },
-      {
-        title: "Closer to the Core",
-        desc: "What kept the Abbey running every day?",
-        storyCategory: "people",
-        story:
-          "You’re close now.\nThis is where the Abbey’s structure became most important.",
-        options: ["Random activity", "Strict routine and order", "External trade"],
-        answer: 1,
-        fact: "You understand how the Abbey functioned.",
-        rebuild: 2,
-        reward: { coins: 28, xp: 16 },
-      },
-      {
-        title: "Pre-Core Pressure",
-        desc: "Answer quickly. What was the Abbey built to protect?",
-        storyCategory: "loss",
-        story:
-          "You’re almost there.\nThis is where mistakes mattered.",
-        options: ["Wealth", "Knowledge and belief", "Soldiers"],
-        answer: 1,
-        followUp: {
-          desc: "And what kept it stable?",
-          options: ["Strict order", "Freedom", "Trade"],
-          answer: 0,
-        },
-        fact: "The Abbey core is now within reach.",
-        clue: {
-          value: "8",
-          importance: "high",
-          saveLabel: "Core Pressure = 8",
-        },
-        rebuild: 4,
-        reward: { coins: 34, xp: 20 },
-        routeComplete: true,
-      },
-    ],
-  },
-
-  core: {
-    id: "core",
-    title: "The Lost Order Core",
-    intro:
-      "You’ve reached it. The heart of the Abbey. Everything you’ve followed led you here.",
-    steps: [
-      {
-        title: "The Heart of the Abbey",
-        desc: "What was the true purpose of the Abbey?",
-        storyCategory: "restoration",
-        story:
-          "You’ve reached it…\nThe heart of the Abbey.\nEverything you’ve followed… every path… every clue… led you here.",
-        options: ["Power", "Wealth", "Faith, structure, and way of life"],
-        answer: 2,
-        fact:
-          "You understand. The Abbey was held together by faith, order, labour, and shared purpose.",
-        rebuild: 10,
-        reward: { coins: 150, xp: 100 },
-        clue: {
-          value: "CORE",
-          importance: "high",
-          saveLabel: "Heart of the Abbey = CORE",
-        },
-        routeComplete: true,
-        coreComplete: true,
-      },
-    ],
-  },
-};
 
 /* ============================
    GLOBAL STATE / RUNTIME
@@ -734,7 +510,7 @@ let locationWatchId = null;
 let arStream = null;
 let audioSystem = null;
 let trailSystem = null;
-
+let abbeySystem = null;
 
 const CHARACTER_ICONS = {
   hero_duo: "🧭",
@@ -3327,6 +3103,59 @@ function clearTrailLayers() {
   trailSystem?.clearTrailLayers();
 }
 
+function getCurrentTaskEls() {
+  return {
+    taskTitle: $("task-title"),
+    taskDesc: $("task-desc"),
+    taskOptions: $("task-options"),
+    taskFeedback: $("task-feedback"),
+  };
+}
+
+function setCurrentTaskValue(value) {
+  currentTask = value;
+}
+
+function getCurrentPinValue() {
+  return currentPin;
+}
+
+function getCurrentMapMode() {
+  return state.mapMode;
+}
+
+function getDefaultRebuildState() {
+  return structuredClone(DEFAULT_STATE.rebuild);
+}
+
+function getAbbeyRebuild() {
+  return abbeySystem?.getAbbeyRebuild();
+}
+
+function clearActiveRoute() {
+  return abbeySystem?.clearActiveRoute();
+}
+
+function isAbbeyRouteApproachPin(pin) {
+  return abbeySystem?.isAbbeyRouteApproachPin(pin);
+}
+
+function getAbbeyRouteStatusText() {
+  return abbeySystem?.getAbbeyRouteStatusText() || "";
+}
+
+function getRewardPresentationMode() {
+  return abbeySystem?.getRewardPresentationMode() || "adult";
+}
+
+function getClueAnnouncementText(clue) {
+  return abbeySystem?.getClueAnnouncementText(clue) || "";
+}
+
+function renderAbbeyRouteChoice() {
+  return abbeySystem?.renderAbbeyRouteChoice();
+}
+
 
 /* ============================
    MAP
@@ -4925,6 +4754,45 @@ function setupSystems() {
   audioSystem = createAudioSystem({
     getState: () => state,
   });
+
+  trailSystem = createTrailSystem({
+    getState: () => state,
+    getMap: () => map,
+    distanceInMeters,
+    playTrailSound: (trailId) => audioSystem?.playTrailSound(trailId),
+  });
+
+  abbeySystem = createAbbeySystem({
+    getState: () => state,
+    setCurrentTask: setCurrentTaskValue,
+    getCurrentPin: getCurrentPinValue,
+    getCurrentMode: getCurrentMapMode,
+    getDefaultRebuild: getDefaultRebuildState,
+    getTaskEls: getCurrentTaskEls,
+    showModal,
+    closeModal,
+    clearTaskBlocks,
+    setTaskBlock,
+    hideBossProgressBox,
+    setBossSummaryBlock,
+    speakText,
+    saveState,
+    renderHUD,
+    renderHomeLog,
+    renderShop,
+    refreshPinMarker,
+    showScriptedRewardImage,
+    saveCaptainNote,
+    saveClueToCaptainNotes,
+    saveRouteStoryToNotes,
+    getActivePlayer,
+    updateCoins,
+    hasBadge,
+    showBadgePopup,
+    getEffectiveTier,
+  });
+}
+
 
   trailSystem = createTrailSystem({
     getState: () => state,
