@@ -2762,14 +2762,30 @@ function equipShopItem(itemId) {
     speakText(`${item.name} equipped.`);
     return true;
   }
-
-  if (item.id === "char_chicken") {
-  playSound("chickenbuy.mp3");
-}
+  
   return false;
 }
 
+if (slot === "character") {
+  state.settings.character = item.id;
 
+  saveState();
+  applySettingsToUI();
+  renderHUD();
+
+  if (heroMarker) {
+    heroMarker.setIcon(createHeroIcon());
+  }
+
+  renderShop();
+  speakText(`${item.name} equipped.`);
+
+  if (item.id === "char_chicken") {
+    playSound("chickenbuy.mp3");
+  }
+
+  return true;
+}
 // =========================
 // GLOBAL ACCESS (REQUIRED)
 // =========================
