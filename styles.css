@@ -772,12 +772,17 @@ input[type="range"] {
   border: 1px solid #333;
   border-radius: 18px;
   padding: 14px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.05),
-    rgba(255, 255, 255, 0.03)
-  );
+
+  background: 
+    linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)),
+    url("./images/gorilla_parrot.png");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
   box-shadow: var(--shadow);
+}
 }
 
 .shop-item-top {
