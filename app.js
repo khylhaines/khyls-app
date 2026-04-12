@@ -21,6 +21,7 @@ import {
   isEquippableItem,
   getEquipSlot,
   ensureDefaultOwnedInventory,
+  buyShopItem,
 } from "./shop_system.js";
 
 const $ = (id) => document.getElementById(id);
