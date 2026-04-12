@@ -8,17 +8,66 @@ export function getShopItemById(itemId) {
   return SHOP_ITEMS.find((item) => item.id === itemId) || null;
 }
 
+function formatSectionTitle(section) {
+  switch (section) {
+    case "characters":
+      return "Characters";
+    case "trails":
+      return "Trails";
+    case "themes":
+      return "Map Themes";
+    case "boosts":
+      return "Boosts";
+    default:
+      return section;
+  }
+}
+
+function getSectionIcon(section) {
+  switch (section) {
+    case "characters":
+      return "🧍";
+    case "trails":
+      return "✨";
+    case "themes":
+      return "🗺️";
+    case "boosts":
+      return "⚡";
+    default:
+      return "🛒";
+  }
+}
+
+function playShopSound(fileName) {
+  try {
+    if (typeof window.playSound === "function") {
+      window.playSound(fileName);
+      return;
+    }
+
+    if (!window.__audioUnlocked) return;
+
+    const audio = new Audio(`./sounds/${fileName}`);
+    audio.volume = 0.8;
+    audio.play().catch(() => {});
+  } catch (err) {
+    console.warn("Shop sound failed:", err);
+  }
+}
+
+/* ============================
+   SECTIONS
+============================ */
+
 export function getShopSections() {
   const sections = {};
 
   SHOP_ITEMS.forEach((item) => {
     if (!sections[item.section]) {
-      const formatted = formatSectionMeta(item.section);
-
       sections[item.section] = {
         id: item.section,
-        title: formatted.title,
-        icon: formatted.icon,
+        title: formatSectionTitle(item.section),
+        icon: getSectionIcon(item.section),
       };
     }
   });
@@ -31,27 +80,14 @@ export function getItemsForSection(section) {
   return SHOP_ITEMS.filter((item) => item.section === id);
 }
 
-function formatSectionMeta(section) {
-  switch (section) {
-    case "characters":
-      return { title: "Characters", icon: "🧍" };
-    case "trails":
-      return { title: "Trails", icon: "✨" };
-    case "themes":
-      return { title: "Map Themes", icon: "🗺️" };
-    case "boosts":
-      return { title: "Boosts", icon: "🎁" };
-    default:
-      return { title: section, icon: "🛒" };
-  }
-}
-
 /* ============================
    INVENTORY SYSTEM
 ============================ */
 
 export function ensureDefaultOwnedInventory(inventory = {}, purchasedItems = []) {
-  const nextInventory = { ...inventory };
+  const nextInventory =
+    inventory && typeof inventory === "object" ? { ...inventory } : {};
+
   const nextPurchasedItems = Array.isArray(purchasedItems)
     ? [...purchasedItems]
     : [];
@@ -75,16 +111,20 @@ export function ensureDefaultOwnedInventory(inventory = {}, purchasedItems = [])
 }
 
 export function getInventoryCount(itemId) {
-  if (!state.inventory) return 0;
-  return state.inventory[itemId] || 0;
+  const state = window.state;
+  if (!state?.inventory || typeof state.inventory !== "object") return 0;
+  return Number(state.inventory[itemId] || 0);
 }
 
 export function addToInventory(itemId, amount = 1) {
-  if (!state.inventory) {
+  const state = window.state;
+  if (!state) return;
+
+  if (!state.inventory || typeof state.inventory !== "object") {
     state.inventory = {};
   }
 
-  state.inventory[itemId] = (state.inventory[itemId] || 0) + amount;
+  state.inventory[itemId] = Number(state.inventory[itemId] || 0) + Number(amount || 0);
 }
 
 export function hasItem(itemId) {
@@ -116,12 +156,29 @@ export function getEquipSlot(item) {
 ============================ */
 
 export function buyShopItem(itemId) {
-  ensureDefaultOwnedInventory();
+  const state = window.state;
+  if (!state) {
+    console.warn("Global state not found");
+    return false;
+  }
+
+  const normalised = ensureDefaultOwnedInventory(
+    state.inventory || {},
+    state.purchasedItems || []
+  );
+
+  state.inventory = normalised.inventory;
+  state.purchasedItems = normalised.purchasedItems;
 
   const item = getShopItemById(itemId);
   if (!item) return false;
 
-  const player = window.getPlayer ? getPlayer() : null;
+  const player =
+    typeof window.getActivePlayer === "function"
+      ? window.getActivePlayer()
+      : typeof window.getPlayer === "function"
+      ? window.getPlayer()
+      : null;
 
   if (!player) {
     console.warn("No player system found");
@@ -135,27 +192,31 @@ export function buyShopItem(itemId) {
     return false;
   }
 
-  if (player.coins < item.cost) {
+  if (Number(player.coins || 0) < Number(item.cost || 0)) {
     alert("Not enough coins");
     return false;
   }
 
-  player.coins -= item.cost;
+  player.coins = Number(player.coins || 0) - Number(item.cost || 0);
 
   addToInventory(itemId, 1);
 
-  if (window.saveState) saveState();
-  if (window.renderHUD) renderHUD();
-  if (window.renderShop) renderShop();
-
-  if (window.speakText) {
-    speakText(`${item.name} purchased`);
+  if (!state.purchasedItems.includes(item.id)) {
+    state.purchasedItems.push(item.id);
   }
 
-if (item.id === "char_chicken") {
-  playSound("chickenbuy.mp3");
-}
-   
+  if (typeof window.saveState === "function") window.saveState();
+  if (typeof window.renderHUD === "function") window.renderHUD();
+  if (typeof window.renderShop === "function") window.renderShop();
+
+  if (typeof window.speakText === "function") {
+    window.speakText(`${item.name} purchased`);
+  }
+
+  if (item.id === "char_chicken") {
+    playShopSound("chickenbuy.mp3");
+  }
+
   return true;
 }
 
@@ -164,5 +225,14 @@ if (item.id === "char_chicken") {
 ============================ */
 
 export function initShopSystem() {
-  ensureDefaultOwnedInventory();
+  const state = window.state;
+  if (!state) return;
+
+  const normalised = ensureDefaultOwnedInventory(
+    state.inventory || {},
+    state.purchasedItems || []
+  );
+
+  state.inventory = normalised.inventory;
+  state.purchasedItems = normalised.purchasedItems;
 }
