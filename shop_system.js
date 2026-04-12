@@ -152,6 +152,10 @@ export function buyShopItem(itemId) {
     speakText(`${item.name} purchased`);
   }
 
+if (item.id === "char_chicken") {
+  playSound("chickenbuy.mp3");
+}
+   
   return true;
 }
 
