@@ -1914,6 +1914,21 @@ function stopSpeech() {
   audioSystem?.stopSpeech();
 }
 
+function playSound(fileName) {
+  if (!window.__audioUnlocked) return;
+
+  try {
+    const audio = new Audio(`./sounds/${fileName}`);
+    audio.volume = Number(state?.settings?.sfxVol || 80) / 100;
+    audio.play().catch((err) => {
+      console.warn("Sound failed:", err);
+    });
+  } catch (err) {
+    console.warn("Sound setup failed:", err);
+  }
+}
+
+
 function dropTrailAt(lat, lng) {
   trailSystem?.dropTrailAt(lat, lng);
 }
@@ -3703,5 +3718,13 @@ function boot() {
   }
 }
 
+
+document.addEventListener(
+  "click",
+  () => {
+    window.__audioUnlocked = true;
+  },
+  { once: true }
+);
 
 window.addEventListener("DOMContentLoaded", boot);
