@@ -3072,7 +3072,14 @@ function renderHomeLog() {
   const quizProfile = getCurrentQuizProfile();
   const badges = Array.isArray(state.meta?.badges) ? state.meta.badges : [];
   const lock = getAdultLock();
-  const abbey = getAbbeyRebuild();
+ const abbey = state?.rebuild?.abbey || {
+  points: 0,
+  stage: 0,
+  completedRoutes: [],
+  unlockedCore: false,
+  completedCore: false,
+  finished: false,
+};
   const route = state.route;
   const noteCount = Array.isArray(state.captainNotes) ? state.captainNotes.length : 0;
   const bossSolvedCount = Object.values(state.bossProgress || {}).filter(
