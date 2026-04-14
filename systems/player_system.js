@@ -1,4 +1,4 @@
-export function PlayerSystem() {
+export function createPlayerSystem() {
   function getEnabledPlayers() {
     return BQ.state.players.filter((p) => p.enabled);
   }
