@@ -1,4 +1,4 @@
-export function ProgressionSystem({ getState, saveState }) {
+export function createProgressionSystem({ getState, saveState }) {
   function getLevelFromXP(xp = 0) {
     return Math.floor(xp / 100) + 1;
   }
