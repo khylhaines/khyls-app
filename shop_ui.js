@@ -105,32 +105,21 @@ function getRarityClass(item) {
   }
 }
 
-function renderOwnedInventory() {
-  const inventory = document.getElementById("shop-inventory");
-  if (!inventory) return;
+function getItemSortScore(item) {
+  const equipped = isEquippedItem(item);
+  const owned = getInventoryCount(item.id) > 0;
 
-  const ownedItems = SHOP_ITEMS.filter((item) => getInventoryCount(item.id) > 0);
+  if (equipped) return 0;
+  if (owned) return 1;
+  return 2;
+}
 
-  if (!ownedItems.length) {
-    inventory.innerHTML = `<div class="shop-mini">No items yet.</div>`;
-    return;
-  }
-
-  inventory.innerHTML = `
-    <div class="shop-owned-strip">
-      ${ownedItems
-        .map((item) => {
-          const equipped = isEquippedItem(item);
-          return `
-            <div class="shop-owned-chip ${equipped ? "active" : ""}">
-              <span class="shop-owned-chip-icon">${item.icon || "🎁"}</span>
-              <span class="shop-owned-chip-name">${item.name}</span>
-            </div>
-          `;
-        })
-        .join("")}
-    </div>
-  `;
+function getItemsForCurrentTab() {
+  return SHOP_ITEMS.filter((item) => item.section === shopView.tab).sort((a, b) => {
+    const scoreDiff = getItemSortScore(a) - getItemSortScore(b);
+    if (scoreDiff !== 0) return scoreDiff;
+    return Number(a.cost || 0) - Number(b.cost || 0);
+  });
 }
 
 function renderSummary() {
@@ -147,48 +136,25 @@ function renderSummary() {
       ? window.getLevelFromXP(xp)
       : Math.floor(xp / 100) + 1;
 
-  const ownedCount = SHOP_ITEMS.filter((item) => getInventoryCount(item.id) > 0).length;
-  const totalCount = SHOP_ITEMS.length;
-
   summary.innerHTML = `
-    <div class="shop-hero-card">
-      <div class="shop-hero-copy">
+    <div class="shop-topbar">
+      <div class="shop-topbar-left">
         <div class="shop-kicker">QUEST STORE</div>
-        <h3>Loadout Bay</h3>
-        <p>Buy gear, switch skins, set trails, and style the map before the next run.</p>
+        <div class="shop-topbar-title">Loadout</div>
       </div>
 
-      <div class="shop-stat-grid">
-        <div class="shop-stat">
+      <div class="shop-topbar-stats">
+        <div class="shop-mini-stat">
           <span>PLAYER</span>
           <strong>${active?.name || "Player"}</strong>
         </div>
-        <div class="shop-stat">
+        <div class="shop-mini-stat">
           <span>COINS</span>
           <strong>🪙 ${coins}</strong>
         </div>
-        <div class="shop-stat">
+        <div class="shop-mini-stat">
           <span>LEVEL</span>
           <strong>⭐ ${level}</strong>
-        </div>
-        <div class="shop-stat">
-          <span>OWNED</span>
-          <strong>${ownedCount}/${totalCount}</strong>
-        </div>
-      </div>
-
-      <div class="shop-loadout">
-        <div class="shop-loadout-pill">
-          <span>🧍</span>
-          <strong>${state.settings.character || "hero_duo"}</strong>
-        </div>
-        <div class="shop-loadout-pill">
-          <span>✨</span>
-          <strong>${state.settings.equippedTrail || "trail_none"}</strong>
-        </div>
-        <div class="shop-loadout-pill">
-          <span>🗺️</span>
-          <strong>${state.settings.mapTheme || "map_classic"}</strong>
         </div>
       </div>
     </div>
@@ -203,8 +169,8 @@ function renderTabs() {
         const active = shopView.tab === tabId ? "active" : "";
         return `
           <button class="shop-tab ${active}" onclick="setShopTab('${tabId}')">
-            <span>${meta.icon}</span>
-            <span>${meta.title}</span>
+            <span class="shop-tab-icon">${meta.icon}</span>
+            <span class="shop-tab-label">${meta.title}</span>
           </button>
         `;
       }).join("")}
@@ -214,53 +180,61 @@ function renderTabs() {
 
 function renderSectionContent() {
   const meta = getSectionMeta(shopView.tab);
-  const items = SHOP_ITEMS.filter((item) => item.section === shopView.tab);
+  const items = getItemsForCurrentTab();
 
   return `
-    <div class="shop-section-head">
+    <div class="shop-section-head compact">
       <div>
         <div class="shop-section-kicker">${meta.icon} ${meta.title}</div>
         <div class="shop-section-sub">${meta.subtitle}</div>
       </div>
     </div>
 
-    <div class="shop-card-grid">
+    <div class="shop-card-grid compact">
       ${items
         .map((item) => {
-          const owned = getInventoryCount(item.id);
+          const ownedCount = getInventoryCount(item.id);
+          const owned = ownedCount > 0;
           const equipped = isEquippedItem(item);
           const canEquip = isEquippableItem(item);
-          const stateLabel = equipped ? "EQUIPPED" : owned ? "OWNED" : "LOCKED";
+          const stateLabel = equipped
+            ? "EQUIPPED"
+            : owned
+            ? item.stackable
+              ? `OWNED x${ownedCount}`
+              : "OWNED"
+            : "LOCKED";
 
           return `
-            <div class="shop-product-card ${owned ? "owned" : ""} ${equipped ? "equipped" : ""}">
-              <div class="shop-product-top">
-                <div class="shop-product-icon-wrap">
-                  <div class="shop-product-icon">${item.icon || "🎁"}</div>
+            <div class="shop-product-card compact ${owned ? "owned" : ""} ${equipped ? "equipped" : ""}">
+              <div class="shop-product-top compact">
+                <div class="shop-product-icon-wrap compact">
+                  <div class="shop-product-icon compact">${item.icon || "🎁"}</div>
                 </div>
-                <div class="shop-product-badges">
+
+                <div class="shop-product-badges compact">
                   <span class="shop-rarity ${getRarityClass(item)}">${getRarityLabel(item)}</span>
-                  ${item.featured ? `<span class="shop-featured">FEATURED</span>` : ""}
+                  ${equipped ? `<span class="shop-featured equipped-badge">LIVE</span>` : ""}
                 </div>
               </div>
 
-              <div class="shop-product-name">${item.name}</div>
-              <div class="shop-product-desc">${item.desc || ""}</div>
+              <div class="shop-product-name compact">${item.name}</div>
+              <div class="shop-product-desc compact">${item.desc || ""}</div>
 
-              <div class="shop-product-row">
-                <div class="shop-price">🪙 ${item.cost}</div>
-                <div class="shop-state">${stateLabel}</div>
+              <div class="shop-product-row compact">
+                <div class="shop-price compact">🪙 ${item.cost}</div>
+                <div class="shop-state compact">${stateLabel}</div>
               </div>
 
               ${
                 owned
                   ? canEquip
-                    ? `<button class="win-btn shop-action-btn" onclick="equipShopItem('${item.id}')">
+                    ? `<button class="win-btn shop-action-btn compact" onclick="equipShopItem('${item.id}')">
                          ${equipped ? "EQUIPPED" : "EQUIP"}
                        </button>`
-                    : `<button class="win-btn shop-action-btn disabled-btn" disabled>OWNED</button>`
-                  : `<button class="win-btn shop-action-btn" onclick="buyShopItem('${item.id}')">
-                       BUY NOW
+                    : `<button class="win-btn shop-action-btn compact disabled-btn" disabled>OWNED</button>`
+                  : `<button class="win-btn shop-action-btn compact" onclick="buyShopItem('${item.id}')">
+                       BUY
                      </button>`
               }
             </div>
@@ -273,7 +247,9 @@ function renderSectionContent() {
 
 export function renderShop() {
   const list = document.getElementById("shop-list");
+  const inventory = document.getElementById("shop-inventory");
   const state = window.state;
+
   if (!list || !state) return;
 
   if (typeof window.ensureShopDefaults === "function") {
@@ -281,10 +257,14 @@ export function renderShop() {
   }
 
   renderSummary();
-  renderOwnedInventory();
+
+  if (inventory) {
+    inventory.innerHTML = "";
+    inventory.style.display = "none";
+  }
 
   list.innerHTML = `
-    <div class="shop-shell">
+    <div class="shop-shell compact">
       ${renderTabs()}
       ${renderSectionContent()}
     </div>
