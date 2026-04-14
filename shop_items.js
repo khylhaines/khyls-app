@@ -1,7 +1,4 @@
 export const SHOP_ITEMS = [
-  // =========================
-  // DEFAULT / FREE
-  // =========================
   {
     id: "hero_duo",
     name: "Hero Duo",
@@ -13,6 +10,8 @@ export const SHOP_ITEMS = [
     ownedByDefault: true,
     defaultEquip: true,
     icon: "🧭",
+    rarity: "common",
+    featured: true,
   },
   {
     id: "trail_none",
@@ -25,6 +24,7 @@ export const SHOP_ITEMS = [
     ownedByDefault: true,
     defaultEquip: true,
     icon: "➖",
+    rarity: "common",
   },
   {
     id: "map_classic",
@@ -37,11 +37,9 @@ export const SHOP_ITEMS = [
     ownedByDefault: true,
     defaultEquip: true,
     icon: "🗺️",
+    rarity: "common",
   },
 
-  // =========================
-  // CHARACTERS
-  // =========================
   {
     id: "ninja",
     name: "Ninja",
@@ -51,6 +49,7 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Silent and sharp.",
     icon: "🥷",
+    rarity: "rare",
   },
   {
     id: "wizard",
@@ -61,6 +60,7 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Mystic explorer of old knowledge.",
     icon: "🧙",
+    rarity: "rare",
   },
   {
     id: "robot",
@@ -71,6 +71,7 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Metal mission machine.",
     icon: "🤖",
+    rarity: "epic",
   },
   {
     id: "pirate",
@@ -81,6 +82,8 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Treasure hunter of Barrow.",
     icon: "🏴‍☠️",
+    rarity: "epic",
+    featured: true,
   },
   {
     id: "monk",
@@ -91,6 +94,7 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Abbey spirit unlocked for the lost order.",
     icon: "⛪",
+    rarity: "legendary",
   },
   {
     id: "khylan",
@@ -101,6 +105,8 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Khylan playable character skin.",
     icon: "🧒",
+    rarity: "legendary",
+    featured: true,
   },
   {
     id: "piper",
@@ -111,6 +117,8 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Piper playable character skin.",
     icon: "👧",
+    rarity: "legendary",
+    featured: true,
   },
   {
     id: "char_chicken",
@@ -121,6 +129,8 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Chaotic chicken energy.",
     icon: "🐔",
+    rarity: "uncommon",
+    featured: true,
   },
   {
     id: "char_frog",
@@ -131,6 +141,7 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Jump into missions as a frog.",
     icon: "🐸",
+    rarity: "uncommon",
   },
   {
     id: "char_ghost",
@@ -141,11 +152,9 @@ export const SHOP_ITEMS = [
     section: "characters",
     desc: "Float through Barrow like a ghost.",
     icon: "👻",
+    rarity: "rare",
   },
 
-  // =========================
-  // TRAILS
-  // =========================
   {
     id: "trail_poo",
     name: "Poo Trail",
@@ -155,6 +164,8 @@ export const SHOP_ITEMS = [
     section: "trails",
     desc: "Leaves a poo trail behind you.",
     icon: "💩",
+    rarity: "uncommon",
+    featured: true,
   },
   {
     id: "trail_rainbow",
@@ -165,6 +176,8 @@ export const SHOP_ITEMS = [
     section: "trails",
     desc: "Leaves a rainbow trail behind you.",
     icon: "🌈",
+    rarity: "rare",
+    featured: true,
   },
   {
     id: "trail_fire",
@@ -175,6 +188,7 @@ export const SHOP_ITEMS = [
     section: "trails",
     desc: "A fiery trail for fast runs.",
     icon: "🔥",
+    rarity: "epic",
   },
   {
     id: "trail_stars",
@@ -185,6 +199,7 @@ export const SHOP_ITEMS = [
     section: "trails",
     desc: "Sparkling stars behind every step.",
     icon: "✨",
+    rarity: "rare",
   },
   {
     id: "trail_slime",
@@ -195,6 +210,7 @@ export const SHOP_ITEMS = [
     section: "trails",
     desc: "A gross green slime trail.",
     icon: "🟢",
+    rarity: "uncommon",
   },
   {
     id: "trail_shadow",
@@ -205,11 +221,9 @@ export const SHOP_ITEMS = [
     section: "trails",
     desc: "Dark smoky shadow trail.",
     icon: "🌑",
+    rarity: "rare",
   },
 
-  // =========================
-  // MAP THEMES
-  // =========================
   {
     id: "map_dark",
     name: "Dark Map",
@@ -219,6 +233,7 @@ export const SHOP_ITEMS = [
     section: "themes",
     desc: "Dark mode map theme.",
     icon: "🌙",
+    rarity: "uncommon",
   },
   {
     id: "map_neon",
@@ -229,6 +244,8 @@ export const SHOP_ITEMS = [
     section: "themes",
     desc: "Bright neon style map theme.",
     icon: "💜",
+    rarity: "epic",
+    featured: true,
   },
   {
     id: "map_parchment",
@@ -239,11 +256,9 @@ export const SHOP_ITEMS = [
     section: "themes",
     desc: "Old parchment explorer theme.",
     icon: "📜",
+    rarity: "rare",
   },
 
-  // =========================
-  // BOOSTS / UTILITIES
-  // =========================
   {
     id: "route_glow_pack",
     name: "Route Glow Pack",
@@ -253,6 +268,7 @@ export const SHOP_ITEMS = [
     section: "boosts",
     desc: "Adds glow styling to captured route markers.",
     icon: "🔆",
+    rarity: "epic",
   },
   {
     id: "hint_basic",
@@ -264,6 +280,7 @@ export const SHOP_ITEMS = [
     desc: "Basic extra hint for tricky missions.",
     stackable: true,
     icon: "💡",
+    rarity: "common",
   },
   {
     id: "hint_plus",
@@ -275,6 +292,7 @@ export const SHOP_ITEMS = [
     desc: "A stronger mission hint.",
     stackable: true,
     icon: "🚨",
+    rarity: "rare",
   },
   {
     id: "xp_boost_small",
@@ -286,6 +304,7 @@ export const SHOP_ITEMS = [
     desc: "Small XP boost item.",
     stackable: true,
     icon: "⭐",
+    rarity: "rare",
   },
   {
     id: "coin_boost_small",
@@ -297,5 +316,6 @@ export const SHOP_ITEMS = [
     desc: "Small coin boost item.",
     stackable: true,
     icon: "🪙",
+    rarity: "rare",
   },
 ];
