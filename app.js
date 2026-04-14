@@ -8,7 +8,10 @@ import { createAdultLockSystem } from "./systems/adult_lock_system.js";
 import { createProgressionSystem } from "./systems/progression_system.js";
 import { createUISystem } from "./systems/ui_system.js";
 import { wireApp } from "./systems/app_wiring.js";
-
+import {
+  getDefaultAdaptiveProfile,
+  normaliseAdaptiveProfile,
+} from "./systems/adaptive_system.js";
 import { renderShop } from "./shop_ui.js";
 
 let state = {};
