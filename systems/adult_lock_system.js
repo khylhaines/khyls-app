@@ -1,4 +1,4 @@
-export function AdultLockSystem({ getState, saveState }) {
+export function Adult_Lock_System({ getState, saveState }) {
   function isAdultUnlocked() {
     return !!getState()?.adultUnlocked;
   }
