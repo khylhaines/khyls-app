@@ -1,4 +1,4 @@
-export function createNotesSystem({
+export function NotesSystem({
   getState,
   saveState,
 }) {
