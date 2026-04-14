@@ -1466,6 +1466,15 @@ function closeModal(id) {
 /* ============================
    HELPERS
 ============================ */
+
+
+function getInventoryCount(itemId) {
+  return Number(window.state?.inventory?.[itemId] || 0);
+}
+
+window.getInventoryCount = getInventoryCount;
+
+
 function hasValidCoords(pin) {
   return (
     Array.isArray(pin?.l) &&
