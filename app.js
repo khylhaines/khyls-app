@@ -33,6 +33,7 @@ const playerSystem = createPlayerSystem({
   renderShop,
   getLevelFromXP,
 });
+
 // MODALS
 const modalSystem = createModalSystem();
 
