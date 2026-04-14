@@ -13,7 +13,7 @@ import { applyReward } from "./progression.js";
 import { getRandomMystery } from "./mysteries.js";
 import { createAudioSystem } from "./audio_system.js";
 import { createBossSystem } from "./boss_system.js";
-import  "./shop_ui.js";
+import  { renderShop } from "./shop_ui.js";
 import { createTrailSystem } from "./trail_system.js";
 import { SHOP_ITEMS } from "./shop_items.js";
 import {
@@ -2583,7 +2583,7 @@ function maybeUnlockMystery() {
   return mystery;
 }
 
-window.getActivePlayer = getActivePlayer;
+
 
 /* ============================
    ANSWERS / REWARDS
@@ -3440,6 +3440,27 @@ $("btn-shop")?.addEventListener("click", () => {
     saveStateNow(true);
   });
 }
+
+window.getActivePlayer = getActivePlayer;
+window.getInventoryCount = getInventoryCount;
+window.ensureShopDefaults = ensureShopDefaults;
+window.getLevelFromXP = getLevelFromXP;
+window.applySettingsToUI = applySettingsToUI;
+window.renderHUD = renderHUD;
+window.speakText = speakText;
+window.playSound = playSound;
+window.clearTrailLayers = clearTrailLayers;
+window.applyMapTheme = applyMapTheme;
+window.createHeroIcon = createHeroIcon;
+window.saveState = saveState;
+window.renderShop = renderShop;
+
+window.refreshHeroMarker = () => {
+  if (heroMarker) {
+    heroMarker.setIcon(createHeroIcon());
+  }
+};
+
 
 function setupSystems() {
   audioSystem = createAudioSystem({
