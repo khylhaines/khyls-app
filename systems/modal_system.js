@@ -1,4 +1,4 @@
-export function createModalSystem() {
+export function createModalSystem({ $ }) {
   function hideAllModals() {
     document.querySelectorAll(".full-modal").forEach((el) => {
       el.style.display = "none";
@@ -7,12 +7,12 @@ export function createModalSystem() {
 
   function showModal(id) {
     hideAllModals();
-    const el = document.getElementById(id);
+    const el = $(id);
     if (el) el.style.display = "block";
   }
 
   function closeModal(id) {
-    const el = document.getElementById(id);
+    const el = $(id);
     if (el) el.style.display = "none";
   }
 
