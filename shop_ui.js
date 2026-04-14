@@ -6,7 +6,7 @@ import {
   buyShopItem,
 } from "./shop_system.js";
 
-const SHOP_TABS = ["characters", "trails", "themes", "boosts"];
+const SHOP_TABS = ["characters", "trails", "themes", "boosts", "owned"];
 
 const shopView = {
   tab: "characters",
@@ -65,6 +65,13 @@ function getSectionMeta(sectionId) {
         title: "Boosts",
         subtitle: "Extra utility for tougher missions.",
       };
+    case "owned":
+      return {
+        id: "owned",
+        icon: "🎒",
+        title: "Owned",
+        subtitle: "Everything you already have.",
+      };
     default:
       return {
         id: sectionId,
@@ -115,6 +122,14 @@ function getItemSortScore(item) {
 }
 
 function getItemsForCurrentTab() {
+  if (shopView.tab === "owned") {
+    return SHOP_ITEMS.filter((item) => getInventoryCount(item.id) > 0).sort((a, b) => {
+      const scoreDiff = getItemSortScore(a) - getItemSortScore(b);
+      if (scoreDiff !== 0) return scoreDiff;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
   return SHOP_ITEMS.filter((item) => item.section === shopView.tab).sort((a, b) => {
     const scoreDiff = getItemSortScore(a) - getItemSortScore(b);
     if (scoreDiff !== 0) return scoreDiff;
@@ -136,6 +151,9 @@ function renderSummary() {
       ? window.getLevelFromXP(xp)
       : Math.floor(xp / 100) + 1;
 
+  const ownedCount = SHOP_ITEMS.filter((item) => getInventoryCount(item.id) > 0).length;
+  const totalCount = SHOP_ITEMS.length;
+
   summary.innerHTML = `
     <div class="shop-topbar">
       <div class="shop-topbar-left">
@@ -156,6 +174,10 @@ function renderSummary() {
           <span>LEVEL</span>
           <strong>⭐ ${level}</strong>
         </div>
+        <div class="shop-mini-stat">
+          <span>OWNED</span>
+          <strong>${ownedCount}/${totalCount}</strong>
+        </div>
       </div>
     </div>
   `;
@@ -163,7 +185,7 @@ function renderSummary() {
 
 function renderTabs() {
   return `
-    <div class="shop-tabs">
+    <div class="shop-tabs shop-tabs-five">
       ${SHOP_TABS.map((tabId) => {
         const meta = getSectionMeta(tabId);
         const active = shopView.tab === tabId ? "active" : "";
@@ -181,6 +203,23 @@ function renderTabs() {
 function renderSectionContent() {
   const meta = getSectionMeta(shopView.tab);
   const items = getItemsForCurrentTab();
+
+  if (!items.length && shopView.tab === "owned") {
+    return `
+      <div class="shop-section-head compact">
+        <div>
+          <div class="shop-section-kicker">${meta.icon} ${meta.title}</div>
+          <div class="shop-section-sub">${meta.subtitle}</div>
+        </div>
+      </div>
+
+      <div class="shop-empty-state">
+        <div class="shop-empty-icon">🎒</div>
+        <div class="shop-empty-title">Nothing owned yet</div>
+        <div class="shop-empty-text">Buy a few items first and they will show up here.</div>
+      </div>
+    `;
+  }
 
   return `
     <div class="shop-section-head compact">
@@ -222,7 +261,7 @@ function renderSectionContent() {
               <div class="shop-product-desc compact">${item.desc || ""}</div>
 
               <div class="shop-product-row compact">
-                <div class="shop-price compact">🪙 ${item.cost}</div>
+                <div class="shop-price compact">${shopView.tab === "owned" ? (ownedCount > 1 ? `x${ownedCount}` : "OWNED") : `🪙 ${item.cost}`}</div>
                 <div class="shop-state compact">${stateLabel}</div>
               </div>
 
