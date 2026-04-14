@@ -16,8 +16,8 @@ let map;
 
 // STORAGE
 const storageSystem = createStorageSystem({
-  getState: () => state,
-  setState: (s) => (state = s),
+  getDefaultAdaptiveProfile,
+  normaliseAdaptiveProfile,
 });
 
 // LOAD STATE
