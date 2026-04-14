@@ -34,6 +34,13 @@ const playerSystem = createPlayerSystem({
   getLevelFromXP,
 });
 
+window.getActivePlayer = playerSystem.getActivePlayer;
+window.renderHUD = playerSystem.renderHUD;
+window.setActivePlayer = playerSystem.setActivePlayer;
+window.setPlayerCount = playerSystem.setPlayerCount;
+window.updateCoins = playerSystem.updateCoins;
+
+
 // MODALS
 const modalSystem = createModalSystem();
 
