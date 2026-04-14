@@ -1,4 +1,4 @@
-export function createModalSystem() {
+export function ModalSystem() {
   function hideAllModals() {
     document.querySelectorAll(".full-modal").forEach((el) => {
       el.style.display = "none";
