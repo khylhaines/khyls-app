@@ -13,6 +13,7 @@ import { applyReward } from "./progression.js";
 import { getRandomMystery } from "./mysteries.js";
 import { createAudioSystem } from "./audio_system.js";
 import { createBossSystem } from "./boss_system.js";
+import { createShop_ui } from "./shop_ui.js";
 import { createTrailSystem } from "./trail_system.js";
 import { SHOP_ITEMS } from "./shop_items.js";
 import {
