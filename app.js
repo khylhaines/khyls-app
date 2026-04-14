@@ -28,10 +28,11 @@ state = storageSystem.loadState();
 
 // PLAYER
 const playerSystem = createPlayerSystem({
-  getState: () => state,
+  state,
   saveState: storageSystem.saveState,
+  renderShop,
+  getLevelFromXP,
 });
-
 // MODALS
 const modalSystem = createModalSystem();
 
