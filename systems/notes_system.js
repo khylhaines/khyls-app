@@ -1,83 +1,80 @@
-export function createNotesSystem({
-  getState,
-  saveState,
-}) {
+export function createNotesSystem({ state, saveState, saveStateNow }) {
+  // fallback safe getter
+  function getState() {
+    return state;
+  }
+
   function ensureNotesStore() {
-    const state = getState();
+    const s = getState();
 
-    if (!state.notes || typeof state.notes !== "object") {
-      state.notes = [];
+    if (!Array.isArray(s.captainNotes)) {
+      s.captainNotes = [];
     }
-
-    return state.notes;
-  }
-
-  function saveCaptainNote(text, type = "general", title = "") {
-    if (!text) return;
-
-    const notes = ensureNotesStore();
-
-    notes.unshift({
-      id: `note_${Date.now()}`,
-      text,
-      type,
-      title,
-      createdAt: new Date().toISOString(),
-    });
-
-    saveState?.();
-  }
-
-  function deleteCaptainNote(noteId) {
-    const state = getState();
-    if (!state.notes) return;
-
-    state.notes = state.notes.filter((n) => n.id !== noteId);
-
-    saveState?.();
-  }
-
-  function clearAllNotes() {
-    const state = getState();
-    state.notes = [];
-
-    saveState?.();
   }
 
   function getAllNotes() {
-    return ensureNotesStore();
+    ensureNotesStore();
+    return getState().captainNotes;
   }
 
-  function renderHomeLog() {
-    const el = document.getElementById("home-list");
-    if (!el) return;
+  function addNote(text) {
+    if (!text || !text.trim()) return;
+
+    ensureNotesStore();
+
+    const note = {
+      id: Date.now(),
+      text: text.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    getState().captainNotes.unshift(note);
+
+    if (typeof saveStateNow === "function") {
+      saveStateNow();
+    } else if (typeof saveState === "function") {
+      saveState();
+    }
+  }
+
+  function deleteNote(id) {
+    ensureNotesStore();
+
+    const s = getState();
+    s.captainNotes = s.captainNotes.filter(n => n.id !== id);
+
+    if (typeof saveStateNow === "function") {
+      saveStateNow();
+    } else if (typeof saveState === "function") {
+      saveState();
+    }
+  }
+
+  function renderCaptainNotes() {
+    ensureNotesStore();
+
+    const container = document.getElementById("captain-notes-list");
+    if (!container) return;
 
     const notes = getAllNotes();
 
-    if (!notes.length) {
-      el.innerHTML = `<div class="shop-mini">No activity yet.</div>`;
-      return;
-    }
-
-    el.innerHTML = notes
-      .map((note) => {
-        return `
-          <div class="case-card">
-            <div class="case-label">
-              ${note.type?.toUpperCase() || "NOTE"} • ${new Date(note.createdAt).toLocaleString()}
-            </div>
-            <div class="case-body">${note.text}</div>
+    container.innerHTML = notes.length
+      ? notes.map(n => `
+          <div class="note">
+            <div class="note-text">${n.text}</div>
+            <button onclick="deleteCaptainNote(${n.id})">Delete</button>
           </div>
-        `;
-      })
-      .join("");
+        `).join("")
+      : "<p>No notes yet.</p>";
   }
 
+  // expose delete globally (for buttons)
+  window.deleteCaptainNote = deleteNote;
+
   return {
-    saveCaptainNote,
-    deleteCaptainNote,
-    clearAllNotes,
     getAllNotes,
-    renderHomeLog,
+    addNote,
+    deleteNote,
+    renderCaptainNotes,
   };
 }
