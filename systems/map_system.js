@@ -1,94 +1,43 @@
-import { PINS } from "../pins.js";
-import { ADULT_PINS } from "../adult_pins.js";
-
-export function createMapSystem({
-  getState,
-  setMap,
-  getMap,
-  setHeroMarker,
-  getHeroMarker,
-  setActiveMarkers,
-  getActiveMarkers,
-  setCurrentPin,
-  getCurrentPin,
-  showActionButton,
-  updateCaptureText,
-  createHeroIcon,
-  createPinIcon,
-  getCaptureStatus,
-  dropTrailAt,
-  clearTrailLayers,
-  renderHomeLog,
-  speakText,
-}) {
+export function createMapSystem({ state }) {
+  let map = null;
+  let heroMarker = null;
+  let activeMarkers = {};
+  let currentPin = null;
   let locationWatchId = null;
+  let nightVisionOn = false;
 
-  function hasValidCoords(pin) {
-    return (
-      Array.isArray(pin?.l) &&
-      pin.l.length === 2 &&
-      Number.isFinite(pin.l[0]) &&
-      Number.isFinite(pin.l[1]) &&
-      !(pin.l[0] === 0 && pin.l[1] === 0)
-    );
+  function getState() {
+    return state;
   }
 
   function getCurrentPins() {
-    const state = getState();
+    const s = getState();
 
-    if (state.activePack === "adult") {
-      if (!state.activeAdultCategory) {
-        return ADULT_PINS.filter(hasValidCoords);
-      }
-
-      return ADULT_PINS.filter(
-        (p) => p.category === state.activeAdultCategory && hasValidCoords(p)
-      );
+    if (typeof window.getCurrentPins === "function") {
+      return window.getCurrentPins();
     }
 
-    if (state.mapMode === "park") {
-      return PINS.filter((p) => p.set === "park" && hasValidCoords(p));
+    if (Array.isArray(s.currentPins)) {
+      return s.currentPins;
     }
 
-    if (state.mapMode === "abbey") {
-      return PINS.filter((p) => p.set === "abbey" && hasValidCoords(p));
-    }
-
-    return PINS.filter((p) => p.set === "core" && hasValidCoords(p));
+    return [];
   }
 
   function getModeStart() {
-    const state = getState();
+    const s = getState();
 
-    if (state.activePack === "adult") {
+    if (s.activePack === "adult") {
       const pins = getCurrentPins();
-      if (pins.length) return [pins[0].l[0], pins[0].l[1], 14];
+      if (pins.length && Array.isArray(pins[0].l)) {
+        return [pins[0].l[0], pins[0].l[1], 14];
+      }
       return [54.11371, -3.218448, 14];
     }
 
-    if (state.mapMode === "park") return [54.1174, -3.2168, 16];
-    if (state.mapMode === "abbey") return [54.1344, -3.1964, 15];
+    if (s.mapMode === "park") return [54.1174, -3.2168, 16];
+    if (s.mapMode === "abbey") return [54.1344, -3.1964, 15];
     return [54.11371, -3.218448, 14];
-  }
-
-  function applyMapTheme() {
-    const map = getMap();
-    if (!map) return;
-
-    const state = getState();
-    const theme = state.settings?.mapTheme || "map_classic";
-    const el = document.getElementById("map");
-    if (!el) return;
-
-    el.classList.remove("map-theme-classic", "map-theme-dark", "map-theme-neon");
-
-    if (theme === "map_dark") {
-      el.classList.add("map-theme-dark");
-    } else if (theme === "map_neon") {
-      el.classList.add("map-theme-neon");
-    } else {
-      el.classList.add("map-theme-classic");
-    }
   }
 
   function distanceInMeters(aLat, aLng, bLat, bLng) {
@@ -109,66 +58,113 @@ export function createMapSystem({
     return R * c;
   }
 
+  function showActionButton(show) {
+    const btn = document.getElementById("action-trigger");
+    if (!btn) return;
+    btn.style.display = show ? "block" : "none";
+  }
+
+  function updateCaptureText(text) {
+    const btn = document.getElementById("action-trigger");
+    if (!btn || !text) return;
+    btn.title = text;
+  }
+
   function renderPins() {
-    const map = getMap();
     if (!map) return;
 
-    const activeMarkers = getActiveMarkers() || {};
-    Object.values(activeMarkers).forEach((marker) => map.removeLayer(marker));
+    Object.values(activeMarkers).forEach((marker) => {
+      try {
+        map.removeLayer(marker);
+      } catch {}
+    });
 
-    const nextMarkers = {};
+    activeMarkers = {};
+
     const pins = getCurrentPins();
 
     pins.forEach((pin) => {
+      if (!Array.isArray(pin.l) || pin.l.length !== 2) return;
+
       const marker = L.marker(pin.l, {
-        icon: createPinIcon(pin),
+        icon:
+          typeof window.createPinIcon === "function"
+            ? window.createPinIcon(pin)
+            : undefined,
       }).addTo(map);
 
       marker.on("click", () => {
-        setCurrentPin(pin);
+        currentPin = pin;
+        window.currentPin = pin;
         showActionButton(true);
 
-        const status = getCaptureStatus(pin);
+        if (typeof window.getCaptureStatus === "function") {
+          const status = window.getCaptureStatus(pin);
+          updateCaptureText(
+            status.fullyCaptured
+              ? `${pin.n} • CAPTURED • REPLAY`
+              : `${pin.n} • ${status.completedCount}/${status.required} CAPTURED`
+          );
 
-        updateCaptureText(
-          status.fullyCaptured
-            ? `${pin.n} • CAPTURED • REPLAY`
-            : `${pin.n} • ${status.completedCount}/${status.required} CAPTURED`
-        );
-
-        speakText(
-          status.fullyCaptured
-            ? `${pin.n}. Fully captured. Replay available.`
-            : `${pin.n}. ${status.completedCount} out of ${status.required} captured.`
-        );
+          window.speakText?.(
+            status.fullyCaptured
+              ? `${pin.n}. Fully captured. Replay available.`
+              : `${pin.n}. ${status.completedCount} out of ${status.required} captured.`
+          );
+        } else {
+          updateCaptureText(pin.n || "Location");
+        }
       });
 
-      nextMarkers[pin.id] = marker;
+      activeMarkers[pin.id] = marker;
     });
-
-    setActiveMarkers(nextMarkers);
   }
 
   function refreshPinMarker(pin) {
-    if (!pin) return;
-    const activeMarkers = getActiveMarkers() || {};
-    if (!activeMarkers[pin.id]) return;
-
-    activeMarkers[pin.id].setIcon(createPinIcon(pin));
+    if (!pin || !activeMarkers[pin.id]) return;
+    if (typeof window.createPinIcon !== "function") return;
+    activeMarkers[pin.id].setIcon(window.createPinIcon(pin));
   }
 
   function refreshAllPinMarkers() {
-    const activeMarkers = getActiveMarkers() || {};
     Object.keys(activeMarkers).forEach((pinId) => {
       const pin = getCurrentPins().find((p) => p.id === pinId);
-      if (pin) {
-        activeMarkers[pin.id].setIcon(createPinIcon(pin));
-      }
+      if (pin) refreshPinMarker(pin);
+    });
+  }
+
+  function applyMapTheme() {
+    const s = getState();
+    const el = document.getElementById("map");
+    if (!el) return;
+
+    el.classList.remove("map-theme-classic", "map-theme-dark", "map-theme-neon");
+
+    const theme = s.settings?.mapTheme || "map_classic";
+
+    if (theme === "map_dark") {
+      el.classList.add("map-theme-dark");
+    } else if (theme === "map_neon") {
+      el.classList.add("map-theme-neon");
+    } else {
+      el.classList.add("map-theme-classic");
+    }
+  }
+
+  function createHeroIcon() {
+    if (typeof window.createHeroIcon === "function") {
+      return window.createHeroIcon();
+    }
+
+    return L.divIcon({
+      className: "marker-logo",
+      html: `<div style="font-size:40px;">🧭</div>`,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
     });
   }
 
   function startLocationWatch() {
-    const map = getMap();
     if (!navigator.geolocation || !map) return;
 
     locationWatchId = navigator.geolocation.watchPosition(
@@ -176,18 +172,19 @@ export function createMapSystem({
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
 
-        dropTrailAt(lat, lng);
-
-        const heroMarker = getHeroMarker();
         heroMarker?.setLatLng([lat, lng]);
 
+        if (typeof window.dropTrailAt === "function") {
+          window.dropTrailAt(lat, lng);
+        }
+
         const pins = getCurrentPins();
-        const state = getState();
-        const radius = Number(state.settings?.radius || 35);
+        const radius = Number(getState().settings?.radius || 35);
 
         let nearby = null;
 
         for (const pin of pins) {
+          if (!Array.isArray(pin.l) || pin.l.length !== 2) continue;
           const d = distanceInMeters(lat, lng, pin.l[0], pin.l[1]);
           if (d <= radius) {
             nearby = pin;
@@ -195,16 +192,20 @@ export function createMapSystem({
           }
         }
 
-        setCurrentPin(nearby);
+        currentPin = nearby;
+        window.currentPin = nearby || null;
 
         if (nearby) {
-          const status = getCaptureStatus(nearby);
-
-          updateCaptureText(
-            status.fullyCaptured
-              ? `${nearby.n} • CAPTURED • REPLAY`
-              : `${nearby.n} • ${status.completedCount}/${status.required} CAPTURED`
-          );
+          if (typeof window.getCaptureStatus === "function") {
+            const status = window.getCaptureStatus(nearby);
+            updateCaptureText(
+              status.fullyCaptured
+                ? `${nearby.n} • CAPTURED • REPLAY`
+                : `${nearby.n} • ${status.completedCount}/${status.required} CAPTURED`
+            );
+          } else {
+            updateCaptureText(nearby.n || "Location");
+          }
 
           showActionButton(true);
         } else {
@@ -220,19 +221,10 @@ export function createMapSystem({
     );
   }
 
-  function stopLocationWatch() {
-    if (locationWatchId != null && navigator.geolocation?.clearWatch) {
-      try {
-        navigator.geolocation.clearWatch(locationWatchId);
-      } catch {}
-      locationWatchId = null;
-    }
-  }
-
   function initMap() {
     const [lat, lng, zoom] = getModeStart();
 
-    const map = L.map("map", {
+    map = L.map("map", {
       zoomControl: !!getState().settings?.zoomUI,
     }).setView([lat, lng], zoom);
 
@@ -241,10 +233,9 @@ export function createMapSystem({
       maxZoom: 19,
     }).addTo(map);
 
-    setMap(map);
-
-    const heroMarker = L.marker([lat, lng], { icon: createHeroIcon() }).addTo(map);
-    setHeroMarker(heroMarker);
+    heroMarker = L.marker([lat, lng], {
+      icon: createHeroIcon(),
+    }).addTo(map);
 
     applyMapTheme();
     renderPins();
@@ -252,35 +243,60 @@ export function createMapSystem({
   }
 
   function resetMap() {
-    stopLocationWatch();
-
-    const map = getMap();
-    if (map) {
-      map.remove();
-      setMap(null);
+    if (locationWatchId != null && navigator.geolocation?.clearWatch) {
+      try {
+        navigator.geolocation.clearWatch(locationWatchId);
+      } catch {}
+      locationWatchId = null;
     }
 
-    setActiveMarkers({});
-    setHeroMarker(null);
-    setCurrentPin(null);
-    clearTrailLayers();
+    if (map) {
+      map.remove();
+      map = null;
+    }
+
+    activeMarkers = {};
+    heroMarker = null;
+    currentPin = null;
+    window.currentPin = null;
+
+    if (typeof window.clearTrailLayers === "function") {
+      window.clearTrailLayers();
+    }
 
     initMap();
-    renderHomeLog?.();
+  }
+
+  function toggleNightVision() {
+    const el = document.getElementById("map");
+    if (!el) return;
+
+    nightVisionOn = !nightVisionOn;
+    el.classList.toggle("night-vision", nightVisionOn);
+    window.speakText?.(nightVisionOn ? "Night vision on." : "Night vision off.");
+  }
+
+  function getMap() {
+    return map;
+  }
+
+  function getCurrentPin() {
+    return currentPin;
   }
 
   return {
-    hasValidCoords,
-    getCurrentPins,
-    getModeStart,
-    applyMapTheme,
-    distanceInMeters,
     initMap,
     resetMap,
     renderPins,
     refreshPinMarker,
     refreshAllPinMarkers,
+    applyMapTheme,
     startLocationWatch,
-    stopLocationWatch,
+    distanceInMeters,
+    toggleNightVision,
+    showActionButton,
+    updateCaptureText,
+    getMap,
+    getCurrentPin,
   };
 }
