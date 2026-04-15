@@ -1,3 +1,4 @@
+console.log("app.js file loaded");
 // ==========================
 // IMPORTS
 // ==========================
@@ -159,6 +160,28 @@ wireApp({
 window.state = state;
 
 window.renderShop = renderShop;
+
+function boot() {
+  try {
+    setupSystems();
+    renderEverything();
+    wireButtons();
+
+    audioSystem?.forceLoadVoices();
+
+    initMap();
+    checkBadgeUnlocksByCaptures();
+    saveStateNow(true);
+
+    audioSystem?.playWelcomeMessage();
+
+    console.log("App loaded");
+  } catch (err) {
+    console.error("BOOT ERROR:", err);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", boot);
 
 playerSystem.renderHUD();
 renderShop();
