@@ -217,6 +217,11 @@ export function buyShopItem(itemId) {
     playShopSound("chickenbuy.mp3");
   }
 
+if (item.id === "char_ghost") {
+    playShopSound("ghost.mp3");
+  }
+
+   
   return true;
 }
 
