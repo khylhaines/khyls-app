@@ -2839,7 +2839,7 @@ function answerMission(index) {
      ("correct_anserw.mp3");
   }
 
-if (!correct) {
+ if (!correct) {
       window.playUIsound?.
      ("wrong_anserw.mp3");
 
