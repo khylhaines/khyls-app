@@ -1467,7 +1467,28 @@ function closeModal(id) {
    HELPERS
 ============================ */
 
+function showWelcomeMessage() {
+  const overlay = document.getElementById("welcome-overlay");
+  const text = document.getElementById("welcome-text");
 
+  if (!overlay || !text) return;
+
+  const player = window.getActivePlayer?.();
+  const name = player?.name || "Explorer";
+
+  text.innerText = `Welcome to Barrow Quest, ${name}.`;
+
+  overlay.classList.remove("hidden");
+
+  // Speak it (if available)
+  window.speakText?.(`Welcome to Barrow Quest, ${name}`);
+
+  setTimeout(() => {
+    overlay.classList.add("hidden");
+  }, 3000);
+}
+
+  
 function getInventoryCount(itemId) {
   return Number(window.state?.inventory?.[itemId] || 0);
 }
@@ -3515,6 +3536,8 @@ function boot() {
     renderEverything();
     wireButtons();
 
+    showWelcomeMessage();
+    
     audioSystem?.forceLoadVoices();
 
     initMap();
