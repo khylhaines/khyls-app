@@ -2835,9 +2835,12 @@ function answerMission(index) {
   feedback.style.display = "block";
 
   if (!correct) {
-    const correctAnswer =
       window.playUIsound?.
-      ("correct_anserw.mp3");
+     ("correct_anserw.mp3");
+  }
+  
+  if (!correct) {
+     const correctAnswer =
       Array.isArray(q.options) && q.options[q.answer] != null
         ? q.options[q.answer]
         : "Unknown";
