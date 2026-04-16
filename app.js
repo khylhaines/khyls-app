@@ -2838,6 +2838,11 @@ function answerMission(index) {
       window.playUIsound?.
      ("correct_anserw.mp3");
   }
+
+if (!correct) {
+      window.playUIsound?.
+     ("wrong_anserw.mp3");
+
   
   if (!correct) {
      const correctAnswer =
