@@ -2836,6 +2836,8 @@ function answerMission(index) {
 
   if (!correct) {
     const correctAnswer =
+      window.playUIsound?.
+      ("correct_anserw.mp3");
       Array.isArray(q.options) && q.options[q.answer] != null
         ? q.options[q.answer]
         : "Unknown";
