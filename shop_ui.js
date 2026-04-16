@@ -332,6 +332,11 @@ export function equipShopItem(itemId) {
     if (item.id === "char_chicken") {
       window.playSound?.("chickenbuy.mp3");
     }
+
+   if (item.id === "char_frog") {
+      window.playSound?.("frog.mp3");
+    }
+    
     return true;
   }
 
