@@ -1480,13 +1480,27 @@ function showWelcomeMessage() {
 
   overlay.classList.remove("hidden");
 
-  // Speak it (if available)
-  window.speakText?.(`Welcome to Barrow Quest, ${name}`);
+  document.addEventListener(
+    "click",
+    () => {
+      try {
+        const fx = new Audio("./sounds/welcome_whoosh.mp3");
+        fx.volume = 0.45;
+        fx.play().catch(() => {});
+      } catch {}
+
+      setTimeout(() => {
+        window.speakText?.(`Welcome to Barrow Quest, ${name}`);
+      }, 150);
+    },
+    { once: true }
+  );
 
   setTimeout(() => {
     overlay.classList.add("hidden");
   }, 3000);
 }
+
 
   
 function getInventoryCount(itemId) {
