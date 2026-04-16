@@ -3552,13 +3552,11 @@ function boot() {
 
     showWelcomeMessage();
     
-    audioSystem?.forceLoadVoices();
 
     initMap();
     checkBadgeUnlocksByCaptures();
     saveStateNow(true);
 
-    audioSystem?.playWelcomeMessage();
 
     console.log("App loaded");
   } catch (err) {
