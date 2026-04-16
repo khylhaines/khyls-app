@@ -1973,6 +1973,21 @@ function playSound(fileName) {
   }
 }
 
+function playUISound(fileName) {
+  if (!window.userInteracted) return;
+
+  try {
+    const audio = new Audio(`./sounds/${fileName}`);
+    audio.volume = Number(state?.settings?.sfxVol || 80) / 100;
+    audio.currentTime = 0;
+    audio.play().catch((err) => {
+      console.warn("UI sound failed:", err);
+    });
+  } catch (err) {
+    console.warn("UI sound setup failed:", err);
+  }
+}
+
 
 function dropTrailAt(lat, lng) {
   trailSystem?.dropTrailAt(lat, lng);
@@ -3484,6 +3499,7 @@ window.applySettingsToUI = applySettingsToUI;
 window.renderHUD = renderHUD;
 window.speakText = speakText;
 window.playSound = playSound;
+window.playUISound = playUISound;
 window.clearTrailLayers = clearTrailLayers;
 window.applyMapTheme = applyMapTheme;
 window.createHeroIcon = createHeroIcon;
