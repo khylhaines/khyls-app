@@ -2834,48 +2834,41 @@ function answerMission(index) {
   const correct = index === q.answer;
   feedback.style.display = "block";
 
-  if (!correct) {
-      window.playUIsound?.
-     ("correct_anserw.mp3");
-  }
-
- if (!correct) {
-      window.playUIsound?.
-     ("wrong_anserw.mp3");
-
-  
-  if (!correct) {
-     const correctAnswer =
-      Array.isArray(q.options) && q.options[q.answer] != null
-        ? q.options[q.answer]
-        : "Unknown";
-
-    feedback.style.color = "#ff6b6b";
-    feedback.innerText = `Wrong answer.\nCorrect answer: ${correctAnswer}`;
-    speakText(`Wrong answer. The correct answer is ${correctAnswer}.`);
-
-    if (currentTask.mode === "quiz") {
-      const tier = getEffectiveTier();
-      const currentProfile =
-        state.quizProfiles?.[tier] || getDefaultAdaptiveProfile(tier);
-
-      state.quizProfiles[tier] = updateAdaptiveProfile(currentProfile, {
-        tier,
-        isCorrect: false,
-        difficulty: q?.meta?.difficulty,
-        tags: q?.meta?.tags || [],
-        questionId: q?.meta?.questionId || q?.id || null,
-      });
-
-      rememberQuestionTags(q?.meta?.tags || []);
-      saveState();
-    }
-
+  if (correct) {
+    window.playUISound?.("correct_answer.mp3");
+    applyMissionOutcome({ isCorrect: true });
     return;
   }
 
-  applyMissionOutcome({ isCorrect: true });
+  window.playUISound?.("wrong_answer.mp3");
+
+  const correctAnswer =
+    Array.isArray(q.options) && q.options[q.answer] != null
+      ? q.options[q.answer]
+      : "Unknown";
+
+  feedback.style.color = "#ff6b6b";
+  feedback.innerText = `Wrong answer.\nCorrect answer: ${correctAnswer}`;
+  speakText(`Wrong answer. The correct answer is ${correctAnswer}.`);
+
+  if (currentTask.mode === "quiz") {
+    const tier = getEffectiveTier();
+    const currentProfile =
+      state.quizProfiles?.[tier] || getDefaultAdaptiveProfile(tier);
+
+    state.quizProfiles[tier] = updateAdaptiveProfile(currentProfile, {
+      tier,
+      isCorrect: false,
+      difficulty: q?.meta?.difficulty,
+      tags: q?.meta?.tags || [],
+      questionId: q?.meta?.questionId || q?.id || null,
+    });
+
+    rememberQuestionTags(q?.meta?.tags || []);
+    saveState();
+  }
 }
+
 
 function completeCurrentTaskManually() {
   if (!currentTask) return;
