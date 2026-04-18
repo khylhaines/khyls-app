@@ -1478,7 +1478,8 @@ function showWelcomeMessage() {
 
   text.innerText = `Welcome to Barrow Quest, ${name}.`;
 
-  overlay.classList.remove("hidden");
+ overlay.classList.remove("hidden");
+window.playUISound?.("welcome_popup.mp3");
 
   document.addEventListener(
     "click",
