@@ -1,3 +1,4 @@
+
 :root {
   --bg: #07111f;
   --bg-2: #0b1729;
@@ -668,9 +669,6 @@ input[type="range"] {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* ============================
-   WELCOME OVERLAY
-============================ */
 .welcome-overlay {
   position: fixed;
   inset: 0;
@@ -693,12 +691,21 @@ input[type="range"] {
   padding: 30px 24px;
   text-align: center;
   box-shadow:
-    0 25px 60px rgba(0, 0, 0, 0.7),
-    0 0 12px rgba(255, 213, 74, 0.2);
-  animation:
-    welcomeBoxSpinIn 0.55s ease-out,
-    welcomeGlow 2s ease-in-out 0.6s infinite alternate;
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(255, 213, 74, 0.12);
+  animation: welcomeBoxIn 0.55s ease-out;
   transform-origin: center;
+}
+
+@keyframes welcomeBoxIn {
+  from {
+    opacity: 0;
+    transform: scale(0.82) rotate(-8deg) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg) translateY(0);
+  }
 }
 
 .welcome-box h2 {
@@ -722,30 +729,14 @@ input[type="range"] {
   }
 }
 
-@keyframes welcomeBoxSpinIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.6) rotate(-12deg);
-  }
-  60% {
-    transform: scale(1.08) rotate(3deg);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
-}
-
-@keyframes welcomeGlow {
+@keyframes welcomeBoxIn {
   from {
-    box-shadow:
-      0 25px 60px rgba(0, 0, 0, 0.7),
-      0 0 10px rgba(255, 213, 74, 0.1);
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
   }
   to {
-    box-shadow:
-      0 25px 60px rgba(0, 0, 0, 0.7),
-      0 0 28px rgba(255, 213, 74, 0.35);
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
@@ -1450,4 +1441,4 @@ input[type="range"] {
   .shop-loadout {
     flex-direction: column;
   }
-  }
+}
