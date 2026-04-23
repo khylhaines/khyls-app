@@ -3083,6 +3083,16 @@ function renderHomeLog() {
 }
 
 function updateStartButtons() {
+ 
+  $("pill-game-explorer")?.classList.toggle(
+  "active",
+  activeGameMode === "explorer"
+);
+$("pill-game-territory")?.classList.toggle(
+  "active",
+  activeGameMode === "territory"
+);
+
   $("pill-full")?.classList.toggle(
     "active",
     state.activePack === "classic" && state.mapMode === "core"
@@ -3172,6 +3182,19 @@ function renderEverything() {
    BUTTONS
 ============================ */
 function wireButtons() {
+ 
+  $("pill-game-explorer")?.addEventListener("click", () => {
+  activeGameMode = "explorer";
+  updateStartButtons();
+  speakText("Explorer mode selected.");
+});
+
+$("pill-game-territory")?.addEventListener("click", () => {
+  activeGameMode = "territory";
+  updateStartButtons();
+  speakText("Territory mode selected.");
+});
+  
   $("btn-start")?.addEventListener("click", () => closeModal("start-modal"));
   $("btn-start-close")?.addEventListener("click", () =>
     closeModal("start-modal")
