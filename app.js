@@ -5,6 +5,7 @@ import {
   normaliseAdaptiveProfile,
   updateAdaptiveProfile,
 } from "./qa.js";
+import { createTerritorySystem } from "./territory_system.js";
 import { PINS } from "./pins.js";
 import { ADULT_PINS } from "./adult_pins.js";
 import { ADULT_CONTENT } from "./adult_content.js";
@@ -180,6 +181,14 @@ function migrateSave(raw) {
     migrated.bossProgress = {};
   }
 
+if (!migrated.territory || typeof migrated.territory !== "object") {
+    migrated.territory = { nodes: {} };
+  }
+
+  if (!migrated.territory.nodes || typeof migrated.territory.nodes !== "object") {
+    migrated.territory.nodes = {};
+  }
+  
   migrated.storage.version = SAVE_VERSION;
   migrated.storage.migratedFrom = version;
   migrated.storage.migratedAt = new Date().toISOString();
@@ -482,6 +491,10 @@ const DEFAULT_STATE = {
     },
   },
 
+  territory: {
+    nodes: {},
+  },
+
   bossProgress: {},
 };
 
@@ -514,6 +527,7 @@ let audioSystem = null;
 let trailSystem = null;
 let abbeySystem = null;
 let bossSystem = null;
+let territorySystem = null;
 let activeGameMode = "explorer";
 const gameModes = {};
 
@@ -720,6 +734,15 @@ function normaliseLoadedState(parsed) {
     adultLock: normaliseAdultLock(safe.adultLock || {}),
     route: normaliseRoute(safe.route || null),
     rebuild: normaliseRebuild(safe.rebuild || {}),
+  territory:
+      safe.territory && typeof safe.territory === "object"
+        ? {
+            nodes:
+              safe.territory.nodes && typeof safe.territory.nodes === "object"
+                ? safe.territory.nodes
+                : {},
+          }
+        : { nodes: {} },
     bossProgress: normaliseBossProgress(safe.bossProgress || {}),
   };
 }
@@ -1666,6 +1689,79 @@ function applyMapTheme() {
 
 
 function createPinIcon(pin) {
+
+if (activeGameMode === "territory" && territorySystem) {
+    const node = territorySystem.getNode(pin);
+    const ownerId = node?.ownerId || null;
+    const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
+
+    let bg = "rgba(160,160,160,0.20)";
+    let border = "#bdbdbd";
+    let badge = "N";
+
+    if (ownerId === "p1") {
+      bg = "rgba(77,163,255,0.20)";
+      border = "#4da3ff";
+      badge = "1";
+    } else if (ownerId === "p2") {
+      bg = "rgba(255,122,89,0.20)";
+      border = "#ff7a59";
+      badge = "2";
+    } else if (ownerId === "p3") {
+      bg = "rgba(99,255,211,0.20)";
+      border = "#63ffd3";
+      badge = "3";
+    } else if (ownerId === "p4") {
+      bg = "rgba(156,107,255,0.20)";
+      border = "#9c6bff";
+      badge = "4";
+    }
+
+    return L.divIcon({
+      className: "marker-logo",
+      html: `
+        <div style="
+          position:relative;
+          width:42px;
+          height:42px;
+          border-radius:50%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:${bg};
+          border:2px solid ${border};
+          box-shadow:0 0 0 2px rgba(0,0,0,0.35) inset;
+          font-size:20px;
+          line-height:1;
+          color:#fff;
+          font-weight:900;
+        ">
+          🏴
+          <div style="
+            position:absolute;
+            right:-5px;
+            bottom:-5px;
+            min-width:20px;
+            height:20px;
+            padding:0 4px;
+            border-radius:999px;
+            background:${border};
+            color:#111;
+            font-size:11px;
+            font-weight:900;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            border:2px solid #111;
+          ">${level}</div>
+        </div>
+      `,
+      iconSize: [42, 42],
+      iconAnchor: [21, 21],
+    });
+  }
+
+  
   const status = getCaptureStatus(pin);
   const icon = pin.i || "📍";
   const abbey = getAbbeyRebuild();
@@ -3178,11 +3274,25 @@ function renderEverything() {
   }
 }
 
+function handleActionTrigger() {
+  if (!currentPin) return;
+
+  if (activeGameMode === "territory") {
+    territorySystem?.handleAction(currentPin, getActivePlayer());
+    return;
+  }
+
+  openMissionMenu();
+}
+
+
 /* ============================
    BUTTONS
 ============================ */
 function wireButtons() {
- 
+
+$("action-trigger")?.addEventListener("click", handleActionTrigger);
+  
   $("pill-game-explorer")?.addEventListener("click", () => {
   activeGameMode = "explorer";
   updateStartButtons();
@@ -3564,6 +3674,17 @@ function setupSystems() {
     playTrailSound: (trailId) => audioSystem?.playTrailSound(trailId),
   });
 
+territorySystem = createTerritorySystem({
+    getState: () => state,
+    saveState,
+    updateCoins,
+    renderHUD,
+    renderHomeLog,
+    refreshAllPinMarkers,
+    speakText,
+  });
+
+  
   bossSystem = createBossSystem({
     getState: () => state,
     getCurrentTask: () => currentTask,
@@ -3615,16 +3736,19 @@ gameModes.explorer = {
   };
 
 gameModes.territory = {
-  openPin(pin) {
-    currentPin = pin;
+    openPin(pin) {
+      currentPin = pin;
+      showActionButton(true);
 
-    showActionButton(true);
+      const active = getActivePlayer();
+      const label =
+        territorySystem?.getNodeLabel(pin, active?.id || "") ||
+        `${pin.n} • TERRITORY NODE`;
 
-    updateCaptureText(`${pin.n} • TERRITORY NODE`);
-
-    speakText(`${pin.n}. Territory node.`);
-  },
-};
+      updateCaptureText(label);
+      speakText(label);
+    },
+  };
 
 /* ============================
    BOOT
