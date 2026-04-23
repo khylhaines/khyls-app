@@ -3180,6 +3180,18 @@ function wireButtons() {
     closeModal("start-modal")
   );
 
+document.addEventListener("keydown", (e) => {
+  if (e.key === "1") {
+    activeGameMode = "explorer";
+    speakText("Explorer mode");
+  }
+
+  if (e.key === "2") {
+    activeGameMode = "territory";
+    speakText("Territory mode");
+  }
+});
+  
   $("btn-home")?.addEventListener("click", () => {
     currentPin = null;
     currentTask = null;
@@ -3578,6 +3590,18 @@ gameModes.explorer = {
       );
     },
   };
+
+gameModes.territory = {
+  openPin(pin) {
+    currentPin = pin;
+
+    showActionButton(true);
+
+    updateCaptureText(`${pin.n} • TERRITORY NODE`);
+
+    speakText(`${pin.n}. Territory node.`);
+  },
+};
 
 /* ============================
    BOOT
