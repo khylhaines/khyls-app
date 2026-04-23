@@ -514,6 +514,8 @@ let audioSystem = null;
 let trailSystem = null;
 let abbeySystem = null;
 let bossSystem = null;
+let activeGameMode = "explorer";
+const gameModes = {};
 
 const CHARACTER_ICONS = {
   hero_duo: "🧭",
@@ -2107,7 +2109,17 @@ function finishBossMission() {
   return bossSystem?.finishBossMission();
 }
 
+function handlePinOpen(pin) {
+  const mode = gameModes[activeGameMode];
 
+  if (mode?.openPin) {
+    mode.openPin(pin);
+    return;
+  }
+
+  currentPin = pin;
+  openMissionMenu();
+}
 
 /* ============================
    MAP
@@ -2166,24 +2178,12 @@ function renderPins() {
       icon: createPinIcon(pin),
     }).addTo(map);
 
-    marker.on("click", () => {
-      currentPin = pin;
-      showActionButton(true);
 
-      const status = getCaptureStatus(pin);
-      updateCaptureText(
-        status.fullyCaptured
-          ? `${pin.n} • CAPTURED • REPLAY`
-          : `${pin.n} • ${status.completedCount}/${status.required} CAPTURED`
-      );
+marker.on("click", () => {
+  handlePinOpen(pin);
+});
 
-      speakText(
-        status.fullyCaptured
-          ? `${pin.n}. Fully captured. Replay available.`
-          : `${pin.n}. ${status.completedCount} out of ${status.required} captured.`
-      );
-    });
-
+    
     activeMarkers[pin.id] = marker;
   });
 }
@@ -3559,7 +3559,25 @@ function setupSystems() {
   });
 }
 
+gameModes.explorer = {
+    openPin(pin) {
+      currentPin = pin;
+      showActionButton(true);
 
+      const status = getCaptureStatus(pin);
+      updateCaptureText(
+        status.fullyCaptured
+          ? `${pin.n} • CAPTURED • REPLAY`
+          : `${pin.n} • ${status.completedCount}/${status.required} CAPTURED`
+      );
+
+      speakText(
+        status.fullyCaptured
+          ? `${pin.n}. Fully captured. Replay available.`
+          : `${pin.n}. ${status.completedCount} out of ${status.required} captured.`
+      );
+    },
+  };
 
 /* ============================
    BOOT
