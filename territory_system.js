@@ -176,18 +176,58 @@ export function createTerritorySystem({
     return amount;
   }
 
+function upgradeNode(pin, player) {
+  const node = getNode(pin);
+  if (!node || node.ownerId !== player.id) return false;
+
+  if (node.level >= 3) {
+    speakText(`${pin.n} is already max level.`);
+    return false;
+  }
+
+  const cost = node.level === 1 ? 40 : 80;
+
+  if ((player.coins || 0) < cost) {
+    speakText(`Not enough coins to upgrade.`);
+    return false;
+  }
+
+  updateCoins(player.id, -cost);
+
+  node.level += 1;
+  node.defencePercent = getBaseDefenceForLevel(node.level);
+  node.updatedAt = new Date().toISOString();
+
+  saveNode(pin, node);
+
+  renderHUD();
+  renderHomeLog();
+  refreshAllPinMarkers();
+
+  speakText(`${pin.n} upgraded to level ${node.level}.`);
+
+  return true;
+}
+
+  
   function handleAction(pin, player) {
     if (!pin || !player) return;
 
     const node = getNode(pin);
     if (!node) return;
 
-    if (!node.ownerId || node.ownerId !== player.id) {
-      captureNode(pin, player);
-      return;
-    }
+if (!node.ownerId || node.ownerId !== player.id) {
+  captureNode(pin, player);
+  return;
+}
 
-    collectNodeCoins(pin, player);
+// already owned → choose behaviour
+if (node.level < 3) {
+  upgradeNode(pin, player);
+  return;
+}
+
+collectNodeCoins(pin, player);
   }
 
   return {
@@ -195,5 +235,6 @@ export function createTerritorySystem({
     getNode,
     getNodeLabel,
     handleAction,
+    upgradeNode,
   };
 }
