@@ -1871,7 +1871,31 @@ if (activeGameMode === "territory" && territorySystem) {
     iconSize: [34, 34],
     iconAnchor: [17, 17],
   });
+
+// ✅ DEFAULT ICON (fallback so app never crashes)
+return L.divIcon({
+  className: "marker-logo",
+  html: `
+    <div style="
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      background:#111;
+      border:2px solid #fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:18px;
+      box-shadow:0 0 6px rgba(0,0,0,0.6);
+    ">
+      📍
+    </div>
+  `,
+  iconSize: [42, 42],
+  iconAnchor: [21, 21],
+});
 }
+
 
 function getAdultContentForPin(pin) {
   if (!pin) return null;
