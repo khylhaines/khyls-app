@@ -209,6 +209,65 @@ function upgradeNode(pin, player) {
   return true;
 }
 
+function attackNode(pin, player) {
+  const node = getNode(pin);
+  if (!node || !player) return false;
+
+  if (!node.ownerId || node.ownerId === player.id) return false;
+
+  const level = Math.max(1, Math.min(3, Number(node.level || 1)));
+
+  const damageByLevel = {
+    1: 40,
+    2: 30,
+    3: 20,
+  };
+
+  const damage = damageByLevel[level] || 30;
+
+  node.defencePercent = Math.max(
+    0,
+    Number(node.defencePercent || getBaseDefenceForLevel(level)) - damage
+  );
+
+  node.updatedAt = new Date().toISOString();
+
+  if (node.defencePercent <= 0) {
+    const oldOwner = node.ownerName || "another player";
+
+    node.ownerId = player.id;
+    node.ownerName = player.name || "Player";
+    node.level = 1;
+    node.defencePercent = getBaseDefenceForLevel(1);
+    node.storedCoins = 0;
+    node.capturedAt = new Date().toISOString();
+    node.lastIncomeAt = Date.now();
+
+    saveNode(pin, node);
+    updateCoins(player.id, 30);
+    renderHUD();
+    renderHomeLog();
+    refreshAllPinMarkers();
+
+    speakText(`${pin.n} captured from ${oldOwner}. 30 coins awarded.`);
+    return true;
+  }
+
+  saveNode(pin, node);
+  renderHUD();
+  renderHomeLog();
+  refreshAllPinMarkers();
+
+  speakText(
+    `${pin.n} attacked. Defence reduced by ${damage}. Defence now ${Math.round(
+      node.defencePercent
+    )} percent.`
+  );
+
+  return true;
+}
+
+  
   
   function handleAction(pin, player) {
     if (!pin || !player) return;
@@ -216,12 +275,16 @@ function upgradeNode(pin, player) {
     const node = getNode(pin);
     if (!node) return;
 
-if (!node.ownerId || node.ownerId !== player.id) {
+if (!node.ownerId) {
   captureNode(pin, player);
   return;
 }
 
-// already owned → choose behaviour
+if (node.ownerId !== player.id) {
+  attackNode(pin, player);
+  return;
+}
+
 if (node.level < 3) {
   upgradeNode(pin, player);
   return;
@@ -236,5 +299,6 @@ collectNodeCoins(pin, player);
     getNodeLabel,
     handleAction,
     upgradeNode,
+    attackNode,
   };
 }
