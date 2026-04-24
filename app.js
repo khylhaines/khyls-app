@@ -1689,144 +1689,146 @@ function applyMapTheme() {
 
 
 function createPinIcon(pin) {
+  if (activeGameMode === "territory" && territorySystem) {
+    const node = territorySystem.getNode(pin);
+    const ownerId = node?.ownerId || null;
+    const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
+    const defence = Math.max(0, Math.min(100, Number(node?.defencePercent || 0)));
 
-if (activeGameMode === "territory" && territorySystem) {
-  const node = territorySystem.getNode(pin);
-  const ownerId = node?.ownerId || null;
-  const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
-  const defence = Math.max(0, Math.min(100, Number(node?.defencePercent || 0)));
+    let ownerColor = "#bdbdbd";
+    let ownerLabel = "FREE";
 
-  let ownerColor = "#bdbdbd";
-  let ownerLabel = "FREE";
+    if (ownerId === "p1") {
+      ownerColor = "#4da3ff";
+      ownerLabel = "P1";
+    } else if (ownerId === "p2") {
+      ownerColor = "#ff5d5d";
+      ownerLabel = "P2";
+    } else if (ownerId === "p3") {
+      ownerColor = "#63ffd3";
+      ownerLabel = "P3";
+    } else if (ownerId === "p4") {
+      ownerColor = "#9c6bff";
+      ownerLabel = "P4";
+    }
 
-  if (ownerId === "p1") {
-    ownerColor = "#4da3ff";
-    ownerLabel = "P1";
-  } else if (ownerId === "p2") {
-    ownerColor = "#ff5d5d";
-    ownerLabel = "P2";
-  } else if (ownerId === "p3") {
-    ownerColor = "#63ffd3";
-    ownerLabel = "P3";
-  } else if (ownerId === "p4") {
-    ownerColor = "#9c6bff";
-    ownerLabel = "P4";
+    const circumference = 113;
+    const offset = circumference - (defence / 100) * circumference;
+
+    return L.divIcon({
+      className: "marker-logo",
+      html: `
+        <div style="position:relative;width:54px;height:54px;">
+          <svg width="54" height="54" viewBox="0 0 54 54" style="position:absolute;inset:0;">
+            <circle cx="27" cy="27" r="18" fill="rgba(0,0,0,0.72)" stroke="rgba(255,255,255,0.18)" stroke-width="5"></circle>
+            <circle cx="27" cy="27" r="18" fill="none" stroke="${ownerColor}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 27 27)"></circle>
+          </svg>
+
+          <div style="
+            position:absolute;
+            inset:9px;
+            border-radius:50%;
+            background:radial-gradient(circle at 30% 25%, rgba(255,255,255,0.22), rgba(0,0,0,0.82));
+            border:2px solid ${ownerColor};
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 0 10px rgba(0,0,0,0.75), 0 0 12px ${ownerColor};
+            font-size:20px;
+          ">⚔️</div>
+
+          <div style="
+            position:absolute;
+            left:50%;
+            top:-8px;
+            transform:translateX(-50%);
+            min-width:34px;
+            height:17px;
+            padding:0 5px;
+            border-radius:999px;
+            background:${ownerColor};
+            color:#111;
+            border:2px solid #111;
+            font-size:9px;
+            font-weight:900;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            line-height:1;
+          ">${ownerLabel}</div>
+
+          <div style="
+            position:absolute;
+            right:-8px;
+            bottom:-4px;
+            min-width:27px;
+            height:20px;
+            padding:0 5px;
+            border-radius:999px;
+            background:#ffd54a;
+            color:#111;
+            border:2px solid #111;
+            font-size:10px;
+            font-weight:900;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            line-height:1;
+          ">L${level}</div>
+
+          <div style="
+            position:absolute;
+            left:-8px;
+            bottom:-4px;
+            min-width:31px;
+            height:20px;
+            padding:0 5px;
+            border-radius:999px;
+            background:#111;
+            color:#fff;
+            border:2px solid ${ownerColor};
+            font-size:9px;
+            font-weight:900;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            line-height:1;
+          ">${Math.round(defence)}%</div>
+        </div>
+      `,
+      iconSize: [54, 54],
+      iconAnchor: [27, 27],
+    });
   }
 
-  const circumference = 113;
-  const offset = circumference - (defence / 100) * circumference;
+  const status = getCaptureStatus(pin);
+  const icon = pin.i || "📍";
+  const abbey = getAbbeyRebuild();
+  const hasGlowPack = getInventoryCount("route_glow_pack") > 0;
 
-  return L.divIcon({
-    className: "marker-logo",
-    html: `
-      <div style="
-        position:relative;
-        width:54px;
-        height:54px;
-      ">
-        <svg width="54" height="54" viewBox="0 0 54 54" style="position:absolute;inset:0;">
-          <circle
-            cx="27"
-            cy="27"
-            r="18"
-            fill="rgba(0,0,0,0.72)"
-            stroke="rgba(255,255,255,0.18)"
-            stroke-width="5"
-          ></circle>
-
-          <circle
-            cx="27"
-            cy="27"
-            r="18"
-            fill="none"
-            stroke="${ownerColor}"
-            stroke-width="5"
-            stroke-linecap="round"
-            stroke-dasharray="${circumference}"
-            stroke-dashoffset="${offset}"
-            transform="rotate(-90 27 27)"
-          ></circle>
-        </svg>
-
+  if (status.fullyCaptured) {
+    return L.divIcon({
+      className: "marker-logo",
+      html: `
         <div style="
-          position:absolute;
-          inset:9px;
+          width:38px;
+          height:38px;
           border-radius:50%;
-          background:radial-gradient(circle at 30% 25%, rgba(255,255,255,0.22), rgba(0,0,0,0.82));
-          border:2px solid ${ownerColor};
           display:flex;
           align-items:center;
           justify-content:center;
-          box-shadow:
-            0 0 10px rgba(0,0,0,0.75),
-            0 0 12px ${ownerColor};
+          background:rgba(77,255,158,0.18);
+          border:2px solid #4dff9e;
+          box-shadow:0 0 0 2px rgba(0,0,0,0.35) inset;
           font-size:20px;
-        ">⚔️</div>
-
-        <div style="
-          position:absolute;
-          left:50%;
-          top:-8px;
-          transform:translateX(-50%);
-          min-width:34px;
-          height:17px;
-          padding:0 5px;
-          border-radius:999px;
-          background:${ownerColor};
-          color:#111;
-          border:2px solid #111;
-          font-size:9px;
-          font-weight:900;
-          display:flex;
-          align-items:center;
-          justify-content:center;
           line-height:1;
-        ">${ownerLabel}</div>
-
-        <div style="
-          position:absolute;
-          right:-8px;
-          bottom:-4px;
-          min-width:27px;
-          height:20px;
-          padding:0 5px;
-          border-radius:999px;
-          background:#ffd54a;
-          color:#111;
-          border:2px solid #111;
-          font-size:10px;
-          font-weight:900;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          line-height:1;
-        ">L${level}</div>
-
-        <div style="
-          position:absolute;
-          left:-8px;
-          bottom:-4px;
-          min-width:31px;
-          height:20px;
-          padding:0 5px;
-          border-radius:999px;
-          background:#111;
-          color:#fff;
-          border:2px solid ${ownerColor};
-          font-size:9px;
-          font-weight:900;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          line-height:1;
-        ">${Math.round(defence)}%</div>
-      </div>
-    `,
-    iconSize: [54, 54],
-    iconAnchor: [27, 27],
-  });
-}
-
+          ${hasGlowPack ? "filter: drop-shadow(0 0 8px rgba(99,255,211,.7));" : ""}
+        ">✅</div>
+      `,
+      iconSize: [38, 38],
+      iconAnchor: [19, 19],
+    });
+  }
 
   const abbeyGlow =
     state.activePack === "classic" &&
@@ -1871,31 +1873,7 @@ if (activeGameMode === "territory" && territorySystem) {
     iconSize: [34, 34],
     iconAnchor: [17, 17],
   });
-
-// ✅ DEFAULT ICON (fallback so app never crashes)
-return L.divIcon({
-  className: "marker-logo",
-  html: `
-    <div style="
-      width:42px;
-      height:42px;
-      border-radius:50%;
-      background:#111;
-      border:2px solid #fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:18px;
-      box-shadow:0 0 6px rgba(0,0,0,0.6);
-    ">
-      📍
-    </div>
-  `,
-  iconSize: [42, 42],
-  iconAnchor: [21, 21],
-});
 }
-
 
 function getAdultContentForPin(pin) {
   if (!pin) return null;
