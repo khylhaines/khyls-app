@@ -21,6 +21,21 @@ export function createTerritorySystem({
     3: 5,
   };
 
+const WEAPONS = {
+  wooden_arrow: {
+    name: "Wooden Arrow",
+    damage: 10,
+  },
+  bone_arrow: {
+    name: "Bone Arrow",
+    damage: 20,
+  },
+  hand_cannon: {
+    name: "Hand Cannon",
+    damage: 30,
+  },
+};
+  
   const CAPTURE_BONUS = 20;
   const MAX_STORED_COINS = 100;
 
@@ -209,6 +224,59 @@ function upgradeNode(pin, player) {
   return true;
 }
 
+function useWeaponOnNode(pin, player, weaponId) {
+  const node = getNode(pin);
+  const state = getState();
+
+  if (!pin || !player || !node) return false;
+
+  if (!node.ownerId) {
+    speakText("This node is neutral. Capture it instead.");
+    return false;
+  }
+
+  if (node.ownerId === player.id) {
+    speakText("You cannot attack your own territory.");
+    return false;
+  }
+
+  const weapon = WEAPONS[weaponId];
+  if (!weapon) {
+    speakText("Weapon not found.");
+    return false;
+  }
+
+  state.inventory = state.inventory || {};
+  const count = Number(state.inventory[weaponId] || 0);
+
+  if (count <= 0) {
+    speakText(`You do not have a ${weapon.name}.`);
+    return false;
+  }
+
+  state.inventory[weaponId] = Math.max(0, count - 1);
+
+  node.defencePercent = Math.max(
+    0,
+    Number(node.defencePercent || 0) - Number(weapon.damage || 0)
+  );
+
+  node.updatedAt = new Date().toISOString();
+
+  saveNode(pin, node);
+  renderHUD();
+  renderHomeLog();
+  refreshAllPinMarkers();
+
+  speakText(
+    `${weapon.name} used. ${pin.n} defence reduced by ${weapon.damage} percent. Defence now ${Math.round(
+      node.defencePercent
+    )} percent.`
+  );
+
+  return true;
+}
+  
 function attackNode(pin, player) {
   const node = getNode(pin);
   if (!node || !player) return false;
