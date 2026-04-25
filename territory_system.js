@@ -298,6 +298,8 @@ collectNodeCoins(pin, player);
     getNode,
     getNodeLabel,
     handleAction,
+    captureNode,
+    collectNodeCoins,
     upgradeNode,
     attackNode,
   };
