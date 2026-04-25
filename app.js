@@ -530,6 +530,7 @@ let bossSystem = null;
 let territorySystem = null;
 let activeGameMode = "explorer";
 const gameModes = {};
+let lastTerritoryAutoOpenPinId = null;
 
 const CHARACTER_ICONS = {
   hero_duo: "🧭",
@@ -2399,7 +2400,7 @@ function startLocationWatch() {
 
       currentPin = nearby;
 
-     if (nearby) {
+ if (nearby) {
   if (activeGameMode === "territory") {
     const active = getActivePlayer();
     const label =
@@ -2407,9 +2408,12 @@ function startLocationWatch() {
       `${nearby.n} • TERRITORY NODE`;
 
     updateCaptureText(label);
-
-    // Territory uses the command panel, not the big gold lightning button.
     showActionButton(false);
+
+    if (lastTerritoryAutoOpenPinId !== nearby.id) {
+      lastTerritoryAutoOpenPinId = nearby.id;
+      openTerritoryCommandPanel(nearby);
+    }
   } else {
     const status = getCaptureStatus(nearby);
     updateCaptureText(
@@ -2421,8 +2425,12 @@ function startLocationWatch() {
   }
 } else {
   showActionButton(false);
-}
+  lastTerritoryAutoOpenPinId = null;
 
+  if (activeGameMode === "territory") {
+    closeModal("territory-command-modal");
+  }
+}
     },
     () => {},
     {
