@@ -370,5 +370,6 @@ collectNodeCoins(pin, player);
     collectNodeCoins,
     upgradeNode,
     attackNode,
+    useWeponOnNode,
   };
 }
