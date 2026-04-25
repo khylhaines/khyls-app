@@ -3368,6 +3368,9 @@ function openTerritoryCommandPanel(pin) {
   const defence = Math.max(0, Math.min(100, Number(node?.defencePercent || 0)));
   const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
   const storedCoins = Math.floor(Number(node?.storedCoins || 0));
+  const woodenArrowCount = getInventoryCount("wooden_arrow");
+  const boneArrowCount = getInventoryCount("bone_arrow");
+  const handCannonCount = getInventoryCount("hand_cannon");
   
   if ($("territory-node-name")) $("territory-node-name").innerText = pin.n || "Territory Node";
   if ($("territory-node-owner")) $("territory-node-owner").innerText = getTerritoryOwnerText(ownerId);
@@ -3397,6 +3400,20 @@ function openTerritoryCommandPanel(pin) {
   if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine;
   if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine || storedCoins <= 0
   
+  if ($("btn-weapon-arrow-wood")) {
+  $("btn-weapon-arrow-wood").disabled = !isEnemy || woodenArrowCount <= 0;
+  $("btn-weapon-arrow-wood").innerHTML = `🏹 Wooden Arrow<br><small>-10% • x${woodenArrowCount}</small>`;
+}
+
+if ($("btn-weapon-arrow-bone")) {
+  $("btn-weapon-arrow-bone").disabled = !isEnemy || boneArrowCount <= 0;
+  $("btn-weapon-arrow-bone").innerHTML = `🦴 Bone Arrow<br><small>-20% • x${boneArrowCount}</small>`;
+}
+
+if ($("btn-weapon-hand-cannon")) {
+  $("btn-weapon-hand-cannon").disabled = !isEnemy || handCannonCount <= 0;
+  $("btn-weapon-hand-cannon").innerHTML = `🔫 Hand Cannon<br><small>-30% • x${handCannonCount}</small>`;
+}
   showActionButton(false);
   showModal("territory-command-modal");
 }
@@ -3476,6 +3493,25 @@ document.addEventListener("keydown", (e) => {
     speakText("Territory mode");
   }
 });
+
+$("btn-weapon-arrow-wood")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "wooden_arrow");
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-weapon-arrow-bone")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "bone_arrow");
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-weapon-hand-cannon")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "hand_cannon");
+  openTerritoryCommandPanel(currentPin);
+});
+
   
   $("btn-home")?.addEventListener("click", () => {
     currentPin = null;
