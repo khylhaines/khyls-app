@@ -3339,14 +3339,14 @@ $("action-trigger")?.addEventListener("click", handleActionTrigger);
   $("pill-game-explorer")?.addEventListener("click", () => {
   activeGameMode = "explorer";
   updateStartButtons();
-  refreshAllmarkers();
+  refreshAllPinMarkers();
   speakText("Explorer mode selected.");
 });
 
 $("pill-game-territory")?.addEventListener("click", () => {
   activeGameMode = "territory";
   updateStartButtons();
-  refreshAllMarkers();
+  refreshAllPinMarkers();
   speakText("Territory mode selected.");
 });
   
