@@ -622,6 +622,90 @@
       </button>
     </div>
 
+<div id="territory-command-modal" class="full-modal territory-modal">
+  <div class="modal-header">
+    <h2 id="territory-panel-title">⚔️ TERRITORY CONTROL</h2>
+    <button
+      type="button"
+      class="close-x"
+      id="btn-territory-close-x"
+      aria-label="Close Territory"
+    >
+      ✕
+    </button>
+  </div>
+
+  <div class="territory-panel-card">
+    <div id="territory-node-name" class="territory-node-name">
+      NODE NAME
+    </div>
+
+    <div class="territory-stat-grid">
+      <div class="territory-stat">
+        <span>OWNER</span>
+        <strong id="territory-node-owner">FREE</strong>
+      </div>
+
+      <div class="territory-stat">
+        <span>LEVEL</span>
+        <strong id="territory-node-level">L1</strong>
+      </div>
+
+      <div class="territory-stat">
+        <span>DEFENCE</span>
+        <strong id="territory-node-defence">40%</strong>
+      </div>
+
+      <div class="territory-stat">
+        <span>STATUS</span>
+        <strong id="territory-node-status">NEUTRAL</strong>
+      </div>
+
+      <div class="territory-stat">
+        <span>STORED</span>
+        <strong id="territory-node-stored">0 coins</strong>
+      </div>
+    </div>
+
+    <div class="territory-defence-bar">
+      <div id="territory-defence-fill"></div>
+    </div>
+
+    <div id="territory-panel-message" class="territory-panel-message">
+      Select an action.
+    </div>
+
+    <div class="territory-action-grid">
+      <button id="btn-territory-capture" class="territory-action-btn capture" type="button">
+        🏴 CAPTURE
+      </button>
+
+      <button id="btn-territory-attack" class="territory-action-btn attack" type="button">
+        ⚔️ ATTACK
+      </button>
+
+      <button id="btn-territory-upgrade" class="territory-action-btn upgrade" type="button">
+        ⬆️ UPGRADE
+      </button>
+
+      <button id="btn-territory-repair" class="territory-action-btn repair" type="button">
+        🪙 COLLECT
+      </button>
+    </div>
+  </div>
+
+  <button
+    class="win-btn"
+    id="btn-territory-close"
+    type="button"
+    style="background: #222; color: #fff; margin-top: 16px"
+  >
+    CLOSE
+  </button>
+</div>
+
+
+    
     <div id="home-modal" class="full-modal">
       <div class="modal-header">
         <h2 style="color: var(--gold)">🏠 HOME BASE LOG</h2>
