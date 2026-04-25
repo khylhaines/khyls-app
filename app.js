@@ -3367,12 +3367,14 @@ function openTerritoryCommandPanel(pin) {
 
   const defence = Math.max(0, Math.min(100, Number(node?.defencePercent || 0)));
   const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
-
+  const storedCoins = Math.floor(Number(node?.storedCoins || 0));
+  
   if ($("territory-node-name")) $("territory-node-name").innerText = pin.n || "Territory Node";
   if ($("territory-node-owner")) $("territory-node-owner").innerText = getTerritoryOwnerText(ownerId);
   if ($("territory-node-level")) $("territory-node-level").innerText = `L${level}`;
   if ($("territory-node-defence")) $("territory-node-defence").innerText = `${Math.round(defence)}%`;
-
+  if ($("territory-node-stored")) $("territory-node-stored").innerText = `${storedCoins} coins`;
+  
   if ($("territory-defence-fill")) {
     $("territory-defence-fill").style.width = `${defence}%`;
   }
@@ -3393,7 +3395,8 @@ function openTerritoryCommandPanel(pin) {
   if ($("btn-territory-attack")) $("btn-territory-attack").disabled = !isEnemy;
   if ($("btn-territory-upgrade")) $("btn-territory-upgrade").disabled = !isMine || level >= 3;
   if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine;
-
+  if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine || storedCoins <= 0
+  
   showActionButton(false);
   showModal("territory-command-modal");
 }
