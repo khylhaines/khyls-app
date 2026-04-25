@@ -1219,6 +1219,137 @@ input[type="range"] {
 }
 
 /* ============================
+   TERRITORY COMMAND PANEL
+============================ */
+.territory-modal {
+  background:
+    radial-gradient(circle at top, rgba(255, 92, 92, 0.16), transparent 30%),
+    linear-gradient(180deg, rgba(10, 8, 12, 0.98), rgba(3, 5, 10, 0.99));
+}
+
+.territory-modal .modal-header h2 {
+  color: #ffdf6e;
+  text-shadow: 0 0 16px rgba(255, 92, 92, 0.35);
+}
+
+.territory-panel-card {
+  border: 1px solid rgba(255, 213, 74, 0.24);
+  border-radius: 24px;
+  padding: 16px;
+  background:
+    linear-gradient(180deg, rgba(40, 18, 18, 0.94), rgba(10, 12, 20, 0.96));
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.52),
+    0 0 24px rgba(255, 92, 92, 0.12);
+}
+
+.territory-node-name {
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.territory-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.territory-stat {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.territory-stat span {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  color: #aeb7ca;
+  letter-spacing: 0.1em;
+  margin-bottom: 5px;
+}
+
+.territory-stat strong {
+  display: block;
+  font-size: 16px;
+  color: #ffd54a;
+}
+
+.territory-defence-bar {
+  height: 18px;
+  margin: 16px 0 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+#territory-defence-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff5d5d, #ffd54a, #63ffd3);
+  box-shadow: 0 0 16px rgba(255, 213, 74, 0.35);
+  transition: width 0.25s ease;
+}
+
+.territory-panel-message {
+  margin: 12px 0 14px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 213, 74, 0.08);
+  border: 1px solid rgba(255, 213, 74, 0.18);
+  color: #ffe8a3;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.territory-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.territory-action-btn {
+  min-height: 62px;
+  border-radius: 18px;
+  padding: 12px;
+  font-weight: 900;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.territory-action-btn.capture {
+  background: linear-gradient(180deg, #2b8a58, #145c38);
+}
+
+.territory-action-btn.attack {
+  background: linear-gradient(180deg, #bd3030, #641313);
+}
+
+.territory-action-btn.upgrade {
+  background: linear-gradient(180deg, #d6a830, #7a5510);
+}
+
+.territory-action-btn.repair {
+  background: linear-gradient(180deg, #2e6fb8, #173b6b);
+}
+
+.territory-action-btn:disabled {
+  opacity: 0.42;
+  filter: grayscale(0.7);
+}
+
+
+
+/* ============================
    RESPONSIVE
 ============================ */
 @media (min-width: 700px) {
