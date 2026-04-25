@@ -362,14 +362,12 @@ collectNodeCoins(pin, player);
   }
 
   return {
-    ensureTerritoryState,
-    getNode,
-    getNodeLabel,
-    handleAction,
-    captureNode,
-    collectNodeCoins,
-    upgradeNode,
-    attackNode,
-    useWeponOnNode,
+  ensureTerritoryState,
+  getNode,
+  getNodeLabel,
+  handleAction,
+  upgradeNode,
+  attackNode,
+  useWeaponOnNode,
   };
 }
