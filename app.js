@@ -3329,11 +3329,101 @@ function handleActionTrigger() {
 }
 
 
+
+function getTerritoryOwnerText(ownerId) {
+  if (!ownerId) return "FREE";
+  if (ownerId === "p1") return "PLAYER 1";
+  if (ownerId === "p2") return "PLAYER 2";
+  if (ownerId === "p3") return "PLAYER 3";
+  if (ownerId === "p4") return "PLAYER 4";
+  return ownerId.toUpperCase();
+}
+
+function openTerritoryCommandPanel(pin) {
+  if (!pin || !territorySystem) return;
+
+  currentPin = pin;
+
+  const active = getActivePlayer();
+  const node = territorySystem.getNode(pin);
+
+  const ownerId = node?.ownerId || null;
+  const isFree = !ownerId;
+  const isMine = ownerId === active?.id;
+  const isEnemy = ownerId && !isMine;
+
+  const defence = Math.max(0, Math.min(100, Number(node?.defencePercent || 0)));
+  const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
+
+  if ($("territory-node-name")) $("territory-node-name").innerText = pin.n || "Territory Node";
+  if ($("territory-node-owner")) $("territory-node-owner").innerText = getTerritoryOwnerText(ownerId);
+  if ($("territory-node-level")) $("territory-node-level").innerText = `L${level}`;
+  if ($("territory-node-defence")) $("territory-node-defence").innerText = `${Math.round(defence)}%`;
+
+  if ($("territory-defence-fill")) {
+    $("territory-defence-fill").style.width = `${defence}%`;
+  }
+
+  if ($("territory-node-status")) {
+    $("territory-node-status").innerText = isFree ? "NEUTRAL" : isMine ? "YOURS" : "ENEMY";
+  }
+
+  if ($("territory-panel-message")) {
+    $("territory-panel-message").innerText = isFree
+      ? "This node is neutral. Capture it to claim the area."
+      : isMine
+      ? "This is your territory. Upgrade, repair, or collect income."
+      : "Enemy territory. Attack to reduce defence and capture it.";
+  }
+
+  if ($("btn-territory-capture")) $("btn-territory-capture").disabled = !isFree;
+  if ($("btn-territory-attack")) $("btn-territory-attack").disabled = !isEnemy;
+  if ($("btn-territory-upgrade")) $("btn-territory-upgrade").disabled = !isMine || level >= 3;
+  if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine;
+
+  showActionButton(false);
+  showModal("territory-command-modal");
+}
+
 /* ============================
    BUTTONS
 ============================ */
 function wireButtons() {
 
+$("btn-territory-close")?.addEventListener("click", () =>
+  closeModal("territory-command-modal")
+);
+
+$("btn-territory-close-x")?.addEventListener("click", () =>
+  closeModal("territory-command-modal")
+);
+
+$("btn-territory-capture")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.captureNode(currentPin, getActivePlayer());
+  closeModal("territory-command-modal");
+});
+
+$("btn-territory-attack")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.attackNode(currentPin, getActivePlayer());
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-territory-upgrade")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.upgradeNode(currentPin, getActivePlayer());
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-territory-repair")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.collectNodeCoins(currentPin, getActivePlayer());
+  openTerritoryCommandPanel(currentPin);
+});
+
+
+  
 $("action-trigger")?.addEventListener("click", handleActionTrigger);
   
   $("pill-game-explorer")?.addEventListener("click", () => {
@@ -3480,7 +3570,6 @@ $("btn-shop")?.addEventListener("click", () => {
     closeRewardImageModal
   );
 
-  $("action-trigger")?.addEventListener("click", openMissionMenu);
 
   $("pill-full")?.addEventListener("click", () => {
     state.activePack = "classic";
@@ -3781,19 +3870,10 @@ gameModes.explorer = {
   };
 
 gameModes.territory = {
-    openPin(pin) {
-      currentPin = pin;
-      showActionButton(true);
-
-      const active = getActivePlayer();
-      const label =
-        territorySystem?.getNodeLabel(pin, active?.id || "") ||
-        `${pin.n} • TERRITORY NODE`;
-
-      updateCaptureText(label);
-      speakText(label);
-    },
-  };
+  openPin(pin) {
+    openTerritoryCommandPanel(pin);
+  },
+};
 
 /* ============================
    BOOT
