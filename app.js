@@ -2400,9 +2400,10 @@ function startLocationWatch() {
 
       currentPin = nearby;
 
- if (nearby) {
+if (nearby) {
   if (activeGameMode === "territory") {
     const active = getActivePlayer();
+
     const label =
       territorySystem?.getNodeLabel(nearby, active?.id || "") ||
       `${nearby.n} • TERRITORY NODE`;
@@ -2410,21 +2411,32 @@ function startLocationWatch() {
     updateCaptureText(label);
     showActionButton(false);
 
+    // 🔥 THIS IS THE KEY PART
     if (lastTerritoryAutoOpenPinId !== nearby.id) {
       lastTerritoryAutoOpenPinId = nearby.id;
-      openTerritoryCommandPanel(nearby);
+
+      // delay slightly so UI doesn't spam
+      setTimeout(() => {
+        openTerritoryCommandPanel(nearby);
+      }, 200);
     }
+
   } else {
-    const status = getCaptureStatus(nearby);
-    updateCaptureText(
-      status.fullyCaptured
-        ? `${nearby.n} • CAPTURED • REPLAY`
-        : `${nearby.n} • ${status.completedCount}/${status.required} CAPTURED`
-    );
+    updateCaptureText(`${nearby.n}`);
     showActionButton(true);
   }
+
 } else {
   showActionButton(false);
+
+  // 🔥 Reset so next node can trigger again
+  lastTerritoryAutoOpenPinId = null;
+
+  if (activeGameMode === "territory") {
+    closeModal("territory-command-modal");
+  }
+}
+
   lastTerritoryAutoOpenPinId = null;
 
   if (activeGameMode === "territory") {
