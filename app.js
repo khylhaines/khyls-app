@@ -1689,7 +1689,11 @@ function applyMapTheme() {
 
 
 function createPinIcon(pin) {
-  if (activeGameMode === "territory" && territorySystem) {
+  if (
+  activeGameMode === "territory" &&
+  territorySystem &&
+  state.activePack === "classic"
+) {
     const node = territorySystem.getNode(pin);
     const ownerId = node?.ownerId || null;
     const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
@@ -3335,12 +3339,14 @@ $("action-trigger")?.addEventListener("click", handleActionTrigger);
   $("pill-game-explorer")?.addEventListener("click", () => {
   activeGameMode = "explorer";
   updateStartButtons();
+  refreshAllmarkers();
   speakText("Explorer mode selected.");
 });
 
 $("pill-game-territory")?.addEventListener("click", () => {
   activeGameMode = "territory";
   updateStartButtons();
+  refreshAllMarkers();
   speakText("Territory mode selected.");
 });
   
