@@ -2399,17 +2399,30 @@ function startLocationWatch() {
 
       currentPin = nearby;
 
-      if (nearby) {
-        const status = getCaptureStatus(nearby);
-        updateCaptureText(
-          status.fullyCaptured
-            ? `${nearby.n} • CAPTURED • REPLAY`
-            : `${nearby.n} • ${status.completedCount}/${status.required} CAPTURED`
-        );
-        showActionButton(true);
-      } else {
-        showActionButton(false);
-      }
+     if (nearby) {
+  if (activeGameMode === "territory") {
+    const active = getActivePlayer();
+    const label =
+      territorySystem?.getNodeLabel(nearby, active?.id || "") ||
+      `${nearby.n} • TERRITORY NODE`;
+
+    updateCaptureText(label);
+
+    // Territory uses the command panel, not the big gold lightning button.
+    showActionButton(false);
+  } else {
+    const status = getCaptureStatus(nearby);
+    updateCaptureText(
+      status.fullyCaptured
+        ? `${nearby.n} • CAPTURED • REPLAY`
+        : `${nearby.n} • ${status.completedCount}/${status.required} CAPTURED`
+    );
+    showActionButton(true);
+  }
+} else {
+  showActionButton(false);
+}
+
     },
     () => {},
     {
@@ -3435,6 +3448,7 @@ $("action-trigger")?.addEventListener("click", handleActionTrigger);
 
 $("pill-game-territory")?.addEventListener("click", () => {
   activeGameMode = "territory";
+  showActionButton(false);
   updateStartButtons();
   refreshAllPinMarkers();
   speakText("Territory mode selected.");
