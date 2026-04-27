@@ -1367,7 +1367,60 @@ input[type="range"] {
   opacity: 0.85;
 }
 
+.territory-panel-card.weapon-hit {
+  animation: territoryHitShake 0.28s ease;
+}
 
+#territory-defence-fill.weapon-hit {
+  animation: defenceFlash 0.45s ease;
+}
+
+.territory-damage-pop {
+  position: fixed;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  z-index: 40000;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: rgba(189, 48, 48, 0.92);
+  color: #fff;
+  font-weight: 900;
+  font-size: 22px;
+  border: 2px solid rgba(255, 213, 74, 0.85);
+  box-shadow: 0 0 26px rgba(255, 92, 92, 0.45);
+  pointer-events: none;
+  animation: damagePop 0.9s ease forwards;
+}
+
+@keyframes territoryHitShake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-7px); }
+  50% { transform: translateX(7px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes defenceFlash {
+  0% { filter: brightness(1); }
+  40% { filter: brightness(2.2); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes damagePop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.75);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -90%) scale(1);
+  }
+}
 /* ============================
    RESPONSIVE
 ============================ */
