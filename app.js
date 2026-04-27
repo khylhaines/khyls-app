@@ -3437,6 +3437,23 @@ function openTerritoryCommandPanel(pin) {
       : `Enemy territory. Use Bee Arrow weapons or attack to break defence. Defence: ${defenceName}.`;
   }
 
+if ($("territory-scoreboard")) {
+  const scores = territorySystem?.getTerritoryScores?.() || [];
+
+  $("territory-scoreboard").innerHTML = scores.length
+    ? scores
+        .map(
+          (row, index) => `
+            <div class="territory-score-line">
+              <span>${index + 1}. ${row.playerName}</span>
+              <strong>${row.score} pts • ${row.nodes} nodes • +${row.income}/min</strong>
+            </div>
+          `
+        )
+        .join("")
+    : "No territory claimed yet.";
+}
+  
   if ($("btn-territory-capture")) $("btn-territory-capture").disabled = !isFree;
   if ($("btn-territory-attack")) $("btn-territory-attack").disabled = !isEnemy;
   if ($("btn-territory-upgrade")) $("btn-territory-upgrade").disabled = !isMine || level >= 3;
