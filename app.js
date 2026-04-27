@@ -532,6 +532,7 @@ let territorySystem = null;
 let activeGameMode = "explorer";
 const gameModes = {};
 let lastTerritoryAutoOpenPinId = null;
+let lastZoneCount = 0;
 
 const CHARACTER_ICONS = {
   hero_duo: "🧭",
@@ -2284,48 +2285,7 @@ function initMap() {
   startLocationWatch();
 }
 
-function renderTerritoryZones() {
-  if (!map || !territorySystem) return;
 
-  // clear old zones
-  if (!window.territoryZoneLayers) {
-    window.territoryZoneLayers = [];
-  }
-
-  window.territoryZoneLayers.forEach((layer) => {
-    try {
-      map.removeLayer(layer);
-    } catch {}
-  });
-
-  window.territoryZoneLayers = [];
-
-  const zones = territorySystem.getConnectedZones?.() || [];
-  const pins = getCurrentPins();
-
-  zones.forEach((zone) => {
-    const coords = zone.nodes
-      .map((id) => pins.find((p) => p.id === id))
-      .filter(Boolean)
-      .map((p) => [p.l[0], p.l[1]]);
-
-    if (coords.length !== 3) return;
-
-    let color = "#4da3ff"; // Player 1
-    if (zone.ownerId === "p2") color = "#ff5d5d";
-    if (zone.ownerId === "p3") color = "#63ffd3";
-    if (zone.ownerId === "p4") color = "#9c6bff";
-
-    const polygon = L.polygon(coords, {
-      color: color,
-      fillColor: color,
-      fillOpacity: 0.18,
-      weight: 2,
-    }).addTo(map);
-
-    window.territoryZoneLayers.push(polygon);
-  });
-}
 
 function resetMap() {
   if (locationWatchId != null && navigator.geolocation?.clearWatch) {
@@ -2347,6 +2307,51 @@ function resetMap() {
 
   initMap();
   renderHomeLog();
+}
+
+function renderTerritoryZones() {
+  if (!map || !territorySystem) return;
+
+  territoryZoneLayers.forEach((layer) => {
+    try {
+      map.removeLayer(layer);
+    } catch {}
+  });
+
+  territoryZoneLayers = [];
+
+  const zones = territorySystem.getConnectedZones?.() || [];
+  const pins = getCurrentPins();
+
+  if (zones.length > lastZoneCount && activeGameMode === "territory") {
+    speakText("Territory zone formed.");
+    playUISound?.("correct_answer.mp3");
+  }
+
+  lastZoneCount = zones.length;
+
+  zones.forEach((zone) => {
+    const coords = zone.nodes
+      .map((id) => pins.find((p) => p.id === id))
+      .filter(Boolean)
+      .map((p) => [p.l[0], p.l[1]]);
+
+    if (coords.length !== 3) return;
+
+    let color = "#4da3ff";
+    if (zone.ownerId === "p2") color = "#ff5d5d";
+    if (zone.ownerId === "p3") color = "#63ffd3";
+    if (zone.ownerId === "p4") color = "#9c6bff";
+
+    const polygon = L.polygon(coords, {
+      color,
+      fillColor: color,
+      fillOpacity: 0.2,
+      weight: 3,
+    }).addTo(map);
+
+    territoryZoneLayers.push(polygon);
+  });
 }
 
 function renderPins() {
