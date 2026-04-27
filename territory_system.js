@@ -35,6 +35,24 @@ const WEAPONS = {
     damage: 30,
   },
 };
+
+const DEFENCES = {
+  shield: {
+    name: "Basic Shield",
+    cost: 25,
+    defenceBoost: 15,
+  },
+  core: {
+    name: "Reinforced Core",
+    cost: 35,
+    defenceBoost: 25,
+  },
+  bee_nest: {
+    name: "Bee Guard Nest",
+    cost: 50,
+    defenceBoost: 35,
+  },
+};
   
   const CAPTURE_BONUS = 20;
   const MAX_STORED_COINS = 100;
@@ -191,6 +209,41 @@ const WEAPONS = {
     return amount;
   }
 
+function installDefence(pin, player, defenceId) {
+  const node = getNode(pin);
+  const defence = DEFENCES[defenceId];
+
+  if (!node || !player || !defence) return false;
+
+  if (node.ownerId !== player.id) {
+    speakText("You can only defend your own territory.");
+    return false;
+  }
+
+  if ((player.coins || 0) < defence.cost) {
+    speakText(`Not enough coins for ${defence.name}.`);
+    return false;
+  }
+
+  updateCoins(player.id, -defence.cost);
+
+  node.defenceType = defenceId;
+  node.defenceName = defence.name;
+  node.defencePercent = Math.min(
+    100,
+    Number(node.defencePercent || 0) + defence.defenceBoost
+  );
+  node.updatedAt = new Date().toISOString();
+
+  saveNode(pin, node);
+  renderHUD();
+  renderHomeLog();
+  refreshAllPinMarkers();
+
+  speakText(`${defence.name} installed at ${pin.n}.`);
+  return true;
+}
+  
 function upgradeNode(pin, player) {
   const node = getNode(pin);
   if (!node || node.ownerId !== player.id) return false;
@@ -397,5 +450,6 @@ collectNodeCoins(pin, player);
   upgradeNode,
   attackNode,
   useWeaponOnNode,
+  installDefence,
   };
 }
