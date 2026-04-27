@@ -558,7 +558,15 @@ function getTerritoryScores() {
         income: 0,
       };
     }
+    
+  const zones = getConnectedZones();
 
+  zones.forEach((zone) => {
+    if (!scores[zone.ownerId]) return;
+    scores[zone.ownerId].score += 25;
+    scores[zone.ownerId].income += 2;
+  });
+    
     const level = Math.max(1, Math.min(3, Number(node.level || 1)));
     const defence = Math.max(0, Math.min(100, Number(node.defencePercent || 0)));
 
