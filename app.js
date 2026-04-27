@@ -2369,10 +2369,26 @@ function renderTerritoryZones() {
     playUISound?.("correct_answer.mp3");
 
     setTimeout(() => {
-      alert(
-        `🏆 TERRITORY VICTORY\n\n${leader.playerName} wins with ${leader.score} points!\n\nNodes: ${leader.nodes}\nZones: ${leader.zones || 0}\nIncome: +${leader.income}/min`
-      );
-    }, 300);
+  const restart = confirm(
+    `🏆 TERRITORY VICTORY\n\n${leader.playerName} wins with ${leader.score} points!\n\nNodes: ${leader.nodes}\nZones: ${leader.zones || 0}\nIncome: +${leader.income}/min\n\nStart a new game?`
+  );
+
+  if (restart) {
+    // reset all territory
+    const state = window.state;
+    state.territory = { nodes: {} };
+
+    window.__territoryVictoryAnnounced = false;
+
+    saveState();
+
+    refreshAllPinMarkers();
+    renderHUD();
+    renderHomeLog();
+
+    speakText("New territory game started.");
+  }
+}, 300);
   }
 }
 
