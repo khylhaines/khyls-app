@@ -148,24 +148,23 @@
           </div>
         </div>
 
-<div class="start-card">
-  <h3>🎮 GAME MODE</h3>
-  <div class="start-mini">
-    Choose how you want to play on the map. Explorer uses your current
-    mission system. Territory will be the strategy control mode.
-  </div>
+        <div class="start-card">
+          <h3>🎮 GAME MODE</h3>
+          <div class="start-mini">
+            Choose how you want to play on the map. Explorer uses your current
+            mission system. Territory is the strategy control mode.
+          </div>
 
-  <div class="pill-row" style="margin-top: 12px">
-    <button class="pill active" id="pill-game-explorer" type="button">
-      EXPLORER
-    </button>
-    <button class="pill" id="pill-game-territory" type="button">
-      TERRITORY
-    </button>
-  </div>
-</div>
+          <div class="pill-row" style="margin-top: 12px">
+            <button class="pill active" id="pill-game-explorer" type="button">
+              EXPLORER
+            </button>
+            <button class="pill" id="pill-game-territory" type="button">
+              TERRITORY
+            </button>
+          </div>
+        </div>
 
-        
         <div class="start-card">
           <h3>🚀 HOW TO PLAY</h3>
           <div class="start-mini">
@@ -334,7 +333,6 @@
           ✕
         </button>
       </div>
-
 
       <div class="settings-card">
         <h3>CLASSIC TIER</h3>
@@ -597,8 +595,8 @@
           <h3>PLAYER STATUS</h3>
           <div id="shop-summary"></div>
           <div class="shop-mini">
-            Buy boosts, collectibles, cosmetics, and badges. Purchased items
-            are shown below in your inventory.
+            Buy boosts, collectibles, cosmetics, weapons, ammo, and badges.
+            Purchased items are shown below in your inventory.
           </div>
         </div>
 
@@ -622,126 +620,169 @@
       </button>
     </div>
 
-<div id="territory-command-modal" class="full-modal territory-modal">
-  <div class="modal-header">
-    <h2 id="territory-panel-title">⚔️ TERRITORY CONTROL</h2>
-    <button
-      type="button"
-      class="close-x"
-      id="btn-territory-close-x"
-      aria-label="Close Territory"
-    >
-      ✕
-    </button>
-  </div>
-
-  <div class="territory-panel-card">
-    <div id="territory-node-name" class="territory-node-name">
-      NODE NAME
-    </div>
-
-    <div class="territory-stat-grid">
-      <div class="territory-stat">
-        <span>OWNER</span>
-        <strong id="territory-node-owner">FREE</strong>
+    <div id="territory-command-modal" class="full-modal territory-modal">
+      <div class="modal-header">
+        <h2 id="territory-panel-title">⚔️ TERRITORY CONTROL</h2>
+        <button
+          type="button"
+          class="close-x"
+          id="btn-territory-close-x"
+          aria-label="Close Territory"
+        >
+          ✕
+        </button>
       </div>
 
-      <div class="territory-stat">
-        <span>LEVEL</span>
-        <strong id="territory-node-level">L1</strong>
+      <div class="territory-panel-card">
+        <div id="territory-node-name" class="territory-node-name">
+          NODE NAME
+        </div>
+
+        <div class="territory-stat-grid">
+          <div class="territory-stat">
+            <span>OWNER</span>
+            <strong id="territory-node-owner">FREE</strong>
+          </div>
+
+          <div class="territory-stat">
+            <span>LEVEL</span>
+            <strong id="territory-node-level">L1</strong>
+          </div>
+
+          <div class="territory-stat">
+            <span>DEFENCE</span>
+            <strong id="territory-node-defence">40%</strong>
+          </div>
+
+          <div class="territory-stat">
+            <span>STATUS</span>
+            <strong id="territory-node-status">NEUTRAL</strong>
+          </div>
+
+          <div class="territory-stat">
+            <span>STORED</span>
+            <strong id="territory-node-stored">0 coins</strong>
+          </div>
+
+          <div class="territory-stat">
+            <span>INCOME</span>
+            <strong id="territory-node-income">0/min</strong>
+          </div>
+        </div>
+
+        <div class="territory-defence-bar">
+          <div id="territory-defence-fill"></div>
+        </div>
+
+        <div id="territory-panel-message" class="territory-panel-message">
+          Select an action.
+        </div>
+
+        <div class="territory-weapon-box">
+          <h3>🐝 BEE ARROW WEAPONS</h3>
+
+          <div class="territory-action-grid">
+            <button
+              id="btn-weapon-arrow-wood"
+              class="territory-action-btn attack"
+              type="button"
+            >
+              🐝🏹 Bee Arrow<br /><small>-10%</small>
+            </button>
+
+            <button
+              id="btn-weapon-arrow-bone"
+              class="territory-action-btn attack"
+              type="button"
+            >
+              🐝🦴 Stinger Arrow<br /><small>-20%</small>
+            </button>
+
+            <button
+              id="btn-weapon-hand-cannon"
+              class="territory-action-btn attack"
+              type="button"
+            >
+              🐝🚢 Bee Sub Cannon<br /><small>-30%</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="territory-defence-box">
+          <h3>🛡️ DEFENCE UPGRADE</h3>
+
+          <div class="territory-action-grid">
+            <button
+              id="btn-defence-shield"
+              class="territory-action-btn repair"
+              type="button"
+            >
+              🛡️ Shield<br /><small>25 coins</small>
+            </button>
+
+            <button
+              id="btn-defence-core"
+              class="territory-action-btn upgrade"
+              type="button"
+            >
+              🧱 Core<br /><small>35 coins</small>
+            </button>
+
+            <button
+              id="btn-defence-bee"
+              class="territory-action-btn capture"
+              type="button"
+            >
+              🐝 Bee Nest<br /><small>50 coins</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="territory-action-grid">
+          <button
+            id="btn-territory-capture"
+            class="territory-action-btn capture"
+            type="button"
+          >
+            🏴 CAPTURE
+          </button>
+
+          <button
+            id="btn-territory-attack"
+            class="territory-action-btn attack"
+            type="button"
+          >
+            ⚔️ ATTACK
+          </button>
+
+          <button
+            id="btn-territory-upgrade"
+            class="territory-action-btn upgrade"
+            type="button"
+          >
+            ⬆️ UPGRADE
+          </button>
+
+          <button
+            id="btn-territory-repair"
+            class="territory-action-btn repair"
+            type="button"
+          >
+            🪙 COLLECT
+          </button>
+        </div>
       </div>
 
-      <div class="territory-stat">
-        <span>DEFENCE</span>
-        <strong id="territory-node-defence">40%</strong>
-      </div>
-
-      <div class="territory-stat">
-        <span>STATUS</span>
-        <strong id="territory-node-status">NEUTRAL</strong>
-      </div>
-
-      <div class="territory-stat">
-        <span>STORED</span>
-        <strong id="territory-node-stored">0 coins</strong>
-      </div>
-    </div>
-
-    <div class="territory-defence-bar">
-      <div id="territory-defence-fill"></div>
-    </div>
-
-    <div id="territory-panel-message" class="territory-panel-message">
-      Select an action.
-    </div>
-
-    <div class="territory-weapon-box">
-  <h3>⚔️ WEAPONS</h3>
-
-<div class="territory-defence-box">
-  <h3>🛡️ DEFENCE UPGRADE</h3>
-
-  <div class="territory-action-grid">
-    <button id="btn-defence-shield" class="territory-action-btn repair" type="button">
-      🛡️ Shield<br><small>25 coins</small>
-    </button>
-
-    <button id="btn-defence-core" class="territory-action-btn upgrade" type="button">
-      🧱 Core<br><small>35 coins</small>
-    </button>
-
-    <button id="btn-defence-bee" class="territory-action-btn capture" type="button">
-      🐝 Bee Nest<br><small>50 coins</small>
-    </button>
-  </div>
-</div>
-      
-  <div class="territory-action-grid">
-<button id="btn-weapon-arrow-wood" class="territory-action-btn attack" type="button">
-  🐝🏹 Bee Arrow<br><small>-10%</small>
-</button>
-
-<button id="btn-weapon-arrow-bone" class="territory-action-btn attack" type="button">
-  🐝🦴 Stinger Arrow<br><small>-20%</small>
-</button>
-
-<button id="btn-weapon-hand-cannon" class="territory-action-btn attack" type="button">
-  🐝🚢 Bee Sub Cannon<br><small>-30%</small>
-</button>
-  </div>
-</div>
-    
-    <div class="territory-action-grid">
-      <button id="btn-territory-capture" class="territory-action-btn capture" type="button">
-        🏴 CAPTURE
+      <button
+        class="win-btn"
+        id="btn-territory-close"
+        type="button"
+        style="background: #222; color: #fff; margin-top: 16px"
+      >
+        CLOSE
       </button>
-
-      <button id="btn-territory-attack" class="territory-action-btn attack" type="button">
-        ⚔️ ATTACK
-      </button>
-
-      <button id="btn-territory-upgrade" class="territory-action-btn upgrade" type="button">
-        ⬆️ UPGRADE
-      </button>
-
-      <button id="btn-territory-repair" class="territory-action-btn repair" type="button">
-        🪙 COLLECT
-      </button>
     </div>
-  </div>
 
-  <button
-    class="win-btn"
-    id="btn-territory-close"
-    type="button"
-    style="background: #222; color: #fff; margin-top: 16px"
-  >
-    CLOSE
-  </button>
-</div>
-
-
-    
     <div id="home-modal" class="full-modal">
       <div class="modal-header">
         <h2 style="color: var(--gold)">🏠 HOME BASE LOG</h2>
@@ -848,14 +889,13 @@
       </div>
     </div>
 
-
-     <div id="welcome-overlay" class="welcome-overlay hidden">
+    <div id="welcome-overlay" class="welcome-overlay hidden">
       <div class="welcome-box">
-       <h2>🧭 Barrow Quest</h2>
-      <p id="welcome-text">Welcome, explorer.</p>
-     </div>
-   </div>
-    
+        <h2>🧭 Barrow Quest</h2>
+        <p id="welcome-text">Welcome, explorer.</p>
+      </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module" src="./app.js"></script>
 
@@ -870,3 +910,4 @@
     </script>
   </body>
 </html>
+
