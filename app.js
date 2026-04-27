@@ -3408,6 +3408,7 @@ function openTerritoryCommandPanel(pin) {
   const defence = Math.max(0, Math.min(100, Number(node?.defencePercent || 0)));
   const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
   const storedCoins = Math.floor(Number(node?.storedCoins || 0));
+  const incomeRate = Math.max(0, Number(node?.level || 1) === 1 ? 2 : Number(node?.level || 1) === 2 ? 3 : 5);
   const defenceName = node?.defenceName || "None";
 
   const woodenArrowCount = getInventoryCount("wooden_arrow");
@@ -3419,7 +3420,7 @@ function openTerritoryCommandPanel(pin) {
   if ($("territory-node-level")) $("territory-node-level").innerText = `L${level}`;
   if ($("territory-node-defence")) $("territory-node-defence").innerText = `${Math.round(defence)}%`;
   if ($("territory-node-stored")) $("territory-node-stored").innerText = `${storedCoins} coins`;
-
+  if ($("territory-node-income")) $("territory-node-income").innerText = `${incomeRate}/min`;
   if ($("territory-defence-fill")) {
     $("territory-defence-fill").style.width = `${defence}%`;
   }
