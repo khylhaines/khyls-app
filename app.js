@@ -3408,6 +3408,7 @@ function openTerritoryCommandPanel(pin) {
   const defence = Math.max(0, Math.min(100, Number(node?.defencePercent || 0)));
   const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
   const storedCoins = Math.floor(Number(node?.storedCoins || 0));
+  const defenceName = node?.defenceName || "None";
   const woodenArrowCount = getInventoryCount("wooden_arrow");
   const boneArrowCount = getInventoryCount("bone_arrow");
   const handCannonCount = getInventoryCount("hand_cannon");
@@ -3426,20 +3427,24 @@ function openTerritoryCommandPanel(pin) {
     $("territory-node-status").innerText = isFree ? "NEUTRAL" : isMine ? "YOURS" : "ENEMY";
   }
 
-  if ($("territory-panel-message")) {
-    $("territory-panel-message").innerText = isFree
-      ? "This node is neutral. Capture it to claim the area."
-      : isMine
-      ? "This is your territory. Upgrade, repair, or collect income."
-      : "Enemy territory. Attack to reduce defence and capture it.";
-  }
+if ($("territory-panel-message")) {
+  $("territory-panel-message").innerText = isFree
+    ? "Neutral node. Capture it to claim the area."
+    : isMine
+    ? `Your territory. Defence: ${defenceName}. Upgrade or install protection.`
+    : `Enemy territory. Use Bee Arrow weapons or attack to break defence. Defence: ${defenceName}.`;
+}
 
   if ($("btn-territory-capture")) $("btn-territory-capture").disabled = !isFree;
   if ($("btn-territory-attack")) $("btn-territory-attack").disabled = !isEnemy;
   if ($("btn-territory-upgrade")) $("btn-territory-upgrade").disabled = !isMine || level >= 3;
   if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine;
   if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine || storedCoins <= 0
-  
+ 
+  if ($("btn-defence-shield")) $("btn-defence-shield").disabled = !isMine;
+  if ($("btn-defence-core")) $("btn-defence-core").disabled = !isMine;
+  if ($("btn-defence-bee")) $("btn-defence-bee").disabled = !isMine;
+
   if ($("btn-weapon-arrow-wood")) {
  $("btn-weapon-arrow-wood")?.addEventListener("click", () => {
   if (!currentPin) return;
@@ -3527,7 +3532,23 @@ $("btn-territory-repair")?.addEventListener("click", () => {
   openTerritoryCommandPanel(currentPin);
 });
 
+$("btn-defence-shield")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.installDefence(currentPin, getActivePlayer(), "shield");
+  openTerritoryCommandPanel(currentPin);
+});
 
+$("btn-defence-core")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.installDefence(currentPin, getActivePlayer(), "core");
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-defence-bee")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.installDefence(currentPin, getActivePlayer(), "bee_nest");
+  openTerritoryCommandPanel(currentPin);
+});
   
 $("action-trigger")?.addEventListener("click", handleActionTrigger);
   
