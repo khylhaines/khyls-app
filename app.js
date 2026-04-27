@@ -3458,8 +3458,8 @@ function openTerritoryCommandPanel(pin) {
   const defence = Math.max(0, Math.min(100, Number(node?.defencePercent || 0)));
   const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
   const storedCoins = Math.floor(Number(node?.storedCoins || 0));
-  const incomeRate = Math.max(0, Number(node?.level || 1) === 1 ? 2 : Number(node?.level || 1) === 2 ? 3 : 5);
   const defenceName = node?.defenceName || "None";
+  const incomeRate = territorySystem.getIncomeRateForLevel?.(level) || 0;
 
   const woodenArrowCount = getInventoryCount("wooden_arrow");
   const boneArrowCount = getInventoryCount("bone_arrow");
@@ -3471,6 +3471,7 @@ function openTerritoryCommandPanel(pin) {
   if ($("territory-node-defence")) $("territory-node-defence").innerText = `${Math.round(defence)}%`;
   if ($("territory-node-stored")) $("territory-node-stored").innerText = `${storedCoins} coins`;
   if ($("territory-node-income")) $("territory-node-income").innerText = `${incomeRate}/min`;
+
   if ($("territory-defence-fill")) {
     $("territory-defence-fill").style.width = `${defence}%`;
   }
@@ -3479,31 +3480,37 @@ function openTerritoryCommandPanel(pin) {
     $("territory-node-status").innerText = isFree ? "NEUTRAL" : isMine ? "YOURS" : "ENEMY";
   }
 
+  const scores = territorySystem?.getTerritoryScores?.() || [];
+  const leader = scores[0] || null;
+  const victoryScore = 500;
+
   if ($("territory-panel-message")) {
-    $("territory-panel-message").innerText = isFree
-      ? "Neutral node. Capture it to claim the area."
-      : isMine
-      ? `Your territory. Defence: ${defenceName}. Upgrade or install protection.`
-      : `Enemy territory. Use Bee Arrow weapons or attack to break defence. Defence: ${defenceName}.`;
+    if (leader && leader.score >= victoryScore) {
+      $("territory-panel-message").innerText = `🏆 ${leader.playerName} is winning the territory war with ${leader.score} points!`;
+    } else if (isFree) {
+      $("territory-panel-message").innerText = "Neutral node. Capture it to claim the area.";
+    } else if (isMine) {
+      $("territory-panel-message").innerText = `Your territory. Defence: ${defenceName}. Upgrade, defend, collect coins, or build zones.`;
+    } else {
+      $("territory-panel-message").innerText = `Enemy territory. Use Bee Arrow weapons or attack to break defence. Defence: ${defenceName}.`;
+    }
   }
 
-if ($("territory-scoreboard")) {
-  const scores = territorySystem?.getTerritoryScores?.() || [];
+  if ($("territory-scoreboard")) {
+    $("territory-scoreboard").innerHTML = scores.length
+      ? scores
+          .map(
+            (row, index) => `
+              <div class="territory-score-line">
+                <span>${index + 1}. ${row.playerName}</span>
+                <strong>${row.score}/${victoryScore} pts • ${row.nodes} nodes • ${row.zones || 0} zones • +${row.income}/min</strong>
+              </div>
+            `
+          )
+          .join("")
+      : "No territory claimed yet.";
+  }
 
-  $("territory-scoreboard").innerHTML = scores.length
-    ? scores
-        .map(
-          (row, index) => `
-            <div class="territory-score-line">
-              <span>${index + 1}. ${row.playerName}</span>
-              <strong>${row.score} pts • ${row.nodes} nodes • +${row.income}/min</strong>
-            </div>
-          `
-        )
-        .join("")
-    : "No territory claimed yet.";
-}
-  
   if ($("btn-territory-capture")) $("btn-territory-capture").disabled = !isFree;
   if ($("btn-territory-attack")) $("btn-territory-attack").disabled = !isEnemy;
   if ($("btn-territory-upgrade")) $("btn-territory-upgrade").disabled = !isMine || level >= 3;
@@ -3531,7 +3538,6 @@ if ($("territory-scoreboard")) {
   showActionButton(false);
   showModal("territory-command-modal");
 }
-
 
 /* ============================
    BUTTONS
