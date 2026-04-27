@@ -570,6 +570,32 @@ function getTerritoryScores() {
   return Object.values(scores).sort((a, b) => b.score - a.score);
 }
 
+  function getConnectedZones() {
+  const territory = ensureTerritoryState();
+  const nodes = Object.values(territory.nodes || []);
+
+  const zones = [];
+
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      for (let k = j + 1; k < nodes.length; k++) {
+        const a = nodes[i];
+        const b = nodes[j];
+        const c = nodes[k];
+
+        if (!a.ownerId || !b.ownerId || !c.ownerId) continue;
+        if (a.ownerId !== b.ownerId || a.ownerId !== c.ownerId) continue;
+
+        zones.push({
+          ownerId: a.ownerId,
+          nodes: [a.pinId, b.pinId, c.pinId],
+        });
+      }
+    }
+  }
+
+  return zones;
+}
   
   return {
     ensureTerritoryState,
@@ -586,6 +612,7 @@ function getTerritoryScores() {
     attackNode,
     useWeaponOnNode,
     getTerritoryScores,
+    getConnectedZones,
   };
 }
 
