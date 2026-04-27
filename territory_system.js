@@ -542,6 +542,35 @@ export function createTerritorySystem({
     return collectNodeCoins(pin, player);
   }
 
+function getTerritoryScores() {
+  const territory = ensureTerritoryState();
+  const scores = {};
+
+  Object.values(territory.nodes || {}).forEach((node) => {
+    if (!node?.ownerId) return;
+
+    if (!scores[node.ownerId]) {
+      scores[node.ownerId] = {
+        playerId: node.ownerId,
+        playerName: node.ownerName || node.ownerId,
+        nodes: 0,
+        score: 0,
+        income: 0,
+      };
+    }
+
+    const level = Math.max(1, Math.min(3, Number(node.level || 1)));
+    const defence = Math.max(0, Math.min(100, Number(node.defencePercent || 0)));
+
+    scores[node.ownerId].nodes += 1;
+    scores[node.ownerId].income += getIncomeRateForLevel(level);
+    scores[node.ownerId].score += 10 + level * 8 + Math.round(defence / 10);
+  });
+
+  return Object.values(scores).sort((a, b) => b.score - a.score);
+}
+
+  
   return {
     ensureTerritoryState,
     getNode,
@@ -556,6 +585,7 @@ export function createTerritorySystem({
     repairNode,
     attackNode,
     useWeaponOnNode,
+    getTerritoryScores,
   };
 }
 
