@@ -23,15 +23,15 @@ export function createTerritorySystem({
 
 const WEAPONS = {
   wooden_arrow: {
-    name: "Wooden Arrow",
+    name: "Bee Arrow",
     damage: 10,
   },
   bone_arrow: {
-    name: "Bone Arrow",
+    name: "Stinger Arrow",
     damage: 20,
   },
   hand_cannon: {
-    name: "Hand Cannon",
+    name: "Bee Sub Cannon",
     damage: 30,
   },
 };
