@@ -3443,6 +3443,50 @@ function handleActionTrigger() {
   openMissionMenu();
 }
 
+function runTerritoryBotTurn() {
+  if (activeGameMode !== "territory") return;
+  if (!territorySystem) return;
+
+  const botPlayer = state.players.find((p) => p.id === "p2");
+  if (!botPlayer) return;
+
+  botPlayer.enabled = true;
+  botPlayer.name = botPlayer.name || "Player 2";
+  botPlayer.coins = Number(botPlayer.coins || 0) + 5;
+
+  const pins = getCurrentPins();
+  if (!pins.length) return;
+
+  const botNodes = [];
+  const enemyNodes = [];
+  const freeNodes = [];
+
+  pins.forEach((pin) => {
+    const node = territorySystem.getNode(pin);
+    if (!node) return;
+
+    if (!node.ownerId) freeNodes.push(pin);
+    else if (node.ownerId === "p2") botNodes.push(pin);
+    else enemyNodes.push(pin);
+  });
+
+  let target = null;
+
+  if (enemyNodes.length && Math.random() < 0.55) {
+    target = enemyNodes[Math.floor(Math.random() * enemyNodes.length)];
+    territorySystem.attackNode(target, botPlayer);
+  } else if (freeNodes.length) {
+    target = freeNodes[Math.floor(Math.random() * freeNodes.length)];
+    territorySystem.captureNode(target, botPlayer);
+  } else if (botNodes.length) {
+    target = botNodes[Math.floor(Math.random() * botNodes.length)];
+    territorySystem.upgradeNode(target, botPlayer);
+  }
+
+  renderHUD();
+  renderHomeLog();
+  refreshAllPinMarkers();
+}
 
 
 function getTerritoryOwnerText(ownerId) {
@@ -4113,12 +4157,27 @@ function boot() {
     wireButtons();
 
     showWelcomeMessage();
-    
 
     initMap();
     checkBadgeUnlocksByCaptures();
     saveStateNow(true);
 
+    setInterval(() => {
+      if (activeGameMode !== "territory") return;
+      if (!territorySystem) return;
+
+      getCurrentPins().forEach((pin) => {
+        territorySystem.getNode(pin);
+      });
+
+      renderHUD();
+      renderHomeLog();
+      refreshAllPinMarkers();
+    }, 15000);
+
+    setInterval(() => {
+      runTerritoryBotTurn();
+    }, 30000);
 
     console.log("App loaded");
   } catch (err) {
