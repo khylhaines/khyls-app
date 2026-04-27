@@ -240,6 +240,19 @@ function useWeaponOnNode(pin, player, weaponId) {
     return false;
   }
 
+const now = Date.now();
+const lastWeaponKey = `lastWeaponAt_${player.id}`;
+const lastWeaponAt = Number(node[lastWeaponKey] || 0);
+const cooldownMs = 10000;
+
+if (now - lastWeaponAt < cooldownMs) {
+  const secondsLeft = Math.ceil((cooldownMs - (now - lastWeaponAt)) / 1000);
+  speakText(`Weapon recharging. Wait ${secondsLeft} seconds.`);
+  return false;
+}
+
+node[lastWeaponKey] = now;
+  
   const weapon = WEAPONS[weaponId];
   if (!weapon) {
     speakText("Weapon not found.");
@@ -283,6 +296,19 @@ function attackNode(pin, player) {
 
   if (!node.ownerId || node.ownerId === player.id) return false;
 
+const now = Date.now();
+const lastAttackKey = `lastAttackAt_${player.id}`;
+const lastAttackAt = Number(node[lastAttackKey] || 0);
+const cooldownMs = 15000;
+
+if (now - lastAttackAt < cooldownMs) {
+  const secondsLeft = Math.ceil((cooldownMs - (now - lastAttackAt)) / 1000);
+  speakText(`Attack recharging. Wait ${secondsLeft} seconds.`);
+  return false;
+}
+
+node[lastAttackKey] = now;
+  
   const level = Math.max(1, Math.min(3, Number(node.level || 1)));
 
   const damageByLevel = {
