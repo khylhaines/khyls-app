@@ -103,6 +103,44 @@ const DEFENCES = {
     return node;
   }
 
+function useWeaponOnNode(pin, player, weaponId) {
+  if (!pin || !player) return false;
+
+  const node = getNode(pin);
+  if (!node) return false;
+
+  // ❌ Can't attack your own node
+  if (node.ownerId === player.id) return false;
+
+  // ❌ No inventory
+  if (!state.inventory[weaponId] || state.inventory[weaponId] <= 0) return false;
+
+  let damage = 0;
+
+  if (weaponId === "wooden_arrow") damage = 10;
+  if (weaponId === "bone_arrow") damage = 20;
+  if (weaponId === "hand_cannon") damage = 30;
+
+  node.defencePercent = Math.max(0, node.defencePercent - damage);
+
+  // 🔥 Break node if defence hits 0
+  if (node.defencePercent <= 0) {
+    node.ownerId = null;
+    node.level = 1;
+    node.defenceName = "None";
+  }
+
+  // 🎒 consume item
+  state.inventory[weaponId] -= 1;
+
+  saveState();
+  refreshAllPinMarkers();
+  renderHUD();
+
+  return true;
+}
+
+  
   function createDefaultNode(pin) {
     return {
       pinId: pin.id,
