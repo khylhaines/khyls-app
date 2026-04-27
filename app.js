@@ -3366,6 +3366,32 @@ function getTerritoryOwnerText(ownerId) {
   return ownerId.toUpperCase();
 }
 
+function showTerritoryHitFeedback(text = "-10%") {
+  const panel = document.querySelector(".territory-panel-card");
+  const fill = $("territory-defence-fill");
+
+  if (panel) {
+    panel.classList.remove("weapon-hit");
+    void panel.offsetWidth;
+    panel.classList.add("weapon-hit");
+  }
+
+  if (fill) {
+    fill.classList.remove("weapon-hit");
+    void fill.offsetWidth;
+    fill.classList.add("weapon-hit");
+  }
+
+  const pop = document.createElement("div");
+  pop.className = "territory-damage-pop";
+  pop.innerText = text;
+  document.body.appendChild(pop);
+
+  setTimeout(() => {
+    pop.remove();
+  }, 950);
+}
+
 function openTerritoryCommandPanel(pin) {
   if (!pin || !territorySystem) return;
 
@@ -3415,19 +3441,51 @@ function openTerritoryCommandPanel(pin) {
   if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine || storedCoins <= 0
   
   if ($("btn-weapon-arrow-wood")) {
-  $("btn-weapon-arrow-wood").disabled = !isEnemy || woodenArrowCount <= 0;
- $("btn-weapon-arrow-wood").innerHTML = `🐝🏹 Bee Arrow<br><small>-10% • x${woodenArrowCount}</small>`;
-}
+ $("btn-weapon-arrow-wood")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  const ok = territorySystem?.useWeaponOnNode(
+    currentPin,
+    getActivePlayer(),
+    "wooden_arrow"
+  );
 
+  if (ok) {
+    showTerritoryHitFeedback("-10%");
+  }
+
+  openTerritoryCommandPanel(currentPin);
+});
 if ($("btn-weapon-arrow-bone")) {
-  $("btn-weapon-arrow-bone").disabled = !isEnemy || boneArrowCount <= 0;
- $("btn-weapon-arrow-bone").innerHTML = `🐝🦴 Stinger Arrow<br><small>-20% • x${boneArrowCount}</small>`;
-}
+$("btn-weapon-arrow-bone")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  const ok = territorySystem?.useWeaponOnNode(
+    currentPin,
+    getActivePlayer(),
+    "bone_arrow"
+  );
+
+  if (ok) {
+    showTerritoryHitFeedback("-20%");
+  }
+
+  openTerritoryCommandPanel(currentPin);
+});
 
 if ($("btn-weapon-hand-cannon")) {
-  $("btn-weapon-hand-cannon").disabled = !isEnemy || handCannonCount <= 0;
-  $("btn-weapon-hand-cannon").innerHTML = `🐝🚢 Bee Sub Cannon<br><small>-30% • x${handCannonCount}</small>`;
-}
+ $("btn-weapon-hand-cannon")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  const ok = territorySystem?.useWeaponOnNode(
+    currentPin,
+    getActivePlayer(),
+    "hand_cannon"
+  );
+
+  if (ok) {
+    showTerritoryHitFeedback("-30%");
+  }
+
+  openTerritoryCommandPanel(currentPin);
+});
   showActionButton(false);
   showModal("territory-command-modal");
 }
