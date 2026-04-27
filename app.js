@@ -515,7 +515,7 @@ window.state = state;
 state.inventory = state.inventory || {};
 state.purchasedItems = state.purchasedItems || [];
 
-let territoryZoneLayers " [];
+let territoryZoneLayers = [];
 let map = null;
 let heroMarker = null;
 let activeMarkers = {};
