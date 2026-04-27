@@ -3610,6 +3610,12 @@ function openTerritoryCommandPanel(pin) {
     }
   }
 
+  if ($("btn-territory-bot-toggle")) {
+    $("btn-territory-bot-toggle").innerText = window.__territoryBotEnabled
+      ? "🤖 BOT: ON"
+      : "🤖 BOT: OFF";
+  }
+
   if ($("territory-scoreboard")) {
     $("territory-scoreboard").innerHTML = scores.length
       ? scores
@@ -3653,92 +3659,108 @@ function openTerritoryCommandPanel(pin) {
   showModal("territory-command-modal");
 }
 
+
 /* ============================
    BUTTONS
 ============================ */
 function wireButtons() {
+  window.__territoryBotEnabled = window.__territoryBotEnabled || false;
 
-  window.__territoryBotEnabled = false;
+  document.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() === "b") {
+      window.__territoryBotEnabled = !window.__territoryBotEnabled;
 
-document.addEventListener("keydown", (e) => {
-  if (e.key.toLowerCase() === "b") {
+      speakText(
+        window.__territoryBotEnabled
+          ? "Territory bot enabled."
+          : "Territory bot disabled."
+      );
+    }
+  });
+
+  $("btn-territory-bot-toggle")?.addEventListener("click", () => {
     window.__territoryBotEnabled = !window.__territoryBotEnabled;
+
+    if ($("btn-territory-bot-toggle")) {
+      $("btn-territory-bot-toggle").innerText = window.__territoryBotEnabled
+        ? "🤖 BOT: ON"
+        : "🤖 BOT: OFF";
+    }
 
     speakText(
       window.__territoryBotEnabled
         ? "Territory bot enabled."
         : "Territory bot disabled."
     );
-  }
-});
+  });
 
-$("btn-territory-close")?.addEventListener("click", () =>
-  closeModal("territory-command-modal")
-);
+  $("btn-territory-close")?.addEventListener("click", () =>
+    closeModal("territory-command-modal")
+  );
 
-$("btn-territory-close-x")?.addEventListener("click", () =>
-  closeModal("territory-command-modal")
-);
+  $("btn-territory-close-x")?.addEventListener("click", () =>
+    closeModal("territory-command-modal")
+  );
 
-$("btn-territory-capture")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.captureNode(currentPin, getActivePlayer());
-  closeModal("territory-command-modal");
-});
+  $("btn-territory-capture")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.captureNode(currentPin, getActivePlayer());
+    closeModal("territory-command-modal");
+  });
 
-$("btn-territory-attack")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.attackNode(currentPin, getActivePlayer());
-  openTerritoryCommandPanel(currentPin);
-});
+  $("btn-territory-attack")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.attackNode(currentPin, getActivePlayer());
+    openTerritoryCommandPanel(currentPin);
+  });
 
-$("btn-territory-upgrade")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.upgradeNode(currentPin, getActivePlayer());
-  openTerritoryCommandPanel(currentPin);
-});
+  $("btn-territory-upgrade")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.upgradeNode(currentPin, getActivePlayer());
+    openTerritoryCommandPanel(currentPin);
+  });
 
-$("btn-territory-repair")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.collectNodeCoins(currentPin, getActivePlayer());
-  openTerritoryCommandPanel(currentPin);
-});
+  $("btn-territory-repair")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.collectNodeCoins(currentPin, getActivePlayer());
+    openTerritoryCommandPanel(currentPin);
+  });
 
-$("btn-defence-shield")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.installDefence(currentPin, getActivePlayer(), "shield");
-  openTerritoryCommandPanel(currentPin);
-});
+  $("btn-defence-shield")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.installDefence(currentPin, getActivePlayer(), "shield");
+    openTerritoryCommandPanel(currentPin);
+  });
 
-$("btn-defence-core")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.installDefence(currentPin, getActivePlayer(), "core");
-  openTerritoryCommandPanel(currentPin);
-});
+  $("btn-defence-core")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.installDefence(currentPin, getActivePlayer(), "core");
+    openTerritoryCommandPanel(currentPin);
+  });
 
-$("btn-defence-bee")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.installDefence(currentPin, getActivePlayer(), "bee_nest");
-  openTerritoryCommandPanel(currentPin);
-});
-  
-$("action-trigger")?.addEventListener("click", handleActionTrigger);
-  
+  $("btn-defence-bee")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.installDefence(currentPin, getActivePlayer(), "bee_nest");
+    openTerritoryCommandPanel(currentPin);
+  });
+
+  $("action-trigger")?.addEventListener("click", handleActionTrigger);
+
   $("pill-game-explorer")?.addEventListener("click", () => {
-  activeGameMode = "explorer";
-  updateStartButtons();
-  refreshAllPinMarkers();
-  speakText("Explorer mode selected.");
-});
+    activeGameMode = "explorer";
+    updateStartButtons();
+    refreshAllPinMarkers();
+    speakText("Explorer mode selected.");
+  });
 
-$("pill-game-territory")?.addEventListener("click", () => {
-  activeGameMode = "territory";
-  showActionButton(false);
-  updateStartButtons();
-  refreshAllPinMarkers();
-  speakText("Territory mode selected.");
-});
-  
+  $("pill-game-territory")?.addEventListener("click", () => {
+    activeGameMode = "territory";
+    showActionButton(false);
+    updateStartButtons();
+    refreshAllPinMarkers();
+    speakText("Territory mode selected.");
+  });
+
   $("btn-start")?.addEventListener("click", () => closeModal("start-modal"));
   $("btn-start-close")?.addEventListener("click", () =>
     closeModal("start-modal")
@@ -3747,37 +3769,36 @@ $("pill-game-territory")?.addEventListener("click", () => {
     closeModal("start-modal")
   );
 
-document.addEventListener("keydown", (e) => {
-  if (e.key === "1") {
-    activeGameMode = "explorer";
-    speakText("Explorer mode");
-  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "1") {
+      activeGameMode = "explorer";
+      speakText("Explorer mode");
+    }
 
-  if (e.key === "2") {
-    activeGameMode = "territory";
-    speakText("Territory mode");
-  }
-});
+    if (e.key === "2") {
+      activeGameMode = "territory";
+      speakText("Territory mode");
+    }
+  });
 
-$("btn-weapon-arrow-wood")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "wooden_arrow");
-  openTerritoryCommandPanel(currentPin);
-});
+  $("btn-weapon-arrow-wood")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "wooden_arrow");
+    openTerritoryCommandPanel(currentPin);
+  });
 
-$("btn-weapon-arrow-bone")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "bone_arrow");
-  openTerritoryCommandPanel(currentPin);
-});
+  $("btn-weapon-arrow-bone")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "bone_arrow");
+    openTerritoryCommandPanel(currentPin);
+  });
 
-$("btn-weapon-hand-cannon")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "hand_cannon");
-  openTerritoryCommandPanel(currentPin);
-});
+  $("btn-weapon-hand-cannon")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "hand_cannon");
+    openTerritoryCommandPanel(currentPin);
+  });
 
-  
   $("btn-home")?.addEventListener("click", () => {
     currentPin = null;
     currentTask = null;
@@ -3798,23 +3819,23 @@ $("btn-weapon-hand-cannon")?.addEventListener("click", () => {
     showModal("start-modal");
   });
 
-$("btn-shop")?.addEventListener("click", () => {
-  renderShop();
-  showModal("shop-modal");
-  speakText("Shop opened.");
-});
- 
+  $("btn-shop")?.addEventListener("click", () => {
+    renderShop();
+    showModal("shop-modal");
+    speakText("Shop opened.");
+  });
+
   $("voice-select")?.addEventListener("change", (e) => {
-  state.settings.voiceName = String(e.target.value || "");
-  saveState();
-  applySettingsToUI();
-  speakText("Voice updated.");
+    state.settings.voiceName = String(e.target.value || "");
+    saveState();
+    applySettingsToUI();
+    speakText("Voice updated.");
   });
 
   $("btn-shop-close")?.addEventListener("click", () =>
     closeModal("shop-modal")
   );
- 
+
   $("btn-shop-close-x")?.addEventListener("click", () =>
     closeModal("shop-modal")
   );
@@ -3887,7 +3908,6 @@ $("btn-shop")?.addEventListener("click", () => {
     "click",
     closeRewardImageModal
   );
-
 
   $("pill-full")?.addEventListener("click", () => {
     state.activePack = "classic";
@@ -4019,7 +4039,6 @@ $("btn-shop")?.addEventListener("click", () => {
     if (enabled.length >= 2) {
       const tmp = enabled[0].name;
       enabled[0].name = enabled[1].name;
-      enabled[1].name = tmp;
       saveState();
       renderHUD();
       renderShop();
@@ -4072,8 +4091,6 @@ $("btn-shop")?.addEventListener("click", () => {
     applySettingsToUI();
   });
 
- 
-
   $("btn-ar-open")?.addEventListener("click", openAR);
   $("btn-ar-stop")?.addEventListener("click", stopAR);
   $("btn-ar-close")?.addEventListener("click", () => {
@@ -4091,27 +4108,6 @@ $("btn-shop")?.addEventListener("click", () => {
     saveStateNow(true);
   });
 }
-
-window.getActivePlayer = getActivePlayer;
-window.getInventoryCount = getInventoryCount;
-window.ensureShopDefaults = ensureShopDefaults;
-window.getLevelFromXP = getLevelFromXP;
-window.applySettingsToUI = applySettingsToUI;
-window.renderHUD = renderHUD;
-window.speakText = speakText;
-window.playSound = playSound;
-window.playUISound = playUISound;
-window.clearTrailLayers = clearTrailLayers;
-window.applyMapTheme = applyMapTheme;
-window.createHeroIcon = createHeroIcon;
-window.saveState = saveState;
-window.renderShop = renderShop;
-
-window.refreshHeroMarker = () => {
-  if (heroMarker) {
-    heroMarker.setIcon(createHeroIcon());
-  }
-};
 
 
 function setupSystems() {
