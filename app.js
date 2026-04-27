@@ -2429,28 +2429,22 @@ if (nearby) {
 } else {
   showActionButton(false);
 
-  // 🔥 Reset so next node can trigger again
   lastTerritoryAutoOpenPinId = null;
 
   if (activeGameMode === "territory") {
     closeModal("territory-command-modal");
   }
 }
-
-  lastTerritoryAutoOpenPinId = null;
-
-  if (activeGameMode === "territory") {
-    closeModal("territory-command-modal");
-  }
+},
+(err) => {
+  console.warn("GPS error:", err);
+},
+{
+  enableHighAccuracy: true,
+  maximumAge: 5000,
+  timeout: 10000,
 }
-    },
-    () => {},
-    {
-      enableHighAccuracy: true,
-      maximumAge: 5000,
-      timeout: 10000,
-    }
-  );
+);
 }
 
 /* ============================
