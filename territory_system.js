@@ -59,6 +59,7 @@ export function createTerritorySystem({
 
   const CAPTURE_BONUS = 20;
   const RAID_CAPTURE_BONUS = 30;
+  const ZONE_BREAK_BONUS = 40;
   const MAX_STORED_COINS = 250;
   const ATTACK_COOLDOWN_MS = 15000;
   const WEAPON_COOLDOWN_MS = 10000;
@@ -106,7 +107,10 @@ export function createTerritorySystem({
       ),
       defenceType: node?.defenceType || "",
       defenceName: node?.defenceName || "",
-      damageReduction: Math.max(0, Math.min(0.75, Number(node?.damageReduction || 0))),
+      damageReduction: Math.max(
+        0,
+        Math.min(0.75, Number(node?.damageReduction || 0))
+      ),
       storedCoins: Math.max(0, Number(node?.storedCoins || 0)),
       lastIncomeAt: Number(node?.lastIncomeAt || Date.now()),
       capturedAt: node?.capturedAt || null,
@@ -190,6 +194,74 @@ export function createTerritorySystem({
     renderHUD?.();
     renderHomeLog?.();
     refreshAllPinMarkers?.();
+  }
+
+  function getConnectedZones() {
+    const territory = ensureTerritoryState();
+    const nodes = Object.values(territory.nodes || {});
+    const zones = [];
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        for (let k = j + 1; k < nodes.length; k++) {
+          const a = nodes[i];
+          const b = nodes[j];
+          const c = nodes[k];
+
+          if (!a.ownerId || !b.ownerId || !c.ownerId) continue;
+          if (a.ownerId !== b.ownerId || a.ownerId !== c.ownerId) continue;
+
+          zones.push({
+            ownerId: a.ownerId,
+            ownerName: a.ownerName || a.ownerId,
+            nodes: [a.pinId, b.pinId, c.pinId],
+          });
+        }
+      }
+    }
+
+    return zones;
+  }
+
+  function getTerritoryScores() {
+    const territory = ensureTerritoryState();
+    const scores = {};
+
+    Object.values(territory.nodes || {}).forEach((node) => {
+      if (!node?.ownerId) return;
+
+      if (!scores[node.ownerId]) {
+        scores[node.ownerId] = {
+          playerId: node.ownerId,
+          playerName: node.ownerName || node.ownerId,
+          nodes: 0,
+          score: 0,
+          income: 0,
+          zones: 0,
+        };
+      }
+
+      const level = Math.max(1, Math.min(3, Number(node.level || 1)));
+      const defence = Math.max(
+        0,
+        Math.min(100, Number(node.defencePercent || 0))
+      );
+
+      scores[node.ownerId].nodes += 1;
+      scores[node.ownerId].income += getIncomeRateForLevel(level);
+      scores[node.ownerId].score += 10 + level * 8 + Math.round(defence / 10);
+    });
+
+    const zones = getConnectedZones();
+
+    zones.forEach((zone) => {
+      if (!scores[zone.ownerId]) return;
+      scores[zone.ownerId].zones += 1;
+      scores[zone.ownerId].score += 25;
+      scores[zone.ownerId].income += 2;
+    });
+
+    return Object.values(scores).sort((a, b) => b.score - a.score);
   }
 
   function getNodeLabel(pin, activePlayerId = "") {
@@ -373,6 +445,10 @@ export function createTerritorySystem({
   }
 
   function weakenOrCapture(pin, player, node, damage, sourceName = "Attack") {
+    const zonesBefore = getConnectedZones();
+    const oldOwnerId = node.ownerId;
+    const oldOwner = node.ownerName || "another player";
+
     node.defencePercent = Math.max(
       0,
       Number(node.defencePercent || 0) - Number(damage || 0)
@@ -380,11 +456,7 @@ export function createTerritorySystem({
 
     node.updatedAt = new Date().toISOString();
 
-   if (node.defencePercent <= 0) {
-  const zonesBefore = getConnectedZones();
-  const oldOwnerId = node.ownerId;
-  const oldOwner = node.ownerName || "another player";
-
+    if (node.defencePercent <= 0) {
       node.ownerId = player.id;
       node.ownerName = player.name || "Player";
       node.level = 1;
@@ -399,26 +471,31 @@ export function createTerritorySystem({
       node.lastWeaponAt = {};
 
       saveNode(pin, node);
-     const zonesAfter = getConnectedZones();
-
-const oldZonesBefore = zonesBefore.filter((z) => z.ownerId === oldOwnerId).length;
-const oldZonesAfter = zonesAfter.filter((z) => z.ownerId === oldOwnerId).length;
-
-const zoneBreakBonus = oldZonesAfter < oldZonesBefore ? 40 : 0;
-const totalBonus = RAID_CAPTURE_BONUS + zoneBreakBonus;
-
-updateCoins(player.id, totalBonus);
-      refreshUI();
 
       const zonesAfter = getConnectedZones();
 
-const oldZonesBefore = zonesBefore.filter((z) => z.ownerId === oldOwnerId).length;
-const oldZonesAfter = zonesAfter.filter((z) => z.ownerId === oldOwnerId).length;
+      const oldZonesBefore = zonesBefore.filter(
+        (z) => z.ownerId === oldOwnerId
+      ).length;
 
-const zoneBreakBonus = oldZonesAfter < oldZonesBefore ? 40 : 0;
-const totalBonus = RAID_CAPTURE_BONUS + zoneBreakBonus;
+      const oldZonesAfter = zonesAfter.filter(
+        (z) => z.ownerId === oldOwnerId
+      ).length;
 
-updateCoins(player.id, totalBonus);
+      const zoneBreakBonus =
+        oldOwnerId && oldZonesAfter < oldZonesBefore ? ZONE_BREAK_BONUS : 0;
+
+      const totalBonus = RAID_CAPTURE_BONUS + zoneBreakBonus;
+
+      updateCoins(player.id, totalBonus);
+      refreshUI();
+
+      speakText(
+        zoneBreakBonus > 0
+          ? `${sourceName} broke the defence. ${pin.n} captured from ${oldOwner}. Enemy zone broken. ${totalBonus} coins awarded.`
+          : `${sourceName} broke the defence. ${pin.n} captured from ${oldOwner}. ${totalBonus} coins awarded.`
+      );
+
       return true;
     }
 
@@ -462,7 +539,10 @@ updateCoins(player.id, totalBonus);
     };
 
     const baseDamage = damageByLevel[level] || 30;
-    const reduction = Math.max(0, Math.min(0.75, Number(node.damageReduction || 0)));
+    const reduction = Math.max(
+      0,
+      Math.min(0.75, Number(node.damageReduction || 0))
+    );
     const finalDamage = Math.max(1, Math.round(baseDamage * (1 - reduction)));
 
     return weakenOrCapture(pin, player, node, finalDamage, "Attack");
@@ -505,7 +585,11 @@ updateCoins(player.id, totalBonus);
 
     state.inventory[weaponId] = Math.max(0, count - 1);
 
-    const reduction = Math.max(0, Math.min(0.75, Number(node.damageReduction || 0)));
+    const reduction = Math.max(
+      0,
+      Math.min(0.75, Number(node.damageReduction || 0))
+    );
+
     const finalDamage = Math.max(
       1,
       Math.round(Number(weapon.damage || 0) * (1 - reduction))
@@ -524,10 +608,12 @@ updateCoins(player.id, totalBonus);
     }
 
     const maxDefence = Math.max(100, getBaseDefenceForLevel(node.level || 1));
+
     node.defencePercent = Math.min(
       maxDefence,
       Number(node.defencePercent || 0) + Number(amount || 0)
     );
+
     node.updatedAt = new Date().toISOString();
 
     saveNode(pin, node);
@@ -558,69 +644,6 @@ updateCoins(player.id, totalBonus);
     return collectNodeCoins(pin, player);
   }
 
-function getTerritoryScores() {
-  const territory = ensureTerritoryState();
-  const scores = {};
-
-  Object.values(territory.nodes || {}).forEach((node) => {
-    if (!node?.ownerId) return;
-
-    if (!scores[node.ownerId]) {
-      scores[node.ownerId] = {
-        playerId: node.ownerId,
-        playerName: node.ownerName || node.ownerId,
-        nodes: 0,
-        score: 0,
-        income: 0,
-      };
-    }
-    
-  const zones = getConnectedZones();
-
-  zones.forEach((zone) => {
-    if (!scores[zone.ownerId]) return;
-    scores[zone.ownerId].score += 25;
-    scores[zone.ownerId].income += 2;
-  });
-    
-    const level = Math.max(1, Math.min(3, Number(node.level || 1)));
-    const defence = Math.max(0, Math.min(100, Number(node.defencePercent || 0)));
-
-    scores[node.ownerId].nodes += 1;
-    scores[node.ownerId].income += getIncomeRateForLevel(level);
-    scores[node.ownerId].score += 10 + level * 8 + Math.round(defence / 10);
-  });
-
-  return Object.values(scores).sort((a, b) => b.score - a.score);
-}
-
-  function getConnectedZones() {
-  const territory = ensureTerritoryState();
-  const nodes = Object.values(territory.nodes || []);
-
-  const zones = [];
-
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      for (let k = j + 1; k < nodes.length; k++) {
-        const a = nodes[i];
-        const b = nodes[j];
-        const c = nodes[k];
-
-        if (!a.ownerId || !b.ownerId || !c.ownerId) continue;
-        if (a.ownerId !== b.ownerId || a.ownerId !== c.ownerId) continue;
-
-        zones.push({
-          ownerId: a.ownerId,
-          nodes: [a.pinId, b.pinId, c.pinId],
-        });
-      }
-    }
-  }
-
-  return zones;
-}
-  
   return {
     ensureTerritoryState,
     getNode,
@@ -639,4 +662,3 @@ function getTerritoryScores() {
     getConnectedZones,
   };
 }
-
