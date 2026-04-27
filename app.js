@@ -2384,7 +2384,7 @@ function refreshAllPinMarkers() {
       activeMarkers[pin.id].setIcon(createPinIcon(pin));
     }
   });
-  renderTerritoryZones{};
+  renderTerritoryZones();
 }
 
 function refreshPinMarker(pin) {
