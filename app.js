@@ -3409,16 +3409,17 @@ function openTerritoryCommandPanel(pin) {
   const level = Math.max(1, Math.min(3, Number(node?.level || 1)));
   const storedCoins = Math.floor(Number(node?.storedCoins || 0));
   const defenceName = node?.defenceName || "None";
+
   const woodenArrowCount = getInventoryCount("wooden_arrow");
   const boneArrowCount = getInventoryCount("bone_arrow");
   const handCannonCount = getInventoryCount("hand_cannon");
-  
+
   if ($("territory-node-name")) $("territory-node-name").innerText = pin.n || "Territory Node";
   if ($("territory-node-owner")) $("territory-node-owner").innerText = getTerritoryOwnerText(ownerId);
   if ($("territory-node-level")) $("territory-node-level").innerText = `L${level}`;
   if ($("territory-node-defence")) $("territory-node-defence").innerText = `${Math.round(defence)}%`;
   if ($("territory-node-stored")) $("territory-node-stored").innerText = `${storedCoins} coins`;
-  
+
   if ($("territory-defence-fill")) {
     $("territory-defence-fill").style.width = `${defence}%`;
   }
@@ -3427,73 +3428,42 @@ function openTerritoryCommandPanel(pin) {
     $("territory-node-status").innerText = isFree ? "NEUTRAL" : isMine ? "YOURS" : "ENEMY";
   }
 
-if ($("territory-panel-message")) {
-  $("territory-panel-message").innerText = isFree
-    ? "Neutral node. Capture it to claim the area."
-    : isMine
-    ? `Your territory. Defence: ${defenceName}. Upgrade or install protection.`
-    : `Enemy territory. Use Bee Arrow weapons or attack to break defence. Defence: ${defenceName}.`;
-}
+  if ($("territory-panel-message")) {
+    $("territory-panel-message").innerText = isFree
+      ? "Neutral node. Capture it to claim the area."
+      : isMine
+      ? `Your territory. Defence: ${defenceName}. Upgrade or install protection.`
+      : `Enemy territory. Use Bee Arrow weapons or attack to break defence. Defence: ${defenceName}.`;
+  }
 
   if ($("btn-territory-capture")) $("btn-territory-capture").disabled = !isFree;
   if ($("btn-territory-attack")) $("btn-territory-attack").disabled = !isEnemy;
   if ($("btn-territory-upgrade")) $("btn-territory-upgrade").disabled = !isMine || level >= 3;
-  if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine;
-  if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine || storedCoins <= 0
- 
+  if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine || storedCoins <= 0;
+
   if ($("btn-defence-shield")) $("btn-defence-shield").disabled = !isMine;
   if ($("btn-defence-core")) $("btn-defence-core").disabled = !isMine;
   if ($("btn-defence-bee")) $("btn-defence-bee").disabled = !isMine;
 
   if ($("btn-weapon-arrow-wood")) {
- $("btn-weapon-arrow-wood")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  const ok = territorySystem?.useWeaponOnNode(
-    currentPin,
-    getActivePlayer(),
-    "wooden_arrow"
-  );
-
-  if (ok) {
-    showTerritoryHitFeedback("-10%");
+    $("btn-weapon-arrow-wood").disabled = !isEnemy || woodenArrowCount <= 0;
+    $("btn-weapon-arrow-wood").innerHTML = `🐝🏹 Bee Arrow<br><small>-10% • x${woodenArrowCount}</small>`;
   }
 
-  openTerritoryCommandPanel(currentPin);
-});
-if ($("btn-weapon-arrow-bone")) {
-$("btn-weapon-arrow-bone")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  const ok = territorySystem?.useWeaponOnNode(
-    currentPin,
-    getActivePlayer(),
-    "bone_arrow"
-  );
-
-  if (ok) {
-    showTerritoryHitFeedback("-20%");
+  if ($("btn-weapon-arrow-bone")) {
+    $("btn-weapon-arrow-bone").disabled = !isEnemy || boneArrowCount <= 0;
+    $("btn-weapon-arrow-bone").innerHTML = `🐝🦴 Stinger Arrow<br><small>-20% • x${boneArrowCount}</small>`;
   }
 
-  openTerritoryCommandPanel(currentPin);
-});
-
-if ($("btn-weapon-hand-cannon")) {
- $("btn-weapon-hand-cannon")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  const ok = territorySystem?.useWeaponOnNode(
-    currentPin,
-    getActivePlayer(),
-    "hand_cannon"
-  );
-
-  if (ok) {
-    showTerritoryHitFeedback("-30%");
+  if ($("btn-weapon-hand-cannon")) {
+    $("btn-weapon-hand-cannon").disabled = !isEnemy || handCannonCount <= 0;
+    $("btn-weapon-hand-cannon").innerHTML = `🐝🚢 Bee Sub Cannon<br><small>-30% • x${handCannonCount}</small>`;
   }
 
-  openTerritoryCommandPanel(currentPin);
-});
   showActionButton(false);
   showModal("territory-command-modal");
 }
+
 
 /* ============================
    BUTTONS
