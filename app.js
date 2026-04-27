@@ -3416,17 +3416,17 @@ function openTerritoryCommandPanel(pin) {
   
   if ($("btn-weapon-arrow-wood")) {
   $("btn-weapon-arrow-wood").disabled = !isEnemy || woodenArrowCount <= 0;
-  $("btn-weapon-arrow-wood").innerHTML = `🏹 Wooden Arrow<br><small>-10% • x${woodenArrowCount}</small>`;
+ $("btn-weapon-arrow-wood").innerHTML = `🐝🏹 Bee Arrow<br><small>-10% • x${woodenArrowCount}</small>`;
 }
 
 if ($("btn-weapon-arrow-bone")) {
   $("btn-weapon-arrow-bone").disabled = !isEnemy || boneArrowCount <= 0;
-  $("btn-weapon-arrow-bone").innerHTML = `🦴 Bone Arrow<br><small>-20% • x${boneArrowCount}</small>`;
+ $("btn-weapon-arrow-bone").innerHTML = `🐝🦴 Stinger Arrow<br><small>-20% • x${boneArrowCount}</small>`;
 }
 
 if ($("btn-weapon-hand-cannon")) {
   $("btn-weapon-hand-cannon").disabled = !isEnemy || handCannonCount <= 0;
-  $("btn-weapon-hand-cannon").innerHTML = `🔫 Hand Cannon<br><small>-30% • x${handCannonCount}</small>`;
+  $("btn-weapon-hand-cannon").innerHTML = `🐝🚢 Bee Sub Cannon<br><small>-30% • x${handCannonCount}</small>`;
 }
   showActionButton(false);
   showModal("territory-command-modal");
