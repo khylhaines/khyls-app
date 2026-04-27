@@ -2369,26 +2369,25 @@ function renderTerritoryZones() {
     playUISound?.("correct_answer.mp3");
 
     setTimeout(() => {
-  const restart = confirm(
-    `🏆 TERRITORY VICTORY\n\n${leader.playerName} wins with ${leader.score} points!\n\nNodes: ${leader.nodes}\nZones: ${leader.zones || 0}\nIncome: +${leader.income}/min\n\nStart a new game?`
-  );
+      const restart = confirm(
+        `🏆 TERRITORY VICTORY\n\n${leader.playerName} wins with ${leader.score} points!\n\nNodes: ${leader.nodes}\nZones: ${leader.zones || 0}\nIncome: +${leader.income}/min\n\nStart a new game?`
+      );
 
-  if (restart) {
-    // reset all territory
-    const state = window.state;
-    state.territory = { nodes: {} };
+      if (restart) {
+        state.territory = { nodes: {} };
 
-    window.__territoryVictoryAnnounced = false;
+        window.__territoryVictoryAnnounced = false;
+        lastZoneCount = 0;
 
-    saveState();
+        saveState();
 
-    refreshAllPinMarkers();
-    renderHUD();
-    renderHomeLog();
+        refreshAllPinMarkers();
+        renderHUD();
+        renderHomeLog();
 
-    speakText("New territory game started.");
-  }
-}, 300);
+        speakText("New territory game started.");
+      }
+    }, 300);
   }
 }
 
