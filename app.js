@@ -2352,7 +2352,30 @@ function renderTerritoryZones() {
 
     territoryZoneLayers.push(polygon);
   });
+
+  const scores = territorySystem.getTerritoryScores?.() || [];
+  const leader = scores[0] || null;
+  const victoryScore = 500;
+
+  if (
+    leader &&
+    leader.score >= victoryScore &&
+    activeGameMode === "territory" &&
+    !window.__territoryVictoryAnnounced
+  ) {
+    window.__territoryVictoryAnnounced = true;
+
+    speakText(`${leader.playerName} wins the territory war.`);
+    playUISound?.("correct_answer.mp3");
+
+    setTimeout(() => {
+      alert(
+        `🏆 TERRITORY VICTORY\n\n${leader.playerName} wins with ${leader.score} points!\n\nNodes: ${leader.nodes}\nZones: ${leader.zones || 0}\nIncome: +${leader.income}/min`
+      );
+    }, 300);
+  }
 }
+
 
 function renderPins() {
   if (!map) return;
