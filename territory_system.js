@@ -380,8 +380,10 @@ export function createTerritorySystem({
 
     node.updatedAt = new Date().toISOString();
 
-    if (node.defencePercent <= 0) {
-      const oldOwner = node.ownerName || "another player";
+   if (node.defencePercent <= 0) {
+  const zonesBefore = getConnectedZones();
+  const oldOwnerId = node.ownerId;
+  const oldOwner = node.ownerName || "another player";
 
       node.ownerId = player.id;
       node.ownerName = player.name || "Player";
@@ -397,12 +399,26 @@ export function createTerritorySystem({
       node.lastWeaponAt = {};
 
       saveNode(pin, node);
-      updateCoins(player.id, RAID_CAPTURE_BONUS);
+     const zonesAfter = getConnectedZones();
+
+const oldZonesBefore = zonesBefore.filter((z) => z.ownerId === oldOwnerId).length;
+const oldZonesAfter = zonesAfter.filter((z) => z.ownerId === oldOwnerId).length;
+
+const zoneBreakBonus = oldZonesAfter < oldZonesBefore ? 40 : 0;
+const totalBonus = RAID_CAPTURE_BONUS + zoneBreakBonus;
+
+updateCoins(player.id, totalBonus);
       refreshUI();
 
-      speakText(
-        `${sourceName} broke the defence. ${pin.n} captured from ${oldOwner}. ${RAID_CAPTURE_BONUS} coins awarded.`
-      );
+      const zonesAfter = getConnectedZones();
+
+const oldZonesBefore = zonesBefore.filter((z) => z.ownerId === oldOwnerId).length;
+const oldZonesAfter = zonesAfter.filter((z) => z.ownerId === oldOwnerId).length;
+
+const zoneBreakBonus = oldZonesAfter < oldZonesBefore ? 40 : 0;
+const totalBonus = RAID_CAPTURE_BONUS + zoneBreakBonus;
+
+updateCoins(player.id, totalBonus);
       return true;
     }
 
