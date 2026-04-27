@@ -3452,7 +3452,7 @@ function runTerritoryBotTurn() {
 
   botPlayer.enabled = true;
   botPlayer.name = botPlayer.name || "Player 2";
-  botPlayer.coins = Number(botPlayer.coins || 0) + 5;
+  botPlayer.coins = Number(botPlayer.coins || 0) + 8;
 
   const pins = getCurrentPins();
   if (!pins.length) return;
@@ -3465,28 +3465,63 @@ function runTerritoryBotTurn() {
     const node = territorySystem.getNode(pin);
     if (!node) return;
 
-    if (!node.ownerId) freeNodes.push(pin);
-    else if (node.ownerId === "p2") botNodes.push(pin);
-    else enemyNodes.push(pin);
+    if (!node.ownerId) {
+      freeNodes.push({ pin, node });
+    } else if (node.ownerId === "p2") {
+      botNodes.push({ pin, node });
+    } else {
+      enemyNodes.push({ pin, node });
+    }
   });
 
-  let target = null;
+  const weakEnemyNodes = enemyNodes
+    .filter((entry) => Number(entry.node.defencePercent || 0) <= 45)
+    .sort(
+      (a, b) =>
+        Number(a.node.defencePercent || 0) -
+        Number(b.node.defencePercent || 0)
+    );
 
-  if (enemyNodes.length && Math.random() < 0.55) {
-    target = enemyNodes[Math.floor(Math.random() * enemyNodes.length)];
-    territorySystem.attackNode(target, botPlayer);
+  const highValueEnemyNodes = enemyNodes
+    .filter((entry) => Number(entry.node.level || 1) >= 2)
+    .sort(
+      (a, b) =>
+        Number(b.node.level || 1) - Number(a.node.level || 1)
+    );
+
+  const upgradeableBotNodes = botNodes
+    .filter((entry) => Number(entry.node.level || 1) < 3)
+    .sort(
+      (a, b) =>
+        Number(b.node.storedCoins || 0) - Number(a.node.storedCoins || 0)
+    );
+
+  const richBotNodes = botNodes
+    .filter((entry) => Math.floor(Number(entry.node.storedCoins || 0)) >= 5)
+    .sort(
+      (a, b) =>
+        Number(b.node.storedCoins || 0) - Number(a.node.storedCoins || 0)
+    );
+
+  if (weakEnemyNodes.length) {
+    territorySystem.attackNode(weakEnemyNodes[0].pin, botPlayer);
+  } else if (highValueEnemyNodes.length && Math.random() < 0.65) {
+    territorySystem.attackNode(highValueEnemyNodes[0].pin, botPlayer);
   } else if (freeNodes.length) {
-    target = freeNodes[Math.floor(Math.random() * freeNodes.length)];
-    territorySystem.captureNode(target, botPlayer);
-  } else if (botNodes.length) {
-    target = botNodes[Math.floor(Math.random() * botNodes.length)];
-    territorySystem.upgradeNode(target, botPlayer);
+    const target = freeNodes[Math.floor(Math.random() * freeNodes.length)];
+    territorySystem.captureNode(target.pin, botPlayer);
+  } else if (upgradeableBotNodes.length && botPlayer.coins >= 10) {
+    territorySystem.upgradeNode(upgradeableBotNodes[0].pin, botPlayer);
+  } else if (richBotNodes.length) {
+    territorySystem.collectNodeCoins(richBotNodes[0].pin, botPlayer);
   }
 
+  saveState();
   renderHUD();
   renderHomeLog();
   refreshAllPinMarkers();
 }
+
 
 
 function getTerritoryOwnerText(ownerId) {
