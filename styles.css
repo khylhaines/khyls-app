@@ -1367,6 +1367,30 @@ input[type="range"] {
   opacity: 0.85;
 }
 
+.territory-scoreboard {
+  margin: 12px 0 14px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(77, 163, 255, 0.08);
+  border: 1px solid rgba(77, 163, 255, 0.18);
+  color: #d8eaff;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.territory-score-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.territory-score-line:last-child {
+  border-bottom: none;
+}
+
+
 .territory-panel-card.weapon-hit {
   animation: territoryHitShake 0.28s ease;
 }
