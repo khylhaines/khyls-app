@@ -3447,6 +3447,8 @@ function runTerritoryBotTurn() {
   if (activeGameMode !== "territory") return;
   if (!territorySystem) return;
 
+  if (!window.__territoryBotEnabled) return;
+
   const botPlayer = state.players.find((p) => p.id === "p2");
   if (!botPlayer) return;
 
@@ -3484,10 +3486,7 @@ function runTerritoryBotTurn() {
 
   const highValueEnemyNodes = enemyNodes
     .filter((entry) => Number(entry.node.level || 1) >= 2)
-    .sort(
-      (a, b) =>
-        Number(b.node.level || 1) - Number(a.node.level || 1)
-    );
+    .sort((a, b) => Number(b.node.level || 1) - Number(a.node.level || 1));
 
   const upgradeableBotNodes = botNodes
     .filter((entry) => Number(entry.node.level || 1) < 3)
@@ -3521,8 +3520,6 @@ function runTerritoryBotTurn() {
   renderHomeLog();
   refreshAllPinMarkers();
 }
-
-
 
 function getTerritoryOwnerText(ownerId) {
   if (!ownerId) return "FREE";
@@ -3660,6 +3657,20 @@ function openTerritoryCommandPanel(pin) {
    BUTTONS
 ============================ */
 function wireButtons() {
+
+  window.__territoryBotEnabled = false;
+
+document.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "b") {
+    window.__territoryBotEnabled = !window.__territoryBotEnabled;
+
+    speakText(
+      window.__territoryBotEnabled
+        ? "Territory bot enabled."
+        : "Territory bot disabled."
+    );
+  }
+});
 
 $("btn-territory-close")?.addEventListener("click", () =>
   closeModal("territory-command-modal")
