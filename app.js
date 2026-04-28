@@ -3710,7 +3710,7 @@ function runTerritoryBotTurn() {
   if (typeof renderTerritoryZones === "function") {
     renderTerritoryZones();
   }
-}
+
 
   function botUseBestAttack(target) {
     if (!target?.pin || !target?.node) return false;
