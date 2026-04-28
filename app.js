@@ -3761,32 +3761,16 @@ function runTerritoryBotTurn() {
   }
 }
 
-
-
 function wireButtons() {
   window.__territoryBotEnabled = window.__territoryBotEnabled || false;
   window.__territoryBotDifficulty = window.__territoryBotDifficulty || "normal";
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key.toLowerCase() === "b") {
-      window.__territoryBotEnabled = !window.__territoryBotEnabled;
-
-      speakText(
-        window.__territoryBotEnabled
-          ? "Territory bot enabled."
-          : "Territory bot disabled."
-      );
-    }
-  });
-
   $("btn-territory-bot-toggle")?.addEventListener("click", () => {
     window.__territoryBotEnabled = !window.__territoryBotEnabled;
 
-    if ($("btn-territory-bot-toggle")) {
-      $("btn-territory-bot-toggle").innerText = window.__territoryBotEnabled
-        ? "🤖 BOT: ON"
-        : "🤖 BOT: OFF";
-    }
+    $("btn-territory-bot-toggle").innerText = window.__territoryBotEnabled
+      ? "🤖 BOT: ON"
+      : "🤖 BOT: OFF";
 
     speakText(
       window.__territoryBotEnabled
@@ -3806,11 +3790,13 @@ function wireButtons() {
       window.__territoryBotDifficulty = "easy";
     }
 
-    if ($("btn-territory-bot-difficulty")) {
-      $("btn-territory-bot-difficulty").innerText = `🎚️ BOT DIFFICULTY: ${window.__territoryBotDifficulty.toUpperCase()}`;
-    }
+    $("btn-territory-bot-difficulty").innerText = `🎚️ BOT DIFFICULTY: ${window.__territoryBotDifficulty.toUpperCase()}`;
 
     speakText(`Bot difficulty ${window.__territoryBotDifficulty}.`);
+
+    if (currentPin && activeGameMode === "territory") {
+      openTerritoryCommandPanel(currentPin);
+    }
   });
 
   $("btn-territory-close")?.addEventListener("click", () =>
@@ -3888,18 +3874,6 @@ function wireButtons() {
     closeModal("start-modal")
   );
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "1") {
-      activeGameMode = "explorer";
-      speakText("Explorer mode");
-    }
-
-    if (e.key === "2") {
-      activeGameMode = "territory";
-      speakText("Territory mode");
-    }
-  });
-
   $("btn-weapon-arrow-wood")?.addEventListener("click", () => {
     if (!currentPin) return;
     territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "wooden_arrow");
@@ -3962,6 +3936,7 @@ function wireButtons() {
   $("btn-home-close")?.addEventListener("click", () =>
     closeModal("home-modal")
   );
+
   $("btn-home-close-x")?.addEventListener("click", () =>
     closeModal("home-modal")
   );
@@ -3979,6 +3954,7 @@ function wireButtons() {
   $("btn-close-settings")?.addEventListener("click", () =>
     closeModal("settings-modal")
   );
+
   $("btn-close-settings-x")?.addEventListener("click", () =>
     closeModal("settings-modal")
   );
@@ -3993,6 +3969,7 @@ function wireButtons() {
   $("btn-close-commander")?.addEventListener("click", () =>
     closeModal("commander-hub")
   );
+
   $("btn-close-commander-x")?.addEventListener("click", () =>
     closeModal("commander-hub")
   );
@@ -4003,6 +3980,7 @@ function wireButtons() {
   $("btn-close-quest")?.addEventListener("click", () =>
     closeModal("quest-modal")
   );
+
   $("btn-task-close")?.addEventListener("click", () =>
     closeModal("task-modal")
   );
@@ -4011,9 +3989,7 @@ function wireButtons() {
     if (currentTask?.mode === "boss") {
       const step =
         currentTask?.boss?.steps?.[Number(currentTask?.boss?.stepIndex || 0)];
-      if (step?.options?.length) {
-        speakOptions(step.options);
-      }
+      if (step?.options?.length) speakOptions(step.options);
       return;
     }
 
@@ -4023,10 +3999,7 @@ function wireButtons() {
   });
 
   $("btn-reward-image-close")?.addEventListener("click", closeRewardImageModal);
-  $("btn-reward-image-close-x")?.addEventListener(
-    "click",
-    closeRewardImageModal
-  );
+  $("btn-reward-image-close-x")?.addEventListener("click", closeRewardImageModal);
 
   $("pill-full")?.addEventListener("click", () => {
     state.activePack = "classic";
@@ -4064,17 +4037,17 @@ function wireButtons() {
     speakText("Abbey selected.");
   });
 
-  $("pill-truecrime")?.addEventListener("click", () => {
-    openAdultCategory("true_crime", "True crime");
-  });
+  $("pill-truecrime")?.addEventListener("click", () =>
+    openAdultCategory("true_crime", "True crime")
+  );
 
-  $("pill-conspiracy")?.addEventListener("click", () => {
-    openAdultCategory("conspiracy", "Conspiracy");
-  });
+  $("pill-conspiracy")?.addEventListener("click", () =>
+    openAdultCategory("conspiracy", "Conspiracy")
+  );
 
-  $("pill-history")?.addEventListener("click", () => {
-    openAdultCategory("history", "History");
-  });
+  $("pill-history")?.addEventListener("click", () =>
+    openAdultCategory("history", "History")
+  );
 
   $("pill-kids")?.addEventListener("click", () => {
     state.tierMode = "kid";
@@ -4158,6 +4131,7 @@ function wireButtons() {
     if (enabled.length >= 2) {
       const tmp = enabled[0].name;
       enabled[0].name = enabled[1].name;
+      enabled[1].name = tmp;
       saveState();
       renderHUD();
       renderShop();
@@ -4212,15 +4186,38 @@ function wireButtons() {
 
   $("btn-ar-open")?.addEventListener("click", openAR);
   $("btn-ar-stop")?.addEventListener("click", stopAR);
+
   $("btn-ar-close")?.addEventListener("click", () => {
     stopAR();
     closeModal("ar-modal");
   });
+
   $("btn-ar-manual")?.addEventListener("click", () => {
     stopAR();
     closeModal("ar-modal");
     speakText("Hotspot verified.");
     alert("Hotspot verified.");
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "1") {
+      activeGameMode = "explorer";
+      speakText("Explorer mode");
+    }
+
+    if (e.key === "2") {
+      activeGameMode = "territory";
+      speakText("Territory mode");
+    }
+
+    if (e.key.toLowerCase() === "b") {
+      window.__territoryBotEnabled = !window.__territoryBotEnabled;
+      speakText(
+        window.__territoryBotEnabled
+          ? "Territory bot enabled."
+          : "Territory bot disabled."
+      );
+    }
   });
 
   window.addEventListener("beforeunload", () => {
