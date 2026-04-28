@@ -3450,6 +3450,22 @@ function getTerritoryOwnerText(ownerId) {
   return player?.name || "UNKNOWN";
 }
 
+function checkTerritoryVictory(scores = []) {
+  const victoryScore = 500;
+
+  if (window.__territoryWinnerId) return true;
+
+  const winner = scores.find((row) => Number(row.score || 0) >= victoryScore);
+  if (!winner) return false;
+
+  window.__territoryWinnerId = winner.playerId;
+
+  speakText(`${winner.playerName} wins the territory war.`);
+  alert(`${winner.playerName} wins the territory war with ${winner.score} points!`);
+
+  return true;
+}
+
 
 function openTerritoryCommandPanel(pin) {
   if (!pin || !territorySystem) return;
@@ -3495,8 +3511,14 @@ function openTerritoryCommandPanel(pin) {
   const leader = scores[0] || null;
   const victoryScore = 500;
 
+  // ✅ NEW: Victory check
+  checkTerritoryVictory(scores);
+
   if ($("territory-panel-message")) {
-    if (leader && leader.score >= victoryScore) {
+    if (window.__territoryWinnerId) {
+      const winner = scores.find(s => s.playerId === window.__territoryWinnerId);
+      $("territory-panel-message").innerText = `🏆 ${winner?.playerName || "Winner"} has won the territory war!`;
+    } else if (leader && leader.score >= victoryScore) {
       $("territory-panel-message").innerText = `🏆 ${leader.playerName} is winning the territory war with ${leader.score} points!`;
     } else if (isFree) {
       $("territory-panel-message").innerText = "Neutral node. Capture it to claim the area.";
@@ -3535,26 +3557,26 @@ function openTerritoryCommandPanel(pin) {
   }
 
   if ($("btn-territory-capture")) $("btn-territory-capture").disabled = !isFree;
-  if ($("btn-territory-attack")) $("btn-territory-attack").disabled = !isEnemy;
-  if ($("btn-territory-upgrade")) $("btn-territory-upgrade").disabled = !isMine || level >= 3;
-  if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine || storedCoins <= 0;
+  if ($("btn-territory-attack")) $("btn-territory-attack").disabled = !isEnemy || window.__territoryWinnerId;
+  if ($("btn-territory-upgrade")) $("btn-territory-upgrade").disabled = !isMine || level >= 3 || window.__territoryWinnerId;
+  if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine || storedCoins <= 0 || window.__territoryWinnerId;
 
-  if ($("btn-defence-shield")) $("btn-defence-shield").disabled = !isMine;
-  if ($("btn-defence-core")) $("btn-defence-core").disabled = !isMine;
-  if ($("btn-defence-bee")) $("btn-defence-bee").disabled = !isMine;
+  if ($("btn-defence-shield")) $("btn-defence-shield").disabled = !isMine || window.__territoryWinnerId;
+  if ($("btn-defence-core")) $("btn-defence-core").disabled = !isMine || window.__territoryWinnerId;
+  if ($("btn-defence-bee")) $("btn-defence-bee").disabled = !isMine || window.__territoryWinnerId;
 
   if ($("btn-weapon-arrow-wood")) {
-    $("btn-weapon-arrow-wood").disabled = !isEnemy || woodenArrowCount <= 0;
+    $("btn-weapon-arrow-wood").disabled = !isEnemy || woodenArrowCount <= 0 || window.__territoryWinnerId;
     $("btn-weapon-arrow-wood").innerHTML = `🐝🏹 Bee Arrow<br><small>-10% • x${woodenArrowCount}</small>`;
   }
 
   if ($("btn-weapon-arrow-bone")) {
-    $("btn-weapon-arrow-bone").disabled = !isEnemy || boneArrowCount <= 0;
+    $("btn-weapon-arrow-bone").disabled = !isEnemy || boneArrowCount <= 0 || window.__territoryWinnerId;
     $("btn-weapon-arrow-bone").innerHTML = `🐝🦴 Stinger Arrow<br><small>-20% • x${boneArrowCount}</small>`;
   }
 
   if ($("btn-weapon-hand-cannon")) {
-    $("btn-weapon-hand-cannon").disabled = !isEnemy || handCannonCount <= 0;
+    $("btn-weapon-hand-cannon").disabled = !isEnemy || handCannonCount <= 0 || window.__territoryWinnerId;
     $("btn-weapon-hand-cannon").innerHTML = `🐝🚢 Bee Sub Cannon<br><small>-30% • x${handCannonCount}</small>`;
   }
 
