@@ -3446,7 +3446,6 @@ function handleActionTrigger() {
 function runTerritoryBotTurn() {
   if (activeGameMode !== "territory") return;
   if (!territorySystem) return;
-
   if (!window.__territoryBotEnabled) return;
 
   const botPlayer = state.players.find((p) => p.id === "p2");
@@ -3476,6 +3475,35 @@ function runTerritoryBotTurn() {
     }
   });
 
+  const zones = territorySystem.getConnectedZones?.() || [];
+
+  const enemyZones = zones.filter((zone) => zone.ownerId && zone.ownerId !== "p2");
+
+  const zoneBreakTargets = [];
+
+  enemyZones.forEach((zone) => {
+    zone.nodes.forEach((pinId) => {
+      const pin = pins.find((p) => p.id === pinId);
+      if (!pin) return;
+
+      const node = territorySystem.getNode(pin);
+      if (!node || node.ownerId === "p2") return;
+
+      zoneBreakTargets.push({ pin, node });
+    });
+  });
+
+  const uniqueZoneBreakTargets = zoneBreakTargets
+    .filter(
+      (entry, index, arr) =>
+        arr.findIndex((x) => x.pin.id === entry.pin.id) === index
+    )
+    .sort(
+      (a, b) =>
+        Number(a.node.defencePercent || 0) -
+        Number(b.node.defencePercent || 0)
+    );
+
   const weakEnemyNodes = enemyNodes
     .filter((entry) => Number(entry.node.defencePercent || 0) <= 45)
     .sort(
@@ -3486,39 +3514,117 @@ function runTerritoryBotTurn() {
 
   const highValueEnemyNodes = enemyNodes
     .filter((entry) => Number(entry.node.level || 1) >= 2)
-    .sort((a, b) => Number(b.node.level || 1) - Number(a.node.level || 1));
+    .sort((a, b) => {
+      const aScore =
+        Number(a.node.level || 1) * 20 +
+        Number(a.node.storedCoins || 0) -
+        Number(a.node.defencePercent || 0);
+      const bScore =
+        Number(b.node.level || 1) * 20 +
+        Number(b.node.storedCoins || 0) -
+        Number(b.node.defencePercent || 0);
+
+      return bScore - aScore;
+    });
 
   const upgradeableBotNodes = botNodes
     .filter((entry) => Number(entry.node.level || 1) < 3)
     .sort(
       (a, b) =>
-        Number(b.node.storedCoins || 0) - Number(a.node.storedCoins || 0)
+        Number(a.node.defencePercent || 0) -
+        Number(b.node.defencePercent || 0)
     );
 
   const richBotNodes = botNodes
-    .filter((entry) => Math.floor(Number(entry.node.storedCoins || 0)) >= 5)
+    .filter((entry) => Math.floor(Number(entry.node.storedCoins || 0)) >= 8)
     .sort(
       (a, b) =>
         Number(b.node.storedCoins || 0) - Number(a.node.storedCoins || 0)
     );
 
-  if (weakEnemyNodes.length) {
-    territorySystem.attackNode(weakEnemyNodes[0].pin, botPlayer);
-  } else if (highValueEnemyNodes.length && Math.random() < 0.65) {
-    territorySystem.attackNode(highValueEnemyNodes[0].pin, botPlayer);
-  } else if (freeNodes.length) {
+  function botUseBestAttack(target) {
+    if (!target?.pin || !target?.node) return false;
+
+    const defence = Number(target.node.defencePercent || 0);
+
+    if (defence >= 70 && getInventoryCount("hand_cannon") > 0) {
+      return territorySystem.useWeaponOnNode(
+        target.pin,
+        botPlayer,
+        "hand_cannon"
+      );
+    }
+
+    if (defence >= 50 && getInventoryCount("bone_arrow") > 0) {
+      return territorySystem.useWeaponOnNode(
+        target.pin,
+        botPlayer,
+        "bone_arrow"
+      );
+    }
+
+    if (defence >= 35 && getInventoryCount("wooden_arrow") > 0) {
+      return territorySystem.useWeaponOnNode(
+        target.pin,
+        botPlayer,
+        "wooden_arrow"
+      );
+    }
+
+    return territorySystem.attackNode(target.pin, botPlayer);
+  }
+
+  let acted = false;
+
+  if (uniqueZoneBreakTargets.length) {
+    acted = botUseBestAttack(uniqueZoneBreakTargets[0]);
+  }
+
+  if (!acted && weakEnemyNodes.length) {
+    acted = botUseBestAttack(weakEnemyNodes[0]);
+  }
+
+  if (!acted && highValueEnemyNodes.length && Math.random() < 0.75) {
+    acted = botUseBestAttack(highValueEnemyNodes[0]);
+  }
+
+  if (!acted && freeNodes.length) {
     const target = freeNodes[Math.floor(Math.random() * freeNodes.length)];
-    territorySystem.captureNode(target.pin, botPlayer);
-  } else if (upgradeableBotNodes.length && botPlayer.coins >= 10) {
-    territorySystem.upgradeNode(upgradeableBotNodes[0].pin, botPlayer);
-  } else if (richBotNodes.length) {
-    territorySystem.collectNodeCoins(richBotNodes[0].pin, botPlayer);
+    acted = territorySystem.captureNode(target.pin, botPlayer);
+  }
+
+  if (!acted && richBotNodes.length) {
+    acted = territorySystem.collectNodeCoins(richBotNodes[0].pin, botPlayer) > 0;
+  }
+
+  if (!acted && upgradeableBotNodes.length && botPlayer.coins >= 10) {
+    acted = territorySystem.upgradeNode(upgradeableBotNodes[0].pin, botPlayer);
+  }
+
+  if (!acted && botNodes.length && botPlayer.coins >= 25) {
+    const weakestOwned = [...botNodes].sort(
+      (a, b) =>
+        Number(a.node.defencePercent || 0) -
+        Number(b.node.defencePercent || 0)
+    )[0];
+
+    if (weakestOwned) {
+      acted = territorySystem.installDefence(
+        weakestOwned.pin,
+        botPlayer,
+        "shield"
+      );
+    }
   }
 
   saveState();
   renderHUD();
   renderHomeLog();
   refreshAllPinMarkers();
+
+  if (typeof renderTerritoryZones === "function") {
+    renderTerritoryZones();
+  }
 }
 
 function getTerritoryOwnerText(ownerId) {
