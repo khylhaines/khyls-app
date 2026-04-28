@@ -3627,6 +3627,91 @@ function runTerritoryBotTurn() {
   }
 }
 
+  function botUseBestAttack(target) {
+    if (!target?.pin || !target?.node) return false;
+
+    const defence = Number(target.node.defencePercent || 0);
+
+    if (defence >= 70 && getInventoryCount("hand_cannon") > 0) {
+      return territorySystem.useWeaponOnNode(
+        target.pin,
+        botPlayer,
+        "hand_cannon"
+      );
+    }
+
+    if (defence >= 50 && getInventoryCount("bone_arrow") > 0) {
+      return territorySystem.useWeaponOnNode(
+        target.pin,
+        botPlayer,
+        "bone_arrow"
+      );
+    }
+
+    if (defence >= 35 && getInventoryCount("wooden_arrow") > 0) {
+      return territorySystem.useWeaponOnNode(
+        target.pin,
+        botPlayer,
+        "wooden_arrow"
+      );
+    }
+
+    return territorySystem.attackNode(target.pin, botPlayer);
+  }
+
+  let acted = false;
+
+  if (uniqueZoneBreakTargets.length) {
+    acted = botUseBestAttack(uniqueZoneBreakTargets[0]);
+  }
+
+  if (!acted && weakEnemyNodes.length) {
+    acted = botUseBestAttack(weakEnemyNodes[0]);
+  }
+
+  if (!acted && highValueEnemyNodes.length && Math.random() < 0.75) {
+    acted = botUseBestAttack(highValueEnemyNodes[0]);
+  }
+
+  if (!acted && freeNodes.length) {
+    const target = freeNodes[Math.floor(Math.random() * freeNodes.length)];
+    acted = territorySystem.captureNode(target.pin, botPlayer);
+  }
+
+  if (!acted && richBotNodes.length) {
+    acted = territorySystem.collectNodeCoins(richBotNodes[0].pin, botPlayer) > 0;
+  }
+
+  if (!acted && upgradeableBotNodes.length && botPlayer.coins >= 10) {
+    acted = territorySystem.upgradeNode(upgradeableBotNodes[0].pin, botPlayer);
+  }
+
+  if (!acted && botNodes.length && botPlayer.coins >= 25) {
+    const weakestOwned = [...botNodes].sort(
+      (a, b) =>
+        Number(a.node.defencePercent || 0) -
+        Number(b.node.defencePercent || 0)
+    )[0];
+
+    if (weakestOwned) {
+      acted = territorySystem.installDefence(
+        weakestOwned.pin,
+        botPlayer,
+        "shield"
+      );
+    }
+  }
+
+  saveState();
+  renderHUD();
+  renderHomeLog();
+  refreshAllPinMarkers();
+
+  if (typeof renderTerritoryZones === "function") {
+    renderTerritoryZones();
+  }
+}
+
 function getTerritoryOwnerText(ownerId) {
   if (!ownerId) return "FREE";
   if (ownerId === "p1") return "PLAYER 1";
