@@ -3443,6 +3443,14 @@ function handleActionTrigger() {
   openMissionMenu();
 }
 
+function getTerritoryOwnerText(ownerId) {
+  if (!ownerId) return "FREE";
+
+  const player = state.players.find(p => p.id === ownerId);
+  return player?.name || "UNKNOWN";
+}
+
+
 function openTerritoryCommandPanel(pin) {
   if (!pin || !territorySystem) return;
 
