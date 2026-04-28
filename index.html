@@ -1,539 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#000000" />
-    <title>Barrow Quest</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#000000" />
+  <title>Barrow Quest</title>
 
-    <link rel="manifest" href="./manifest.json" />
-    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
 
-  <body>
-    <div class="top-appbar">
-      <div class="top-left">
-        <button id="btn-home" class="icon-btn" aria-label="Home">🏠</button>
-      </div>
+<body>
 
-      <div class="top-center">
-        <div class="top-pill">BARROW QUEST</div>
-      </div>
-
-      <div class="top-right">
-        <div class="status-stack">
-          <div class="status-chip">XP<strong id="top-xp">0</strong></div>
-          <div class="status-chip">COINS<strong id="top-coins">0</strong></div>
-          <div class="status-chip hidden">
-            TOKENS<strong id="top-tokens">0</strong>
-          </div>
-        </div>
+  <!-- TOP BAR -->
+  <div class="top-appbar">
+    <div class="top-left">
+      <button id="btn-home" class="icon-btn">🏠</button>
+    </div>
+    <div class="top-center">
+      <div class="top-pill">BARROW QUEST</div>
+    </div>
+    <div class="top-right">
+      <div class="status-stack">
+        <div class="status-chip">XP<strong id="top-xp">0</strong></div>
+        <div class="status-chip">COINS<strong id="top-coins">0</strong></div>
       </div>
     </div>
+  </div>
 
-    <div id="map"></div>
+  <div id="map"></div>
 
-    <button id="action-trigger" aria-label="Action">⚡</button>
+  <button id="action-trigger">⚡</button>
 
-    <div class="hud-dock" aria-label="Bottom Controls">
-      <button id="btn-commander" class="hud-btn" aria-label="Commander">
-        🎮
-      </button>
-      <button id="btn-shop" class="hud-btn hud-btn-shop" aria-label="Shop">
-        🛒
-      </button>
-      <button id="btn-settings" class="hud-btn" aria-label="Settings">
-        ⚙️
-      </button>
+  <!-- START MODAL -->
+  <div id="start-modal" class="full-modal" style="display:block">
+    <div class="modal-header">
+      <h2>BARROW QUEST</h2>
     </div>
 
-    <div id="badge-popup" class="badge-popup hidden">
-      <div class="badge-popup-inner">
-        <div class="badge-popup-ring"></div>
-        <div id="badge-icon" class="badge-spin">🧭</div>
-        <h2 id="badge-title">BADGE UNLOCKED</h2>
-        <p id="badge-text">Scout</p>
-      </div>
+    <div class="start-grid">
+      <button class="win-btn" id="btn-start">START ADVENTURE</button>
+    </div>
+  </div>
+
+  <!-- TERRITORY PANEL -->
+  <div id="territory-command-modal" class="full-modal territory-modal">
+    <div class="modal-header">
+      <h2>⚔️ TERRITORY CONTROL</h2>
     </div>
 
-    <div id="start-modal" class="full-modal" style="display: block">
-      <div class="modal-header">
-        <h2 style="color: var(--gold)">BARROW QUEST</h2>
-        <button
-          type="button"
-          class="close-x"
-          id="btn-start-close-x"
-          aria-label="Close Start"
-        >
-          ✕
-        </button>
+    <div class="territory-panel-card">
+
+      <div id="territory-node-name">NODE</div>
+
+      <div class="territory-stat-grid">
+        <div>Owner: <strong id="territory-node-owner"></strong></div>
+        <div>Level: <strong id="territory-node-level"></strong></div>
+        <div>Defence: <strong id="territory-node-defence"></strong></div>
+        <div>Stored: <strong id="territory-node-stored"></strong></div>
       </div>
 
-      <div class="start-grid">
-        <div class="start-card">
-          <h3>🧒 KIDS</h3>
-          <div class="start-mini">
-            Fun adventure maps, playful tasks, family challenges, and
-            easy-to-follow exploration.
-          </div>
-
-          <div class="pill-row" style="margin-top: 12px">
-            <button class="pill active" id="pill-kids" type="button">
-              KIDS
-            </button>
-            <button class="pill" id="pill-teen" type="button">TEEN</button>
-          </div>
-
-          <div class="pill-row" style="margin-top: 12px">
-            <button class="pill active" id="pill-full" type="button">
-              FULL BARROW
-            </button>
-            <button class="pill" id="pill-park" type="button">
-              BARROW PARK
-            </button>
-            <button class="pill" id="pill-docks" type="button">ABBEY</button>
-          </div>
-        </div>
-
-        <div class="start-card">
-          <h3>🕵️ RESTRICTED ARCHIVE</h3>
-          <div class="start-mini">
-            Adult story packs are locked behind parent access. Kids and teens
-            stay in the classic adventure world. Adults can unlock deeper
-            archives with a parent PIN.
-          </div>
-
-          <div
-            style="
-              margin-top: 12px;
-              padding: 12px;
-              border-radius: 16px;
-              border: 1px solid rgba(255, 122, 89, 0.25);
-              background: rgba(255, 122, 89, 0.08);
-              color: #ffd4c8;
-              font-size: 12px;
-              line-height: 1.45;
-            "
-          >
-            ⚠️ Restricted content area. Parent approval required.
-          </div>
-
-          <div class="pill-row" style="margin-top: 12px">
-            <button class="pill" id="pill-truecrime" type="button">
-              🔒 TRUE CRIME
-            </button>
-            <button class="pill" id="pill-conspiracy" type="button">
-              🔒 CONSPIRACY
-            </button>
-            <button class="pill" id="pill-history" type="button">
-              🔒 HISTORY
-            </button>
-          </div>
-        </div>
-
-        <div class="start-card">
-          <h3>🏛️ FURNESS ABBEY: THE LOST ORDER</h3>
-          <div class="start-mini">
-            Explore the Abbey, recover lost fragments, follow monk paths,
-            rebuild what was forgotten, and unlock the Abbey core.
-          </div>
-        </div>
-
-        <div class="start-card">
-          <h3>🎮 GAME MODE</h3>
-          <div class="start-mini">
-            Choose how you want to play on the map. Explorer uses your current
-            mission system. Territory is the strategy control mode.
-          </div>
-
-          <div class="pill-row" style="margin-top: 12px">
-            <button class="pill active" id="pill-game-explorer" type="button">
-              EXPLORER
-            </button>
-            <button class="pill" id="pill-game-territory" type="button">
-              TERRITORY
-            </button>
-          </div>
-        </div>
-
-        <div class="start-card">
-          <h3>🚀 HOW TO PLAY</h3>
-          <div class="start-mini">
-            Walk to a live pin, hit the lightning button, complete missions,
-            build capture progress, earn coins and XP, collect clues, and unlock
-            bigger routes and rewards.
-          </div>
-        </div>
-
-        <div class="start-card">
-          <button class="win-btn" id="btn-start" type="button">
-            START ADVENTURE
-          </button>
-
-          <button
-            class="win-btn"
-            id="btn-open-settings"
-            type="button"
-            style="background: #222; color: #fff; margin-top: 10px"
-          >
-            SETTINGS
-          </button>
-        </div>
+      <div class="territory-defence-bar">
+        <div id="territory-defence-fill"></div>
       </div>
 
-      <button
-        class="win-btn"
-        id="btn-start-close"
-        style="background: #222; color: #fff; margin-top: 16px"
-      >
-        CLOSE
-      </button>
+      <div id="territory-panel-message"></div>
+
+      <button id="btn-territory-bot-toggle" class="win-btn">🤖 BOT</button>
+      <button id="btn-territory-bot-difficulty" class="win-btn">🎚️ DIFFICULTY</button>
+
+      <div class="territory-action-grid">
+        <button id="btn-territory-capture">CAPTURE</button>
+        <button id="btn-territory-attack">ATTACK</button>
+        <button id="btn-territory-upgrade">UPGRADE</button>
+        <button id="btn-territory-repair">COLLECT</button>
+      </div>
+
     </div>
 
-    <div id="commander-hub" class="full-modal">
-      <div class="modal-header">
-        <h1 style="color: var(--gold)">COMMANDER HUB</h1>
-        <button
-          type="button"
-          class="close-x"
-          id="btn-close-commander-x"
-          aria-label="Close Commander"
-        >
-          ✕
-        </button>
-      </div>
+    <button id="btn-territory-close">CLOSE</button>
+  </div>
 
-      <div class="setting-row">
-        <h3>📢 BROADCAST</h3>
-        <div class="settings-mini" style="margin-bottom: 10px">
-          Send a spoken message through the app narrator.
-        </div>
+  <!-- TASK MODAL (FIXED SECTION) -->
+  <div id="task-modal" class="full-modal">
 
-        <textarea
-          id="broadcast-input"
-          placeholder="Type a message to read out..."
-          style="
-            width: 100%;
-            min-height: 96px;
-            background: #111827;
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 14px;
-            padding: 12px;
-            resize: vertical;
-          "
-        ></textarea>
-
-        <button
-          type="button"
-          class="win-btn"
-          id="btn-send-broadcast"
-          style="margin-top: 10px"
-        >
-          SEND
-        </button>
-      </div>
-
-      <div class="setting-row">
-        <h3>📝 CAPTAIN NOTES</h3>
-        <div class="settings-mini" style="margin-bottom: 10px">
-          Save reminders, clues, route ideas, or investigation notes.
-        </div>
-
-        <textarea
-          id="captain-note-input"
-          placeholder="Write a captain note..."
-          style="
-            width: 100%;
-            min-height: 96px;
-            background: #111827;
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 14px;
-            padding: 12px;
-            resize: vertical;
-          "
-        ></textarea>
-
-        <button
-          type="button"
-          class="win-btn"
-          id="btn-save-captain-note"
-          style="margin-top: 10px"
-        >
-          SAVE NOTE
-        </button>
-
-        <div
-          id="captain-notes-list"
-          style="display: grid; gap: 10px; margin-top: 14px"
-        ></div>
-      </div>
-
-      <div class="setting-row">
-        <h3>👥 PLAYER TEAM SETUP</h3>
-        <div style="display: grid; gap: 10px">
-          <button class="win-btn" id="btn-player-1" type="button">
-            1 PLAYER
-          </button>
-          <button class="win-btn" id="btn-player-2" type="button">
-            2 PLAYERS
-          </button>
-          <button class="win-btn" id="btn-player-3" type="button">
-            3 PLAYERS
-          </button>
-          <button class="win-btn" id="btn-player-4" type="button">
-            4 PLAYERS
-          </button>
-        </div>
-
-        <div style="display: flex; gap: 10px; margin-top: 12px">
-          <button class="win-btn" id="btn-hp-k" type="button">PLAYER 1</button>
-          <button class="win-btn" id="btn-hp-p" type="button">PLAYER 2</button>
-        </div>
-
-        <button
-          type="button"
-          class="win-btn"
-          id="btn-swap"
-          style="margin-top: 10px"
-        >
-          SWAP FIRST TWO PLAYERS
-        </button>
-      </div>
-
-      <button
-        type="button"
-        class="win-btn"
-        id="btn-close-commander"
-        style="background: #222; color: #fff; margin-top: 16px"
-      >
-        EXIT HUB
-      </button>
+    <div id="boss-progress"
+      style="
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 213, 74, 0.25);
+        background: rgba(255, 213, 74, 0.08);
+        color: #ffe8a3;
+        font-size: 12px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        display: none;
+      ">
     </div>
 
-    <div id="settings-modal" class="full-modal">
-      <div class="modal-header">
-        <h2 style="color: var(--gold)">SYSTEM CONFIG</h2>
-        <button
-          type="button"
-          class="close-x"
-          id="btn-close-settings-x"
-          aria-label="Close Settings"
-        >
-          ✕
-        </button>
-      </div>
+    <button id="btn-task-close">CLOSE</button>
+  </div>
 
-      <div class="settings-card">
-        <h3>CLASSIC TIER</h3>
-        <select id="tier-mode">
-          <option value="kid">KIDS</option>
-          <option value="teen">TEEN</option>
-          <option value="adult">ADULT</option>
-          <option value="auto">AUTO</option>
-        </select>
-      </div>
-
-      <div class="settings-card">
-        <h3>GAMEPLAY</h3>
-        <div class="case-label">Enter Radius</div>
-        <strong><span id="radius-label">35</span>m</strong>
-        <input
-          type="range"
-          min="10"
-          max="80"
-          step="5"
-          id="enter-radius"
-          value="35"
-        />
-      </div>
-
-      <div class="settings-card">
-        <h3>DISPLAY</h3>
-        <div class="case-label">Map Zoom Buttons</div>
-        <strong><span id="zoomui-label">OFF</span></strong>
-
-        <button
-          class="win-btn"
-          id="btn-zoom-ui"
-          style="background: #333; color: #fff; margin-top: 10px"
-        >
-          TOGGLE ZOOM UI
-        </button>
-
-        <button class="win-btn" id="btn-night" style="margin-top: 10px">
-          NIGHT VISION
-        </button>
-      </div>
-
-      <div class="settings-card">
-        <h3>AUDIO</h3>
-
-        <div class="case-label">Voice Type</div>
-        <select id="voice-select">
-          <option value="">Default</option>
-        </select>
-
-        <div class="case-label" style="margin-top: 12px">Voice Pitch</div>
-        <strong><span id="pitch-label">1</span>x</strong>
-        <input
-          type="range"
-          min="0.5"
-          max="1.5"
-          step="0.1"
-          id="v-pitch"
-          value="1"
-        />
-
-        <div class="case-label" style="margin-top: 12px">Voice Rate</div>
-        <strong><span id="rate-label">1</span>x</strong>
-        <input
-          type="range"
-          min="0.6"
-          max="1.4"
-          step="0.1"
-          id="v-rate"
-          value="1"
-        />
-
-        <div class="case-label" style="margin-top: 12px">Voice Volume</div>
-        <strong><span id="sfx-label">80</span>%</strong>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          id="sfx-vol"
-          value="80"
-        />
-      </div>
-
-      <button class="win-btn" id="btn-test">TEST SYSTEMS</button>
-      <button class="win-btn" id="btn-close-settings">CLOSE</button>
+  <!-- WELCOME -->
+  <div id="welcome-overlay" class="welcome-overlay hidden">
+    <div class="welcome-box">
+      <h2>🧭 Barrow Quest</h2>
+      <p id="welcome-text">Welcome, explorer.</p>
     </div>
+  </div>
 
-    <div id="quest-modal" class="full-modal">
-      <h1 id="q-name" style="color: var(--gold)">ZONE</h1>
+  <!-- REQUIRED SCRIPTS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="./app.js"></script>
 
-      <div id="mode-banner" class="zone-banner" style="display: none"></div>
-      <div id="boss-banner" class="boss-banner" style="display: none"></div>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("./service-worker.js")
+          .catch((err) => console.error(err));
+      });
+    }
+  </script>
 
-      <div
-        id="quest-status"
-        style="margin: 10px 0; font-size: 13px; color: #fff"
-      >
-        STATUS: —
-      </div>
+</body>
+</html>
 
-      <div id="classic-mission-wrap" class="classic-only">
-        <button
-          class="win-btn"
-          id="btn-ar-open"
-          style="
-            background: #111;
-            color: var(--gold);
-            border: 2px solid var(--gold);
-          "
-        >
-          AR VERIFY (SCAN)
-        </button>
-
-        <div class="mission-grid" style="margin-top: 15px">
-          <div class="m-tile" data-mode="quiz"><span>❓</span>QUIZ</div>
-          <div class="m-tile" data-mode="history"><span>📜</span>HISTORY</div>
-          <div class="m-tile" data-mode="logic"><span>🧩</span>LOGIC</div>
-          <div class="m-tile" data-mode="activity"><span>🎯</span>ACTIVITY</div>
-          <div class="m-tile" data-mode="family"><span>👨‍👩‍👧</span>FAMILY</div>
-          <div class="m-tile" data-mode="speed"><span>⚡</span>SPEED</div>
-          <div class="m-tile" data-mode="boss"><span>👑</span>BOSS</div>
-        </div>
-      </div>
-
-      <div id="adult-investigation-wrap" class="adult-only">
-        <div class="case-card">
-          <h3>CASE PANEL</h3>
-          <div class="case-mini">
-            Open the case, inspect evidence, review clue, then AR verify hotspot
-            proof.
-          </div>
-        </div>
-
-        <div class="adult-action-grid">
-          <button class="adult-action" id="adult-read-case" type="button">
-            <span>📖</span>READ CASE
-          </button>
-          <button class="adult-action" id="adult-view-evidence" type="button">
-            <span>🧾</span>EVIDENCE
-          </button>
-          <button class="adult-action" id="adult-view-clue" type="button">
-            <span>🔍</span>CLUE
-          </button>
-          <button class="adult-action" id="adult-ar-verify" type="button">
-            <span>📷</span>AR VERIFY
-          </button>
-        </div>
-      </div>
-
-      <button
-        class="win-btn"
-        style="background: #222; color: white; margin-top: 16px"
-        id="btn-close-quest"
-      >
-        CLOSE
-      </button>
-    </div>
-
-    <div id="task-modal" class="full-modal">
-      <h1 id="task-title" style="color: var(--gold)">MISSION</h1>
-
-      <div
-        style="
-          border: 3px solid var(--gold);
-          padding: 20px;
-          border-radius: 20px;
-          margin: 25px 0;
-          background: rgba(255, 255, 255, 0.05);
-          text-align: left;
-        "
-      >
-        <div id="task-block-story" class="case-block hidden">
-          <div class="case-label">WHAT HAPPENED</div>
-          <div id="task-story" class="case-body"></div>
-        </div>
-
-        <div id="task-block-evidence" class="case-block hidden">
-          <div class="case-label">EVIDENCE</div>
-          <div id="task-evidence" class="case-body"></div>
-        </div>
-
-        <div id="task-block-clue" class="case-block hidden">
-          <div class="case-label">CLUE</div>
-          <div id="task-clue" class="case-body"></div>
-        </div>
-
-        <div id="task-block-boss" class="case-block hidden">
-          <div class="case-label">BOSS FILE</div>
-          <div id="task-boss-summary" class="case-body"></div>
-        </div>
-
-        <div
-          id="boss-progress"
-          style="
-            margin-top: 12px;
-            padding: 12px;
-            border-radius: 14px;
-            border: 1px solid rgba(255, 213, 74, 0.25);
-            background: rgba(255, 213, 74, 0.08);
-            color: #ffe8a3;
-            font-size
-
+          
