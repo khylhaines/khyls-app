@@ -3711,7 +3711,7 @@ function runTerritoryBotTurn() {
   if (typeof renderTerritoryZones === "function") {
     renderTerritoryZones();
   }
-}
+
 
 function getTerritoryOwnerText(ownerId) {
   if (!ownerId) return "FREE";
