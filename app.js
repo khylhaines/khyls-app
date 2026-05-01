@@ -3980,12 +3980,7 @@ function wireButtons() {
   );
 
 $("btn-territory-capture")?.addEventListener("click", async () => {
-  alert("Capture button pressed");
-
-  if (!currentPin) {
-    alert("No current pin selected");
-    return;
-  }
+  if (!currentPin) return;
 
   const targetPin = currentPin;
   const player = getActivePlayer();
@@ -3999,7 +3994,6 @@ $("btn-territory-capture")?.addEventListener("click", async () => {
   currentPin = targetPin;
   openTerritoryCommandPanel(targetPin);
 });
-
 
   
 $("btn-territory-attack")?.addEventListener("click", async () => {
