@@ -1560,6 +1560,133 @@ input[type="range"] {
   100% { transform: translateX(0) scale(1); }
 }
 
+/* ============================
+   TERRITORY DEFENCE CUTSCENE
+============================ */
+.defence-cutscene {
+  position: fixed;
+  inset: 0;
+  z-index: 45000;
+  background:
+    radial-gradient(circle at center, rgba(99, 255, 211, 0.16), transparent 38%),
+    rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.defence-cutscene.hidden {
+  display: none !important;
+}
+
+.defence-cutscene-card {
+  width: min(92vw, 520px);
+  border-radius: 26px;
+  border: 2px solid rgba(99, 255, 211, 0.55);
+  background: linear-gradient(180deg, #10231d, #080b12);
+  padding: 22px;
+  text-align: center;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.75),
+    0 0 34px rgba(99, 255, 211, 0.28);
+}
+
+.defence-scene-title {
+  color: var(--neon);
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  margin-bottom: 22px;
+}
+
+.defence-scene-stage {
+  position: relative;
+  height: 150px;
+  border-radius: 22px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(99, 255, 211, 0.12), rgba(255, 213, 74, 0.14)),
+    #070b12;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 34px;
+}
+
+.defence-builder,
+.defence-node {
+  font-size: 54px;
+  z-index: 2;
+  filter: drop-shadow(0 0 12px rgba(99, 255, 211, 0.35));
+}
+
+.defence-builder {
+  animation: builderBounce 1.2s ease infinite;
+}
+
+.defence-node {
+  animation: nodePowerUp 1.3s ease forwards;
+}
+
+.defence-effect {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--gold);
+  font-size: 46px;
+  text-shadow: 0 0 18px rgba(255, 213, 74, 0.85);
+  animation: defenceEffectPulse 1.3s ease forwards;
+}
+
+.defence-cutscene-text {
+  margin-top: 18px;
+  color: #d7fff4;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+@keyframes builderBounce {
+  0% { transform: translateY(0) rotate(0deg); }
+  35% { transform: translateY(-8px) rotate(-6deg); }
+  70% { transform: translateY(0) rotate(6deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+@keyframes nodePowerUp {
+  0% {
+    transform: scale(0.92);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.12);
+    filter: brightness(1.8);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1.15);
+  }
+}
+
+@keyframes defenceEffectPulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.35);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.65);
+  }
 
 
 /* ============================
