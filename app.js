@@ -3470,24 +3470,25 @@ function playAttackEffect(fromLatLng, toLatLng) {
   if (!map || !fromLatLng || !toLatLng) return;
 
   const line = L.polyline([fromLatLng, toLatLng], {
-    color: "yellow",
-    weight: 4,
-    opacity: 0.95,
+    color: "red", // 🔴 easier to see
+    weight: 6, // thicker
+    opacity: 1,
   }).addTo(map);
 
   const impact = L.circleMarker(toLatLng, {
-    radius: 14,
-    color: "yellow",
-    weight: 3,
+    radius: 20, // bigger flash
+    color: "red",
+    weight: 4,
     fillColor: "orange",
-    fillOpacity: 0.55,
+    fillOpacity: 0.8,
   }).addTo(map);
 
   setTimeout(() => {
     try { map.removeLayer(line); } catch {}
     try { map.removeLayer(impact); } catch {}
-  }, 350);
+  }, 500);
 }
+
 
 
 function openTerritoryCommandPanel(pin) {
@@ -3869,7 +3870,7 @@ function wireButtons() {
 $("btn-territory-attack")?.addEventListener("click", () => {
   if (!currentPin) return;
 
-  const from = map.getCenter();
+  const from = map.getCenter().wrap();
   const to = currentPin.l;
 
   closeModal("territory-command-modal");
