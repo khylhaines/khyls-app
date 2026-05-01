@@ -3980,40 +3980,45 @@ $("btn-territory-attack")?.addEventListener("click", async () => {
     openTerritoryCommandPanel(currentPin);
   });
 
- $("btn-defence-shield")?.addEventListener("click", () => {
+$("btn-defence-shield")?.addEventListener("click", async () => {
   if (!currentPin) return;
 
-  // simple defence boost
-  territorySystem?.installDefence(currentPin, getActivePlayer(), "shield");
+  const targetPin = currentPin;
+  closeModal("territory-command-modal");
 
-  speakText("Shield installed.");
-  openTerritoryCommandPanel(currentPin);
+  await playTerritoryDefenceCutscene("shield", targetPin);
+
+  territorySystem?.installDefence(targetPin, getActivePlayer(), "shield");
+  currentPin = targetPin;
+  openTerritoryCommandPanel(targetPin);
 });
 
-$("btn-defence-core")?.addEventListener("click", () => {
+$("btn-defence-core")?.addEventListener("click", async () => {
   if (!currentPin) return;
 
-  // CORE = UPGRADE SYSTEM
-  const upgraded = territorySystem?.upgradeNode(currentPin, getActivePlayer());
+  const targetPin = currentPin;
+  closeModal("territory-command-modal");
 
-  if (upgraded) {
-    speakText("Core upgraded. Level increased.");
-  } else {
-    speakText("Upgrade failed.");
-  }
+  await playTerritoryDefenceCutscene("core", targetPin);
 
-  openTerritoryCommandPanel(currentPin);
+  territorySystem?.upgradeNode(targetPin, getActivePlayer());
+  currentPin = targetPin;
+  openTerritoryCommandPanel(targetPin);
 });
 
-$("btn-defence-bee")?.addEventListener("click", () => {
+$("btn-defence-bee")?.addEventListener("click", async () => {
   if (!currentPin) return;
 
-  // strong defence option
-  territorySystem?.installDefence(currentPin, getActivePlayer(), "bee_nest");
+  const targetPin = currentPin;
+  closeModal("territory-command-modal");
 
-  speakText("Bee nest deployed.");
-  openTerritoryCommandPanel(currentPin);
+  await playTerritoryDefenceCutscene("bee_nest", targetPin);
+
+  territorySystem?.installDefence(targetPin, getActivePlayer(), "bee_nest");
+  currentPin = targetPin;
+  openTerritoryCommandPanel(targetPin);
 });
+
 
   $("action-trigger")?.addEventListener("click", handleActionTrigger);
 
