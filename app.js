@@ -3856,17 +3856,18 @@ function wireButtons() {
     closeModal("territory-command-modal");
   });
 
-  $("btn-territory-attack")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.attackNode(currentPin, getActivePlayer());
-    openTerritoryCommandPanel(currentPin);
-  });
+ $("btn-territory-attack")?.addEventListener("click", () => {
+  if (!currentPin) return;
 
-  $("btn-territory-upgrade")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.upgradeNode(currentPin, getActivePlayer());
-    openTerritoryCommandPanel(currentPin);
-  });
+  const from = map.getCenter(); // quick placeholder
+  const to = currentPin.latlng;
+
+  playAttackEffect(from, to);
+
+  territorySystem?.attackNode(currentPin, getActivePlayer());
+  openTerritoryCommandPanel(currentPin);
+});
+  
 
   $("btn-territory-repair")?.addEventListener("click", () => {
     if (!currentPin) return;
