@@ -3578,6 +3578,35 @@ function playTerritoryDefenceCutscene(type = "shield", targetPin = null) {
   });
 }
 
+function playTerritoryCaptureCutscene(targetPin, player = null) {
+  return new Promise((resolve) => {
+    const modal = $("territory-capture-cutscene");
+    const title = $("capture-scene-title");
+    const flag = $("capture-flag-new");
+    const text = $("capture-cutscene-text");
+
+    if (!modal) {
+      resolve();
+      return;
+    }
+
+    const playerName = player?.name || "Player";
+    const nodeName = targetPin?.n || "territory";
+
+    if (title) title.innerText = "🏴 TERRITORY CAPTURED";
+    if (flag) flag.innerText = player?.id === "p2" ? "🚩" : "🏴";
+    if (text) text.innerText = `${playerName} has captured ${nodeName}.`;
+
+    modal.classList.remove("hidden");
+
+    setTimeout(() => {
+      modal.classList.add("hidden");
+      resolve();
+    }, 1400);
+  });
+}
+
+
 
 
 function openTerritoryCommandPanel(pin) {
@@ -3950,16 +3979,32 @@ function wireButtons() {
     closeModal("territory-command-modal")
   );
 
-  $("btn-territory-capture")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.captureNode(currentPin, getActivePlayer());
-    closeModal("territory-command-modal");
-  });
+ $("btn-territory-capture")?.addEventListener("click", async () => {
+  if (!currentPin) return;
+
+  const targetPin = currentPin;
+  const player = getActivePlayer();
+
+  closeModal("territory-command-modal");
+
+  const captured = territorySystem?.captureNode(targetPin, player);
+
+  if (captured) {
+    await playTerritoryCaptureCutscene(targetPin, player);
+  }
+
+  currentPin = targetPin;
+  openTerritoryCommandPanel(targetPin);
+});
+
   
 $("btn-territory-attack")?.addEventListener("click", async () => {
   if (!currentPin) return;
 
   const targetPin = currentPin;
+  const player = getActivePlayer();
+  const beforeNode = territorySystem?.getNode(targetPin);
+  const beforeOwnerId = beforeNode?.ownerId || null;
 
   closeModal("territory-command-modal");
 
@@ -3968,10 +4013,19 @@ $("btn-territory-attack")?.addEventListener("click", async () => {
     `Firing on ${targetPin.n || "target"}...`
   );
 
-  territorySystem?.attackNode(targetPin, getActivePlayer());
+  territorySystem?.attackNode(targetPin, player);
+
+  const afterNode = territorySystem?.getNode(targetPin);
+  const afterOwnerId = afterNode?.ownerId || null;
+
+  if (afterOwnerId === player?.id && beforeOwnerId !== afterOwnerId) {
+    await playTerritoryCaptureCutscene(targetPin, player);
+  }
+
   currentPin = targetPin;
   openTerritoryCommandPanel(targetPin);
 });
+
 
 
   $("btn-territory-repair")?.addEventListener("click", () => {
