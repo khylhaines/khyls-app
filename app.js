@@ -3580,15 +3580,35 @@ function playTerritoryDefenceCutscene(type = "shield", targetPin = null) {
 
 function playTerritoryCaptureCutscene(targetPin, player = null) {
   return new Promise((resolve) => {
-    const modal = $("territory-capture-cutscene");
+    let modal = $("territory-capture-cutscene");
+
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "territory-capture-cutscene";
+      modal.className = "capture-cutscene hidden";
+      modal.innerHTML = `
+        <div class="capture-cutscene-card">
+          <div id="capture-scene-title" class="capture-scene-title">
+            🏴 TERRITORY CAPTURED
+          </div>
+
+          <div class="capture-scene-stage">
+            <div class="capture-flag-old">🛡️</div>
+            <div class="capture-wave">⚡⚡⚡</div>
+            <div id="capture-flag-new" class="capture-flag-new">🏴</div>
+          </div>
+
+          <div id="capture-cutscene-text" class="capture-cutscene-text">
+            Territory secured.
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
     const title = $("capture-scene-title");
     const flag = $("capture-flag-new");
     const text = $("capture-cutscene-text");
-
-    if (!modal) {
-      resolve();
-      return;
-    }
 
     const playerName = player?.name || "Player";
     const nodeName = targetPin?.n || "territory";
@@ -3598,14 +3618,15 @@ function playTerritoryCaptureCutscene(targetPin, player = null) {
     if (text) text.innerText = `${playerName} has captured ${nodeName}.`;
 
     modal.classList.remove("hidden");
+    modal.style.display = "flex";
 
     setTimeout(() => {
       modal.classList.add("hidden");
+      modal.style.display = "none";
       resolve();
-    }, 1400);
+    }, 1600);
   });
 }
-
 
 
 
