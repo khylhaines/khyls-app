@@ -3470,7 +3470,34 @@ function playAttackEffect(fromLatLng, toLatLng) {
   if (!map || !fromLatLng || !toLatLng) return;
 
   const line = L.polyline([fromLatLng, toLatLng], {
+    colofunction playAttackEffect(fromLatLng, toLatLng) {
+  if (!map || !fromLatLng || !toLatLng) return;
+
+  const line = L.polyline([fromLatLng, toLatLng], {
     color: "yellow",
+    weight: 4,
+    opacity: 0.95,
+  }).addTo(map);
+
+  const impact = L.circleMarker(toLatLng, {
+    radius: 14,
+    color: "yellow",
+    weight: 3,
+    fillColor: "orange",
+    fillOpacity: 0.55,
+  }).addTo(map);
+
+  setTimeout(() => {
+    try {
+      map.removeLayer(line);
+    } catch {}
+
+    try {
+      map.removeLayer(impact);
+    } catch {}
+  }, 350);
+}
+r: "yellow",
     weight: 4,
   }).addTo(map);
 
