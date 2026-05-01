@@ -3466,6 +3466,19 @@ function checkTerritoryVictory(scores = []) {
   return true;
 }
 
+function playAttackEffect(fromLatLng, toLatLng) {
+  if (!map) return;
+
+  const line = L.polyline([fromLatLng, toLatLng], {
+    color: "yellow",
+    weight: 3,
+  }).addTo(map);
+
+  setTimeout(() => {
+    map.removeLayer(line);
+  }, 300);
+}
+
 
 function openTerritoryCommandPanel(pin) {
   if (!pin || !territorySystem) return;
@@ -3904,6 +3917,13 @@ function wireButtons() {
     closeModal("start-modal")
   );
 
+$("btn-territory-attack")?.addEventListener("click", () => {
+  if (!currentPin) return;
+  territorySystem?.attackNode(currentPin, getActivePlayer());
+  openTerritoryCommandPanel(currentPin);
+});
+
+  
   $("btn-weapon-arrow-wood")?.addEventListener("click", () => {
     if (!currentPin) return;
     territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "wooden_arrow");
