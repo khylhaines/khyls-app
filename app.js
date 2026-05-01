@@ -3467,16 +3467,18 @@ function checkTerritoryVictory(scores = []) {
 }
 
 function playAttackEffect(fromLatLng, toLatLng) {
-  if (!map) return;
+  if (!map || !fromLatLng || !toLatLng) return;
 
   const line = L.polyline([fromLatLng, toLatLng], {
     color: "yellow",
-    weight: 3,
+    weight: 4,
   }).addTo(map);
 
   setTimeout(() => {
-    map.removeLayer(line);
-  }, 300);
+    try {
+      map.removeLayer(line);
+    } catch {}
+  }, 350);
 }
 
 
