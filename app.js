@@ -3469,26 +3469,40 @@ function checkTerritoryVictory(scores = []) {
 function playAttackEffect(fromLatLng, toLatLng) {
   if (!map || !fromLatLng || !toLatLng) return;
 
-  console.log("ATTACK EFFECT:", fromLatLng, toLatLng); // debug
+  const attackPaneName = "attack-effect-pane";
+
+  if (!map.getPane(attackPaneName)) {
+    map.createPane(attackPaneName);
+    map.getPane(attackPaneName).style.zIndex = 9999;
+  }
 
   const line = L.polyline([fromLatLng, toLatLng], {
+    pane: attackPaneName,
     color: "red",
-    weight: 8,
+    weight: 10,
     opacity: 1,
   }).addTo(map);
 
   const impact = L.circle(toLatLng, {
-    radius: 40,
+    pane: attackPaneName,
+    radius: 70,
     color: "red",
+    weight: 5,
     fillColor: "orange",
     fillOpacity: 0.9,
   }).addTo(map);
 
   setTimeout(() => {
-    map.removeLayer(line);
-    map.removeLayer(impact);
-  }, 800);
+    try {
+      map.removeLayer(line);
+    } catch {}
+
+    try {
+      map.removeLayer(impact);
+    } catch {}
+  }, 1200);
 }
+
 
 
 function openTerritoryCommandPanel(pin) {
@@ -3870,23 +3884,21 @@ function wireButtons() {
 $("btn-territory-attack")?.addEventListener("click", () => {
   if (!currentPin) return;
 
- const from = map.getCenter();
- const to = map.getCenter();
-  
+  const from = map.getCenter();
+  const to = currentPin.l;
 
   closeModal("territory-command-modal");
 
   setTimeout(() => {
     playAttackEffect(from, to);
-  }, 80);
+  }, 150);
 
   setTimeout(() => {
     territorySystem?.attackNode(currentPin, getActivePlayer());
     openTerritoryCommandPanel(currentPin);
-  }, 420);
+  }, 1450);
 });
 
-  
 
   $("btn-territory-repair")?.addEventListener("click", () => {
     if (!currentPin) return;
