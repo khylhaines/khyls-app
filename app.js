@@ -3877,23 +3877,40 @@ function wireButtons() {
     openTerritoryCommandPanel(currentPin);
   });
 
-  $("btn-defence-shield")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.installDefence(currentPin, getActivePlayer(), "shield");
-    openTerritoryCommandPanel(currentPin);
-  });
+ $("btn-defence-shield")?.addEventListener("click", () => {
+  if (!currentPin) return;
 
-  $("btn-defence-core")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.installDefence(currentPin, getActivePlayer(), "core");
-    openTerritoryCommandPanel(currentPin);
-  });
+  // simple defence boost
+  territorySystem?.installDefence(currentPin, getActivePlayer(), "shield");
 
-  $("btn-defence-bee")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.installDefence(currentPin, getActivePlayer(), "bee_nest");
-    openTerritoryCommandPanel(currentPin);
-  });
+  speakText("Shield installed.");
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-defence-core")?.addEventListener("click", () => {
+  if (!currentPin) return;
+
+  // CORE = UPGRADE SYSTEM
+  const upgraded = territorySystem?.upgradeNode(currentPin, getActivePlayer());
+
+  if (upgraded) {
+    speakText("Core upgraded. Level increased.");
+  } else {
+    speakText("Upgrade failed.");
+  }
+
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-defence-bee")?.addEventListener("click", () => {
+  if (!currentPin) return;
+
+  // strong defence option
+  territorySystem?.installDefence(currentPin, getActivePlayer(), "bee_nest");
+
+  speakText("Bee nest deployed.");
+  openTerritoryCommandPanel(currentPin);
+});
 
   $("action-trigger")?.addEventListener("click", handleActionTrigger);
 
