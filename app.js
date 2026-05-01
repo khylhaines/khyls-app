@@ -3580,53 +3580,75 @@ function playTerritoryDefenceCutscene(type = "shield", targetPin = null) {
 
 function playTerritoryCaptureCutscene(targetPin, player = null) {
   return new Promise((resolve) => {
-    let modal = $("territory-capture-cutscene");
-
-    if (!modal) {
-      modal = document.createElement("div");
-      modal.id = "territory-capture-cutscene";
-      modal.className = "capture-cutscene hidden";
-      modal.innerHTML = `
-        <div class="capture-cutscene-card">
-          <div id="capture-scene-title" class="capture-scene-title">
-            🏴 TERRITORY CAPTURED
-          </div>
-
-          <div class="capture-scene-stage">
-            <div class="capture-flag-old">🛡️</div>
-            <div class="capture-wave">⚡⚡⚡</div>
-            <div id="capture-flag-new" class="capture-flag-new">🏴</div>
-          </div>
-
-          <div id="capture-cutscene-text" class="capture-cutscene-text">
-            Territory secured.
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-    }
-
-    const title = $("capture-scene-title");
-    const flag = $("capture-flag-new");
-    const text = $("capture-cutscene-text");
-
     const playerName = player?.name || "Player";
     const nodeName = targetPin?.n || "territory";
 
-    if (title) title.innerText = "🏴 TERRITORY CAPTURED";
-    if (flag) flag.innerText = player?.id === "p2" ? "🚩" : "🏴";
-    if (text) text.innerText = `${playerName} has captured ${nodeName}.`;
-
-    modal.classList.remove("hidden");
+    const modal = document.createElement("div");
+    modal.style.position = "fixed";
+    modal.style.inset = "0";
+    modal.style.zIndex = "999999";
+    modal.style.background = "rgba(0,0,0,0.92)";
     modal.style.display = "flex";
+    modal.style.alignItems = "center";
+    modal.style.justifyContent = "center";
+    modal.style.padding = "20px";
+
+    modal.innerHTML = `
+      <div style="
+        width: min(92vw, 520px);
+        border-radius: 26px;
+        border: 2px solid rgba(255, 213, 74, 0.75);
+        background: linear-gradient(180deg, #241b08, #080b12);
+        padding: 24px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 0 40px rgba(255, 213, 74, 0.35);
+      ">
+        <div style="
+          color: #ffd54a;
+          font-weight: 900;
+          font-size: 22px;
+          margin-bottom: 22px;
+          letter-spacing: 0.08em;
+        ">
+          🏴 TERRITORY CAPTURED
+        </div>
+
+        <div style="
+          height: 150px;
+          border-radius: 22px;
+          background: #070b12;
+          border: 1px solid rgba(255,255,255,0.15);
+          display: flex;
+          align-items: center;
+          justify-content: space-around;
+          font-size: 58px;
+          margin-bottom: 18px;
+        ">
+          <span>🛡️</span>
+          <span style="color:#ffd54a;">⚡</span>
+          <span>${player?.id === "p2" ? "🚩" : "🏴"}</span>
+        </div>
+
+        <div style="
+          color: #ffe8a3;
+          font-weight: 900;
+          font-size: 15px;
+        ">
+          ${playerName} has captured ${nodeName}.
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
 
     setTimeout(() => {
-      modal.classList.add("hidden");
-      modal.style.display = "none";
+      modal.remove();
       resolve();
-    }, 1600);
+    }, 1800);
   });
 }
+
 
 
 
