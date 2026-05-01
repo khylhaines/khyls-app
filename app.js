@@ -3866,17 +3866,24 @@ function wireButtons() {
     closeModal("territory-command-modal");
   });
 
- $("btn-territory-attack")?.addEventListener("click", () => {
+$("btn-territory-attack")?.addEventListener("click", () => {
   if (!currentPin) return;
 
-  const from = map.getCenter(); // quick placeholder
-  const to = currentPin.latlng;
+  const from = map.getCenter();
+  const to = currentPin.l;
 
-  playAttackEffect(from, to);
+  closeModal("territory-command-modal");
 
-  territorySystem?.attackNode(currentPin, getActivePlayer());
-  openTerritoryCommandPanel(currentPin);
+  setTimeout(() => {
+    playAttackEffect(from, to);
+  }, 80);
+
+  setTimeout(() => {
+    territorySystem?.attackNode(currentPin, getActivePlayer());
+    openTerritoryCommandPanel(currentPin);
+  }, 420);
 });
+
   
 
   $("btn-territory-repair")?.addEventListener("click", () => {
