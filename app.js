@@ -3600,8 +3600,8 @@ function openTerritoryCommandPanel(pin) {
   if ($("btn-territory-repair")) $("btn-territory-repair").disabled = !isMine || storedCoins <= 0 || window.__territoryWinnerId;
 
   if ($("btn-defence-shield")) $("btn-defence-shield").disabled = !isMine || window.__territoryWinnerId;
-  if ($("btn-defence-core")) $("btn-defence-core").disabled = !isMine || window.__territoryWinnerId;
-  if ($("btn-defence-bee")) $("btn-defence-bee").disabled = !isMine || window.__territoryWinnerId;
+if ($("btn-defence-core")) $("btn-defence-core").disabled = !isMine || level >= 3 || window.__territoryWinnerId;
+if ($("btn-defence-bee")) $("btn-defence-bee").disabled = !isMine || window.__territoryWinnerId;
 
   if ($("btn-weapon-arrow-wood")) {
     $("btn-weapon-arrow-wood").disabled = !isEnemy || woodenArrowCount <= 0 || window.__territoryWinnerId;
