@@ -1445,6 +1445,123 @@ input[type="range"] {
     transform: translate(-50%, -90%) scale(1);
   }
 }
+
+/* ============================
+   TERRITORY ATTACK CUTSCENE
+============================ */
+.attack-cutscene {
+  position: fixed;
+  inset: 0;
+  z-index: 45000;
+  background:
+    radial-gradient(circle at center, rgba(255, 213, 74, 0.16), transparent 38%),
+    rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.attack-cutscene.hidden {
+  display: none !important;
+}
+
+.attack-cutscene-card {
+  width: min(92vw, 520px);
+  border-radius: 26px;
+  border: 2px solid rgba(255, 213, 74, 0.55);
+  background: linear-gradient(180deg, #231111, #080b12);
+  padding: 22px;
+  text-align: center;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.75),
+    0 0 34px rgba(255, 92, 92, 0.35);
+}
+
+.attack-scene-title {
+  color: var(--gold);
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  margin-bottom: 22px;
+}
+
+.attack-scene-stage {
+  position: relative;
+  height: 150px;
+  border-radius: 22px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(77, 163, 255, 0.12), rgba(255, 92, 92, 0.14)),
+    #070b12;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 34px;
+}
+
+.attack-weapon,
+.attack-target {
+  font-size: 54px;
+  z-index: 2;
+  filter: drop-shadow(0 0 12px rgba(255, 213, 74, 0.35));
+}
+
+.attack-target {
+  animation: targetHitShake 0.5s ease 0.75s;
+}
+
+.attack-projectile {
+  position: absolute;
+  left: 92px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ff3131;
+  font-size: 34px;
+  font-weight: 900;
+  text-shadow: 0 0 18px rgba(255, 49, 49, 0.85);
+  animation: projectileFire 1.05s ease forwards;
+}
+
+.attack-cutscene-text {
+  margin-top: 18px;
+  color: #ffe8a3;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+@keyframes projectileFire {
+  0% {
+    left: 92px;
+    opacity: 0;
+    transform: translateY(-50%) scale(0.7);
+  }
+  15% {
+    opacity: 1;
+  }
+  75% {
+    left: calc(100% - 156px);
+    opacity: 1;
+    transform: translateY(-50%) scale(1.15);
+  }
+  100% {
+    left: calc(100% - 132px);
+    opacity: 0;
+    transform: translateY(-50%) scale(1.45);
+  }
+}
+
+@keyframes targetHitShake {
+  0% { transform: translateX(0) scale(1); }
+  25% { transform: translateX(-8px) scale(1.08); }
+  50% { transform: translateX(8px) scale(1.08); }
+  75% { transform: translateX(-5px) scale(1.05); }
+  100% { transform: translateX(0) scale(1); }
+}
+
+
+
 /* ============================
    RESPONSIVE
 ============================ */
