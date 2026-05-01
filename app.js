@@ -3526,6 +3526,59 @@ function playTerritoryAttackCutscene(targetPin, label = "Firing on target...") {
   });
 }
 
+function playTerritoryDefenceCutscene(type = "shield", targetPin = null) {
+  return new Promise((resolve) => {
+    const modal = $("territory-defence-cutscene");
+    const title = $("defence-scene-title");
+    const builder = $("defence-builder");
+    const effect = $("defence-effect");
+    const text = $("defence-cutscene-text");
+
+    if (!modal) {
+      resolve();
+      return;
+    }
+
+    const name = targetPin?.n || "territory";
+
+    const scenes = {
+      shield: {
+        title: "🛡️ SHIELD BUILD",
+        builder: "👷",
+        effect: "🛡️",
+        text: `Building shield defence at ${name}...`,
+      },
+      core: {
+        title: "🧱 CORE UPGRADE",
+        builder: "🧙",
+        effect: "🧱",
+        text: `Powering up the core at ${name}...`,
+      },
+      bee_nest: {
+        title: "🐝 BEE NEST DEPLOYED",
+        builder: "🐝",
+        effect: "🐝🐝🐝",
+        text: `Bee guards are swarming around ${name}...`,
+      },
+    };
+
+    const scene = scenes[type] || scenes.shield;
+
+    if (title) title.innerText = scene.title;
+    if (builder) builder.innerText = scene.builder;
+    if (effect) effect.innerText = scene.effect;
+    if (text) text.innerText = scene.text;
+
+    modal.classList.remove("hidden");
+
+    setTimeout(() => {
+      modal.classList.add("hidden");
+      resolve();
+    }, 1300);
+  });
+}
+
+
 
 function openTerritoryCommandPanel(pin) {
   if (!pin || !territorySystem) return;
