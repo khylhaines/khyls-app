@@ -3503,6 +3503,28 @@ function playAttackEffect(fromLatLng, toLatLng) {
   }, 1200);
 }
 
+function playTerritoryAttackCutscene(targetPin, label = "Firing on target...") {
+  return new Promise((resolve) => {
+    const modal = $("territory-attack-cutscene");
+    const text = $("attack-cutscene-text");
+
+    if (!modal) {
+      resolve();
+      return;
+    }
+
+    if (text) {
+      text.innerText = label || `Attacking ${targetPin?.n || "target"}...`;
+    }
+
+    modal.classList.remove("hidden");
+
+    setTimeout(() => {
+      modal.classList.add("hidden");
+      resolve();
+    }, 1300);
+  });
+}
 
 
 function openTerritoryCommandPanel(pin) {
@@ -3880,14 +3902,18 @@ function wireButtons() {
     territorySystem?.captureNode(currentPin, getActivePlayer());
     closeModal("territory-command-modal");
   });
-$("btn-territory-attack")?.addEventListener("click", () => {
+  
+$("btn-territory-attack")?.addEventListener("click", async () => {
   if (!currentPin) return;
 
   const targetPin = currentPin;
-  const from = map.getCenter();
-  const to = targetPin.l;
 
-  playAttackEffect(from, to);
+  closeModal("territory-command-modal");
+
+  await playTerritoryAttackCutscene(
+    targetPin,
+    `Firing on ${targetPin.n || "target"}...`
+  );
 
   territorySystem?.attackNode(targetPin, getActivePlayer());
   currentPin = targetPin;
