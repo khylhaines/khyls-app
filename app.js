@@ -3979,7 +3979,7 @@ function wireButtons() {
     closeModal("territory-command-modal")
   );
 
- $("btn-territory-capture")?.addEventListener("click", async () => {
+$("btn-territory-capture")?.addEventListener("click", async () => {
   if (!currentPin) return;
 
   const targetPin = currentPin;
@@ -3987,11 +3987,9 @@ function wireButtons() {
 
   closeModal("territory-command-modal");
 
-  const captured = territorySystem?.captureNode(targetPin, player);
+  await playTerritoryCaptureCutscene(targetPin, player);
 
-  if (captured) {
-    await playTerritoryCaptureCutscene(targetPin, player);
-  }
+  territorySystem?.captureNode(targetPin, player);
 
   currentPin = targetPin;
   openTerritoryCommandPanel(targetPin);
