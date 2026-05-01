@@ -3872,7 +3872,7 @@ $("btn-territory-attack")?.addEventListener("click", () => {
 
  const from = map.getCenter();
  const to = map.getCenter();
-  const to = currentPin.l;
+  
 
   closeModal("territory-command-modal");
 
