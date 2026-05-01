@@ -3884,19 +3884,21 @@ function wireButtons() {
 $("btn-territory-attack")?.addEventListener("click", () => {
   if (!currentPin) return;
 
+  const targetPin = currentPin;
   const from = map.getCenter();
-  const to = currentPin.l;
+  const to = targetPin.l;
 
   closeModal("territory-command-modal");
 
   setTimeout(() => {
     playAttackEffect(from, to);
-  }, 150);
+  }, 300);
 
   setTimeout(() => {
-    territorySystem?.attackNode(currentPin, getActivePlayer());
-    openTerritoryCommandPanel(currentPin);
-  }, 1450);
+    territorySystem?.attackNode(targetPin, getActivePlayer());
+    currentPin = targetPin;
+    openTerritoryCommandPanel(targetPin);
+  }, 1700);
 });
 
 
