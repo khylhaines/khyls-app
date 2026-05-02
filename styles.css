@@ -2211,4 +2211,40 @@ input[type="range"] {
   background: #111827;
   color: #fff;
 }
+.leoids-map-controls {
+  position: fixed;
+  left: 50%;
+  bottom: 112px;
+  transform: translateX(-50%);
+  z-index: 50000;
+  width: min(92vw, 420px);
+  display: grid;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.leoids-map-controls.hidden {
+  display: none !important;
+}
+
+.leoids-map-btn {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 16px;
+  padding: 10px 14px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45);
+}
+
+.leoids-map-btn.confirm {
+  background: linear-gradient(180deg, #ffe27c, #ffd54a 55%, #efb000);
+  color: #1c1200;
+}
+
+.leoids-map-btn.dark {
+  background: linear-gradient(180deg, #202a3c, #101827);
+  color: #fff;
+}
 
