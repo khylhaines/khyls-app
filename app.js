@@ -6,6 +6,7 @@ import {
   updateAdaptiveProfile,
 } from "./qa.js";
 import { createTerritorySystem } from "./territory_system.js";
+import { createLeoidsSystem } from "./leoids_system.js";
 import { PINS } from "./pins.js";
 import { ADULT_PINS } from "./adult_pins.js";
 import { ADULT_CONTENT } from "./adult_content.js";
@@ -529,6 +530,7 @@ let trailSystem = null;
 let abbeySystem = null;
 let bossSystem = null;
 let territorySystem = null;
+let leoidsSystem = null;
 let activeGameMode = "explorer";
 const gameModes = {};
 let lastTerritoryAutoOpenPinId = null;
@@ -2398,6 +2400,10 @@ function renderPins() {
   Object.values(activeMarkers).forEach((m) => map.removeLayer(m));
   activeMarkers = {};
 
+  if (activeGameMode === "leoids") {
+    return;
+  }
+
   const pins = getCurrentPins();
 
   pins.forEach((pin) => {
@@ -2405,15 +2411,14 @@ function renderPins() {
       icon: createPinIcon(pin),
     }).addTo(map);
 
+    marker.on("click", () => {
+      handlePinOpen(pin);
+    });
 
-marker.on("click", () => {
-  handlePinOpen(pin);
-});
-
-    
     activeMarkers[pin.id] = marker;
   });
 }
+
 
 function refreshAllPinMarkers() {
   Object.keys(activeMarkers).forEach((pinId) => {
@@ -3335,29 +3340,32 @@ function renderHomeLog() {
       })
       .join("");
 }
-
 function updateStartButtons() {
- 
- $("pill-game-explorer")?.addEventListener("click", () => {
-  selectGameMode("explorer");
-});
+  $("pill-game-explorer")?.classList.toggle(
+    "active",
+    activeGameMode === "explorer"
+  );
 
-$("pill-game-territory")?.addEventListener("click", () => {
-  selectGameMode("territory");
-});
+  $("pill-game-territory")?.classList.toggle(
+    "active",
+    activeGameMode === "territory"
+  );
 
-$("pill-game-leoids")?.addEventListener("click", () => {
-  selectGameMode("leoids");
-});
+  $("pill-game-leoids")?.classList.toggle(
+    "active",
+    activeGameMode === "leoids"
+  );
 
   $("pill-full")?.classList.toggle(
     "active",
     state.activePack === "classic" && state.mapMode === "core"
   );
+
   $("pill-park")?.classList.toggle(
     "active",
     state.activePack === "classic" && state.mapMode === "park"
   );
+
   $("pill-docks")?.classList.toggle(
     "active",
     state.activePack === "classic" && state.mapMode === "abbey"
@@ -3370,15 +3378,18 @@ $("pill-game-leoids")?.addEventListener("click", () => {
     "active",
     state.activePack === "adult" && state.activeAdultCategory === "true_crime"
   );
+
   $("pill-conspiracy")?.classList.toggle(
     "active",
     state.activePack === "adult" && state.activeAdultCategory === "conspiracy"
   );
+
   $("pill-history")?.classList.toggle(
     "active",
     state.activePack === "adult" && state.activeAdultCategory === "history"
   );
 }
+
 
 /* ============================
    AR
@@ -4015,26 +4026,33 @@ function selectGameMode(mode) {
   activeGameMode = mode;
 
   if (mode === "explorer") {
+    leoidsSystem?.exitBattleMap?.();
     showActionButton(false);
     updateStartButtons();
+    renderPins();
     refreshAllPinMarkers();
     speakText("Explorer mode selected.");
     return;
   }
 
   if (mode === "territory") {
+    leoidsSystem?.exitBattleMap?.();
     showActionButton(false);
     updateStartButtons();
+    renderPins();
     refreshAllPinMarkers();
     speakText("Territory mode selected.");
     return;
   }
 
   if (mode === "leoids") {
+    currentPin = null;
+    leoidsSystem?.enterBattleMap?.();
     showActionButton(false);
     updateStartButtons();
-    refreshAllPinMarkers();
-    speakText("LEOIDs mode selected. Hunters and runners ready.");
+    renderPins();
+    leoidsSystem?.openSetupPanel?.();
+    speakText("LEOIDS battle map selected.");
     return;
   }
 }
@@ -4067,93 +4085,20 @@ function wireButtons() {
   window.__territoryBotEnabled = window.__territoryBotEnabled || false;
   window.__territoryBotDifficulty = window.__territoryBotDifficulty || "normal";
 
-$("leoids-round-length")?.addEventListener("change", (e) => {
-  window.__leoidsRoundLength = Number(e.target.value || 1200);
+  leoidsSystem?.wirePanelButtons?.();
 
-  if ($("leoids-status")) {
-    $("leoids-status").innerText = `Round length set to ${Math.round(
-      window.__leoidsRoundLength / 60
-    )} minutes.`;
-  }
+  $("pill-game-explorer")?.addEventListener("click", () => {
+    selectGameMode("explorer");
+  });
 
-  speakText(`Round length ${Math.round(window.__leoidsRoundLength / 60)} minutes.`);
-});
+  $("pill-game-territory")?.addEventListener("click", () => {
+    selectGameMode("territory");
+  });
 
-$("leoids-hunter-delay")?.addEventListener("change", (e) => {
-  window.__leoidsHunterDelay = Number(e.target.value || 120);
+  $("pill-game-leoids")?.addEventListener("click", () => {
+    selectGameMode("leoids");
+  });
 
-  if ($("leoids-status")) {
-    $("leoids-status").innerText = `Hunter delay set to ${Math.round(
-      window.__leoidsHunterDelay / 60
-    )} minutes.`;
-  }
-
-  speakText(`Hunter delay ${Math.round(window.__leoidsHunterDelay / 60)} minutes.`);
-});
-
-
-  
-$("btn-leoids-close")?.addEventListener("click", () =>
-  closeModal("leoids-modal")
-);
-
-$("btn-leoids-close-x")?.addEventListener("click", () =>
-  closeModal("leoids-modal")
-);
-
-$("btn-leoids-runner")?.addEventListener("click", () => {
-  window.__leoidsRole = "runner";
-
-  $("btn-leoids-runner")?.classList.add("active");
-  $("btn-leoids-hunter")?.classList.remove("active");
-
-  if ($("leoids-status")) {
-    $("leoids-status").innerText = "Role selected: Runner. Survive the timer.";
-  }
-
-  speakText("Runner selected.");
-});
-
-$("btn-leoids-hunter")?.addEventListener("click", () => {
-  window.__leoidsRole = "hunter";
-
-  $("btn-leoids-hunter")?.classList.add("active");
-  $("btn-leoids-runner")?.classList.remove("active");
-
-  if ($("leoids-status")) {
-    $("leoids-status").innerText =
-      "Role selected: Hunter. Wait for release, then chase runners.";
-  }
-
-  speakText("Hunter selected.");
-});
-
-$("btn-leoids-start")?.addEventListener("click", () => {
-  const role = window.__leoidsRole || "runner";
-  const roundLength = Number($("leoids-round-length")?.value || 1200);
-  const hunterDelay = Number($("leoids-hunter-delay")?.value || 120);
-
-  window.__leoidsRoundLength = roundLength;
-  window.__leoidsHunterDelay = hunterDelay;
-
-  const roundMinutes = Math.round(roundLength / 60);
-  const delayMinutes = Math.round(hunterDelay / 60);
-
-  if ($("leoids-status")) {
-    $("leoids-status").innerText =
-      role === "hunter"
-        ? `Hunter round started. Release delay: ${delayMinutes} minute(s). Round length: ${roundMinutes} minutes.`
-        : `Runner round started. Survive for ${roundMinutes} minutes. Hunter delay: ${delayMinutes} minute(s).`;
-  }
-
-  speakText(
-    role === "hunter"
-      ? `Hunter round started. Wait ${delayMinutes} minutes.`
-      : `Runner round started. Survive for ${roundMinutes} minutes.`
-  );
-});
-
-  
   $("btn-territory-bot-toggle")?.addEventListener("click", () => {
     window.__territoryBotEnabled = !window.__territoryBotEnabled;
 
@@ -4196,55 +4141,53 @@ $("btn-leoids-start")?.addEventListener("click", () => {
     closeModal("territory-command-modal")
   );
 
-$("btn-territory-capture")?.addEventListener("click", async () => {
-  if (!currentPin) return;
+  $("btn-territory-capture")?.addEventListener("click", async () => {
+    if (!currentPin) return;
 
-  const targetPin = currentPin;
-  const player = getActivePlayer();
+    const targetPin = currentPin;
+    const player = getActivePlayer();
 
-  closeModal("territory-command-modal");
+    closeModal("territory-command-modal");
 
-  await playTerritoryCaptureCutscene(targetPin, player);
-
-  territorySystem?.captureNode(targetPin, player);
-
-  currentPin = targetPin;
-  openTerritoryCommandPanel(targetPin);
-});
-
-  
-$("btn-territory-attack")?.addEventListener("click", async () => {
-  if (!currentPin) return;
-
-  const targetPin = currentPin;
-  const player = getActivePlayer();
-  const beforeNode = territorySystem?.getNode(targetPin);
-  const beforeOwnerId = beforeNode?.ownerId || null;
-
-  closeModal("territory-command-modal");
-
-  await playTerritoryAttackCutscene(
-    targetPin,
-    `Firing on ${targetPin.n || "target"}...`
-  );
-
-  territorySystem?.attackNode(targetPin, player);
-
-  const afterNode = territorySystem?.getNode(targetPin);
-  const afterOwnerId = afterNode?.ownerId || null;
-
-  if (afterOwnerId === player?.id && beforeOwnerId !== afterOwnerId) {
     await playTerritoryCaptureCutscene(targetPin, player);
-  }
 
-  currentPin = targetPin;
-  openTerritoryCommandPanel(targetPin);
-});
+    territorySystem?.captureNode(targetPin, player);
 
-$("btn-territory-victory-close")?.addEventListener("click", () => {
-  closeModal("territory-victory-screen");
-});
+    currentPin = targetPin;
+    openTerritoryCommandPanel(targetPin);
+  });
 
+  $("btn-territory-attack")?.addEventListener("click", async () => {
+    if (!currentPin) return;
+
+    const targetPin = currentPin;
+    const player = getActivePlayer();
+    const beforeNode = territorySystem?.getNode(targetPin);
+    const beforeOwnerId = beforeNode?.ownerId || null;
+
+    closeModal("territory-command-modal");
+
+    await playTerritoryAttackCutscene(
+      targetPin,
+      `Firing on ${targetPin.n || "target"}...`
+    );
+
+    territorySystem?.attackNode(targetPin, player);
+
+    const afterNode = territorySystem?.getNode(targetPin);
+    const afterOwnerId = afterNode?.ownerId || null;
+
+    if (afterOwnerId === player?.id && beforeOwnerId !== afterOwnerId) {
+      await playTerritoryCaptureCutscene(targetPin, player);
+    }
+
+    currentPin = targetPin;
+    openTerritoryCommandPanel(targetPin);
+  });
+
+  $("btn-territory-victory-close")?.addEventListener("click", () => {
+    closeModal("territory-victory-screen");
+  });
 
   $("btn-territory-repair")?.addEventListener("click", () => {
     if (!currentPin) return;
@@ -4252,62 +4195,76 @@ $("btn-territory-victory-close")?.addEventListener("click", () => {
     openTerritoryCommandPanel(currentPin);
   });
 
-$("btn-defence-shield")?.addEventListener("click", async () => {
-  if (!currentPin) return;
+  $("btn-defence-shield")?.addEventListener("click", async () => {
+    if (!currentPin) return;
 
-  const targetPin = currentPin;
-  closeModal("territory-command-modal");
+    const targetPin = currentPin;
+    closeModal("territory-command-modal");
 
-  await playTerritoryDefenceCutscene("shield", targetPin);
+    await playTerritoryDefenceCutscene("shield", targetPin);
 
-  territorySystem?.installDefence(targetPin, getActivePlayer(), "shield");
-  currentPin = targetPin;
-  openTerritoryCommandPanel(targetPin);
-});
+    territorySystem?.installDefence(targetPin, getActivePlayer(), "shield");
+    currentPin = targetPin;
+    openTerritoryCommandPanel(targetPin);
+  });
 
-$("btn-defence-core")?.addEventListener("click", async () => {
-  if (!currentPin) return;
+  $("btn-defence-core")?.addEventListener("click", async () => {
+    if (!currentPin) return;
 
-  const targetPin = currentPin;
-  closeModal("territory-command-modal");
+    const targetPin = currentPin;
+    closeModal("territory-command-modal");
 
-  await playTerritoryDefenceCutscene("core", targetPin);
+    await playTerritoryDefenceCutscene("core", targetPin);
 
-  territorySystem?.upgradeNode(targetPin, getActivePlayer());
-  currentPin = targetPin;
-  openTerritoryCommandPanel(targetPin);
-});
+    territorySystem?.upgradeNode(targetPin, getActivePlayer());
+    currentPin = targetPin;
+    openTerritoryCommandPanel(targetPin);
+  });
 
-$("btn-defence-bee")?.addEventListener("click", async () => {
-  if (!currentPin) return;
+  $("btn-defence-bee")?.addEventListener("click", async () => {
+    if (!currentPin) return;
 
-  const targetPin = currentPin;
-  closeModal("territory-command-modal");
+    const targetPin = currentPin;
+    closeModal("territory-command-modal");
 
-  await playTerritoryDefenceCutscene("bee_nest", targetPin);
+    await playTerritoryDefenceCutscene("bee_nest", targetPin);
 
-  territorySystem?.installDefence(targetPin, getActivePlayer(), "bee_nest");
-  currentPin = targetPin;
-  openTerritoryCommandPanel(targetPin);
-});
+    territorySystem?.installDefence(targetPin, getActivePlayer(), "bee_nest");
+    currentPin = targetPin;
+    openTerritoryCommandPanel(targetPin);
+  });
 
+  $("btn-weapon-arrow-wood")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.useWeaponOnNode(
+      currentPin,
+      getActivePlayer(),
+      "wooden_arrow"
+    );
+    openTerritoryCommandPanel(currentPin);
+  });
+
+  $("btn-weapon-arrow-bone")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.useWeaponOnNode(
+      currentPin,
+      getActivePlayer(),
+      "bone_arrow"
+    );
+    openTerritoryCommandPanel(currentPin);
+  });
+
+  $("btn-weapon-hand-cannon")?.addEventListener("click", () => {
+    if (!currentPin) return;
+    territorySystem?.useWeaponOnNode(
+      currentPin,
+      getActivePlayer(),
+      "hand_cannon"
+    );
+    openTerritoryCommandPanel(currentPin);
+  });
 
   $("action-trigger")?.addEventListener("click", handleActionTrigger);
-
-  $("pill-game-explorer")?.addEventListener("click", () => {
-    activeGameMode = "explorer";
-    updateStartButtons();
-    refreshAllPinMarkers();
-    speakText("Explorer mode selected.");
-  });
-
-  $("pill-game-territory")?.addEventListener("click", () => {
-    activeGameMode = "territory";
-    showActionButton(false);
-    updateStartButtons();
-    refreshAllPinMarkers();
-    speakText("Territory mode selected.");
-  });
 
   $("btn-start")?.addEventListener("click", () => closeModal("start-modal"));
   $("btn-start-close")?.addEventListener("click", () =>
@@ -4316,31 +4273,6 @@ $("btn-defence-bee")?.addEventListener("click", async () => {
   $("btn-start-close-x")?.addEventListener("click", () =>
     closeModal("start-modal")
   );
-
-$("btn-territory-attack")?.addEventListener("click", () => {
-  if (!currentPin) return;
-  territorySystem?.attackNode(currentPin, getActivePlayer());
-  openTerritoryCommandPanel(currentPin);
-});
-
-  
-  $("btn-weapon-arrow-wood")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "wooden_arrow");
-    openTerritoryCommandPanel(currentPin);
-  });
-
-  $("btn-weapon-arrow-bone")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "bone_arrow");
-    openTerritoryCommandPanel(currentPin);
-  });
-
-  $("btn-weapon-hand-cannon")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.useWeaponOnNode(currentPin, getActivePlayer(), "hand_cannon");
-    openTerritoryCommandPanel(currentPin);
-  });
 
   $("btn-home")?.addEventListener("click", () => {
     currentPin = null;
@@ -4354,6 +4286,8 @@ $("btn-territory-attack")?.addEventListener("click", () => {
     state.mapMode = "core";
     clearAdultSessionApproval();
     clearActiveRoute();
+
+    leoidsSystem?.exitBattleMap?.();
 
     saveState();
     updateStartButtons();
@@ -4439,7 +4373,11 @@ $("btn-territory-attack")?.addEventListener("click", () => {
     if (currentTask?.mode === "boss") {
       const step =
         currentTask?.boss?.steps?.[Number(currentTask?.boss?.stepIndex || 0)];
-      if (step?.options?.length) speakOptions(step.options);
+
+      if (step?.options?.length) {
+        speakOptions(step.options);
+      }
+
       return;
     }
 
@@ -4449,13 +4387,17 @@ $("btn-territory-attack")?.addEventListener("click", () => {
   });
 
   $("btn-reward-image-close")?.addEventListener("click", closeRewardImageModal);
-  $("btn-reward-image-close-x")?.addEventListener("click", closeRewardImageModal);
+  $("btn-reward-image-close-x")?.addEventListener(
+    "click",
+    closeRewardImageModal
+  );
 
   $("pill-full")?.addEventListener("click", () => {
     state.activePack = "classic";
     state.mapMode = "core";
     state.activeAdultCategory = null;
     clearActiveRoute();
+    leoidsSystem?.exitBattleMap?.();
     saveState();
     updateStartButtons();
     refreshAdultLockUI();
@@ -4468,6 +4410,7 @@ $("btn-territory-attack")?.addEventListener("click", () => {
     state.mapMode = "park";
     state.activeAdultCategory = null;
     clearActiveRoute();
+    leoidsSystem?.exitBattleMap?.();
     saveState();
     updateStartButtons();
     refreshAdultLockUI();
@@ -4480,6 +4423,7 @@ $("btn-territory-attack")?.addEventListener("click", () => {
     state.mapMode = "abbey";
     state.activeAdultCategory = null;
     clearActiveRoute();
+    leoidsSystem?.exitBattleMap?.();
     saveState();
     updateStartButtons();
     refreshAdultLockUI();
@@ -4504,6 +4448,7 @@ $("btn-territory-attack")?.addEventListener("click", () => {
     state.activePack = "classic";
     state.activeAdultCategory = null;
     clearAdultSessionApproval();
+    leoidsSystem?.exitBattleMap?.();
     saveState();
     updateStartButtons();
     refreshAdultLockUI();
@@ -4520,14 +4465,17 @@ $("btn-territory-attack")?.addEventListener("click", () => {
 
   $("tier-mode")?.addEventListener("change", (e) => {
     state.tierMode = e.target.value;
+
     if (state.tierMode === "kid") {
       clearAdultSessionApproval();
+
       if (state.activePack === "adult") {
         state.activePack = "classic";
         state.activeAdultCategory = null;
         resetMap();
       }
     }
+
     saveState();
     refreshAdultLockUI();
   });
@@ -4578,6 +4526,7 @@ $("btn-territory-attack")?.addEventListener("click", () => {
 
   $("btn-swap")?.addEventListener("click", () => {
     const enabled = getEnabledPlayers();
+
     if (enabled.length >= 2) {
       const tmp = enabled[0].name;
       enabled[0].name = enabled[1].name;
@@ -4651,17 +4600,20 @@ $("btn-territory-attack")?.addEventListener("click", () => {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "1") {
-      activeGameMode = "explorer";
-      speakText("Explorer mode");
+      selectGameMode("explorer");
     }
 
     if (e.key === "2") {
-      activeGameMode = "territory";
-      speakText("Territory mode");
+      selectGameMode("territory");
+    }
+
+    if (e.key === "3") {
+      selectGameMode("leoids");
     }
 
     if (e.key.toLowerCase() === "b") {
       window.__territoryBotEnabled = !window.__territoryBotEnabled;
+
       speakText(
         window.__territoryBotEnabled
           ? "Territory bot enabled."
@@ -4688,7 +4640,7 @@ function setupSystems() {
     playTrailSound: (trailId) => audioSystem?.playTrailSound(trailId),
   });
 
-territorySystem = createTerritorySystem({
+  territorySystem = createTerritorySystem({
     getState: () => state,
     saveState,
     updateCoins,
@@ -4698,7 +4650,18 @@ territorySystem = createTerritorySystem({
     speakText,
   });
 
-  
+  leoidsSystem = createLeoidsSystem({
+    getState: () => state,
+    saveState,
+    getMap: () => map,
+    showModal,
+    closeModal,
+    showActionButton,
+    refreshAllPinMarkers,
+    speakText,
+    $,
+  });
+
   bossSystem = createBossSystem({
     getState: () => state,
     getCurrentTask: () => currentTask,
@@ -4729,6 +4692,7 @@ territorySystem = createTerritorySystem({
   });
 }
 
+
 gameModes.explorer = {
   openPin(pin) {
     currentPin = pin;
@@ -4756,10 +4720,10 @@ gameModes.territory = {
 };
 
 gameModes.leoids = {
-  openPin(pin) {
-    currentPin = pin;
+  openPin() {
+    currentPin = null;
     showActionButton(false);
-    openLeoidsPanel();
+    leoidsSystem?.openSetupPanel?.();
   },
 };
 /* ============================
