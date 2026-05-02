@@ -2148,3 +2148,26 @@ input[type="range"] {
 .leoids-modal .settings-mini {
   white-space: pre-line;
 }
+
+.leoids-player-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.leoids-player-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 12px;
+}
+
+.leoids-player-row strong {
+  color: var(--gold);
+  text-align: right;
+}
