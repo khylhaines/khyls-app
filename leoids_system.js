@@ -142,44 +142,47 @@ export function createLeoidsSystem({
     );
   }
 
-  function setBoundaryMode(mode = "circle", announce = true) {
-    leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
+ function setBoundaryMode(mode = "circle", announce = true) {
+  leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
 
-    $("btn-leoids-boundary-circle")?.classList.toggle(
-      "active",
-      leoidsState.boundaryMode === "circle"
-    );
+  $("btn-leoids-boundary-circle")?.classList.toggle(
+    "active",
+    leoidsState.boundaryMode === "circle"
+  );
 
-    $("btn-leoids-boundary-polygon")?.classList.toggle(
-      "active",
-      leoidsState.boundaryMode === "polygon"
-    );
+  $("btn-leoids-boundary-polygon")?.classList.toggle(
+    "active",
+    leoidsState.boundaryMode === "polygon"
+  );
 
-    if ($("btn-leoids-set-boundary")) {
-      $("btn-leoids-set-boundary").style.display =
-        leoidsState.boundaryMode === "circle" ? "block" : "none";
-    }
-
-    if ($("btn-leoids-add-point")) {
-      $("btn-leoids-add-point").style.display =
-        leoidsState.boundaryMode === "polygon" ? "block" : "none";
-    }
-
-    if ($("btn-leoids-undo-point")) {
-      $("btn-leoids-undo-point").style.display =
-        leoidsState.boundaryMode === "polygon" ? "block" : "none";
-    }
-
-    updatePanel();
-
-    if (announce) {
-      speakText?.(
-        leoidsState.boundaryMode === "circle"
-          ? "Circle boundary mode."
-          : "Street boundary mode."
-      );
-    }
+  if ($("btn-leoids-set-boundary")) {
+    $("btn-leoids-set-boundary").style.display =
+      leoidsState.boundaryMode === "circle" ? "block" : "none";
   }
+
+  if ($("btn-leoids-add-point")) {
+    $("btn-leoids-add-point").style.display =
+      leoidsState.boundaryMode === "polygon" ? "block" : "none";
+  }
+
+  if ($("btn-leoids-undo-point")) {
+    $("btn-leoids-undo-point").style.display =
+      leoidsState.boundaryMode === "polygon" ? "block" : "none";
+  }
+
+  updatePanel();
+
+  // 🔥 KEY CHANGE: exit modal when entering street mode
+  if (leoidsState.boundaryMode === "polygon") {
+    closeModal?.("leoids-modal");
+    showActionButton?.(true);
+
+    speakText?.("Street boundary mode. Move the map and add points.");
+  } else {
+    showActionButton?.(false);
+    speakText?.("Circle boundary mode.");
+  }
+}
 
   function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
     leoidsState.roundTime = Number(seconds || DEFAULT_ROUND_SECONDS);
