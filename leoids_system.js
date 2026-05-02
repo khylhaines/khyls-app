@@ -11,18 +11,27 @@ export function createLeoidsSystem({
   speakText,
   $,
 }) {
-  const DEFAULT_ROUND_SECONDS = 1200; // 20 minutes
-  const DEFAULT_HUNTER_DELAY_SECONDS = 120; // 2 minutes
+  const DEFAULT_ROUND_SECONDS = 1200;
+  const DEFAULT_HUNTER_DELAY_SECONDS = 120;
+  const DEFAULT_BOUNDARY_RADIUS = 200;
 
   const leoidsState = {
     active: false,
     role: "runner",
     status: "free",
+
     roundTime: DEFAULT_ROUND_SECONDS,
     timeLeft: DEFAULT_ROUND_SECONDS,
+
     hunterDelay: DEFAULT_HUNTER_DELAY_SECONDS,
     hunterDelayLeft: DEFAULT_HUNTER_DELAY_SECONDS,
     huntersReleased: false,
+
+    boundaryRadius: DEFAULT_BOUNDARY_RADIUS,
+    boundaryCenter: null,
+    boundaryLayer: null,
+    boundaryMarker: null,
+
     score: 0,
     coins: 0,
     startedAt: null,
@@ -37,19 +46,28 @@ export function createLeoidsSystem({
     return `${mins}:${String(secs).padStart(2, "0")}`;
   }
 
+  function getMapSafe() {
+    return getMap?.() || null;
+  }
+
   function enterBattleMap() {
     showActionButton?.(false);
 
-    if ($("map")) {
-      $("map").classList.add("leoids-battle-map");
+    const mapEl = $("map");
+    if (mapEl) {
+      mapEl.classList.add("leoids-battle-map");
     }
 
     refreshAllPinMarkers?.();
+    updatePanel();
   }
 
   function exitBattleMap() {
-    if ($("map")) {
-      $("map").classList.remove("leoids-battle-map");
+    clearBoundary();
+
+    const mapEl = $("map");
+    if (mapEl) {
+      mapEl.classList.remove("leoids-battle-map");
     }
 
     refreshAllPinMarkers?.();
@@ -66,10 +84,13 @@ export function createLeoidsSystem({
       $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
     }
 
-    updatePanel();
+    if ($("leoids-boundary-size")) {
+      $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
+    }
 
+    updatePanel();
     showModal?.("leoids-modal");
-    speakText?.("LEOIDs battle map opened.");
+    speakText?.("LEOIDs battle map opened. Set your boundary.");
   }
 
   function closeSetupPanel() {
@@ -92,9 +113,7 @@ export function createLeoidsSystem({
     updatePanel();
 
     speakText?.(
-      leoidsState.role === "hunter"
-        ? "Hunter selected."
-        : "Runner selected."
+      leoidsState.role === "hunter" ? "Hunter selected." : "Runner selected."
     );
   }
 
@@ -110,7 +129,92 @@ export function createLeoidsSystem({
     updatePanel();
   }
 
+  function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
+    leoidsState.boundaryRadius = Number(radius || DEFAULT_BOUNDARY_RADIUS);
+
+    if (leoidsState.boundaryCenter) {
+      drawBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
+    }
+
+    updatePanel();
+  }
+
+  function setBoundaryHere() {
+    const map = getMapSafe();
+    if (!map) return;
+
+    const center = map.getCenter();
+    leoidsState.boundaryCenter = {
+      lat: center.lat,
+      lng: center.lng,
+    };
+
+    drawBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
+    updatePanel();
+
+    speakText?.("LEOIDs boundary set.");
+  }
+
+  function drawBoundary(center, radius) {
+    const map = getMapSafe();
+    if (!map || !center) return;
+
+    clearBoundary();
+
+    leoidsState.boundaryLayer = L.circle([center.lat, center.lng], {
+      radius: Number(radius || DEFAULT_BOUNDARY_RADIUS),
+      color: "#ff3b3b",
+      weight: 4,
+      opacity: 0.95,
+      fillColor: "#ff3b3b",
+      fillOpacity: 0.12,
+      dashArray: "10, 8",
+    }).addTo(map);
+
+    leoidsState.boundaryMarker = L.circleMarker([center.lat, center.lng], {
+      radius: 8,
+      color: "#ffd54a",
+      weight: 3,
+      fillColor: "#ffd54a",
+      fillOpacity: 1,
+    }).addTo(map);
+
+    map.setView([center.lat, center.lng], map.getZoom());
+  }
+
+  function clearBoundary() {
+    const map = getMapSafe();
+
+    if (map && leoidsState.boundaryLayer) {
+      try {
+        map.removeLayer(leoidsState.boundaryLayer);
+      } catch {}
+    }
+
+    if (map && leoidsState.boundaryMarker) {
+      try {
+        map.removeLayer(leoidsState.boundaryMarker);
+      } catch {}
+    }
+
+    leoidsState.boundaryLayer = null;
+    leoidsState.boundaryMarker = null;
+  }
+
+  function clearBoundaryFull() {
+    clearBoundary();
+    leoidsState.boundaryCenter = null;
+    updatePanel();
+    speakText?.("LEOIDs boundary cleared.");
+  }
+
   function startRound() {
+    if (!leoidsState.boundaryCenter) {
+      alert("Set the LEOIDs boundary first.");
+      speakText?.("Set the boundary first.");
+      return;
+    }
+
     stopTimer();
 
     leoidsState.active = true;
@@ -193,7 +297,11 @@ export function createLeoidsSystem({
     if (!$("leoids-status")) return;
 
     const roleText = leoidsState.role === "hunter" ? "Hunter" : "Runner";
-    const statusText = leoidsState.active ? "ACTIVE" : "READY";
+    const statusText = leoidsState.active ? "ACTIVE" : "SETUP";
+    const boundaryText = leoidsState.boundaryCenter
+      ? `${leoidsState.boundaryRadius}m battle zone set`
+      : "No boundary set";
+
     const releaseText =
       leoidsState.role === "hunter"
         ? leoidsState.huntersReleased
@@ -203,6 +311,7 @@ export function createLeoidsSystem({
 
     $("leoids-status").innerText =
       `Mode: ${statusText}\n` +
+      `Boundary: ${boundaryText}\n` +
       `Role: ${roleText}\n` +
       `Round Time: ${formatTime(leoidsState.timeLeft)}\n` +
       `${releaseText}\n` +
@@ -226,6 +335,13 @@ export function createLeoidsSystem({
       setHunterDelay(Number(e.target.value || DEFAULT_HUNTER_DELAY_SECONDS));
     });
 
+    $("leoids-boundary-size")?.addEventListener("change", (e) => {
+      setBoundaryRadius(Number(e.target.value || DEFAULT_BOUNDARY_RADIUS));
+    });
+
+    $("btn-leoids-set-boundary")?.addEventListener("click", setBoundaryHere);
+    $("btn-leoids-clear-boundary")?.addEventListener("click", clearBoundaryFull);
+
     $("btn-leoids-start")?.addEventListener("click", startRound);
   }
 
@@ -238,6 +354,10 @@ export function createLeoidsSystem({
     setRole,
     setRoundLength,
     setHunterDelay,
+    setBoundaryRadius,
+    setBoundaryHere,
+    clearBoundary,
+    clearBoundaryFull,
     startRound,
     endRound,
     updatePanel,
