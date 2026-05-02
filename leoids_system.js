@@ -1469,3 +1469,4 @@ function wirePanelButtons() {
     wirePanelButtons,
   };
 }
+}
