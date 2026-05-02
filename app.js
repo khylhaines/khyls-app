@@ -4600,9 +4600,6 @@ function setupSystems() {
     speakText,
   });
 
-khyl haines <khylhaines@gmail.com>
-10:59 PM (0 minutes ago)
-to me
 
 leoidsSystem = createLeoidsSystem({
   getState: () => state,
