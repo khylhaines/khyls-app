@@ -1053,40 +1053,65 @@ function confirmBaseFromMap() {
     checkHunterWin();
   }
 
-  function rescueJailedRunners() {
-    const local = getLocalPlayer();
-    if (!local) return;
+ function rescueJailedRunners() {
+  const local = getLocalPlayer();
+  if (!local) return;
 
-    if (local.role !== "runner") {
-      alert("Only runners can rescue.");
-      speakText?.("Only runners can rescue.");
-      return;
-    }
-
-   if (!leoidsState.basePoint && window.__leoidsBasePoint) {
-  leoidsState.basePoint = window.__leoidsBasePoint;
-}
-
-if (!leoidsState.basePoint) {
-  const map = getMapSafe();
-
-  if (map) {
-    const center = map.getCenter();
-    leoidsState.basePoint = {
-      lat: Number(center.lat),
-      lng: Number(center.lng),
-    };
-
-    drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
-    speakText?.("Jail base was missing, so I set it at the map centre.");
+  if (local.role !== "runner") {
+    alert("Only runners can rescue.");
+    speakText?.("Only runners can rescue.");
+    return;
   }
+
+  if (!leoidsState.basePoint && window.__leoidsBasePoint) {
+    leoidsState.basePoint = window.__leoidsBasePoint;
+  }
+
+  if (!leoidsState.basePoint) {
+    alert("Set the Jail / Base point first.");
+    speakText?.("Set the jail base first.");
+    return;
+  }
+
+  if (!local.position) {
+    local.position = leoidsState.basePoint;
+  }
+
+  const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
+
+  if (distanceToBase > leoidsState.baseRadius) {
+    alert(`You need to be inside the ${leoidsState.baseRadius}m base radius.`);
+    speakText?.("You are not close enough to the jail base.");
+    return;
+  }
+
+  const jailed = leoidsState.players.filter(
+    (p) => p.role === "runner" && p.status === "jailed"
+  );
+
+  if (!jailed.length) {
+    alert("No jailed runners to rescue.");
+    speakText?.("No jailed runners to rescue.");
+    return;
+  }
+
+  jailed.forEach((runner) => {
+    runner.status = "free";
+    runner.position = randomNearbyPoint(leoidsState.basePoint, 15);
+  });
+
+  local.score += 75;
+  local.coins += 15;
+  leoidsState.score += 75;
+  leoidsState.coins += 15;
+
+  drawPlayerMarkers();
+  renderPlayers();
+  updatePanel();
+
+  speakText?.("Jailed runners rescued.");
 }
 
-if (!leoidsState.basePoint) {
-  alert("Set the Jail / Base point first.");
-  speakText?.("Set the jail base first.");
-  return;
-}
 
 
   function runAITagChecks() {
@@ -1447,7 +1472,7 @@ function wirePanelButtons() {
 }
 
 
- return {
+return {
     state: leoidsState,
 
     enterBattleMap,
@@ -1488,5 +1513,4 @@ function wirePanelButtons() {
     updatePanel,
     wirePanelButtons,
   };
-}
 }
