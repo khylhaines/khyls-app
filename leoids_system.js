@@ -1427,8 +1427,9 @@ function wirePanelButtons() {
 }
 
 
-  return {
+ return {
     state: leoidsState,
+
     enterBattleMap,
     exitBattleMap,
     openSetupPanel,
@@ -1467,4 +1468,4 @@ function wirePanelButtons() {
     updatePanel,
     wirePanelButtons,
   };
-  }
+}
