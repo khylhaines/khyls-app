@@ -4039,12 +4039,75 @@ function selectGameMode(mode) {
   }
 }
 
+function openLeoidsPanel() {
+  showActionButton(false);
 
+  if ($("leoids-status")) {
+    $("leoids-status").innerText =
+      "LEOIDs ready. Choose Hunter or Runner, then start the round.";
+  }
+
+  showModal("leoids-modal");
+  speakText("LEOIDs game panel opened.");
+}
 
 function wireButtons() {
   window.__territoryBotEnabled = window.__territoryBotEnabled || false;
   window.__territoryBotDifficulty = window.__territoryBotDifficulty || "normal";
 
+$("btn-leoids-close")?.addEventListener("click", () =>
+  closeModal("leoids-modal")
+);
+
+$("btn-leoids-close-x")?.addEventListener("click", () =>
+  closeModal("leoids-modal")
+);
+
+$("btn-leoids-runner")?.addEventListener("click", () => {
+  window.__leoidsRole = "runner";
+
+  $("btn-leoids-runner")?.classList.add("active");
+  $("btn-leoids-hunter")?.classList.remove("active");
+
+  if ($("leoids-status")) {
+    $("leoids-status").innerText = "Role selected: Runner. Survive the timer.";
+  }
+
+  speakText("Runner selected.");
+});
+
+$("btn-leoids-hunter")?.addEventListener("click", () => {
+  window.__leoidsRole = "hunter";
+
+  $("btn-leoids-hunter")?.classList.add("active");
+  $("btn-leoids-runner")?.classList.remove("active");
+
+  if ($("leoids-status")) {
+    $("leoids-status").innerText =
+      "Role selected: Hunter. Wait for release, then chase runners.";
+  }
+
+  speakText("Hunter selected.");
+});
+
+$("btn-leoids-start")?.addEventListener("click", () => {
+  const role = window.__leoidsRole || "runner";
+
+  if ($("leoids-status")) {
+    $("leoids-status").innerText =
+      role === "hunter"
+        ? "Hunter round started. Release delay: 30 seconds."
+        : "Runner round started. Survive for 10 minutes.";
+  }
+
+  speakText(
+    role === "hunter"
+      ? "Hunter round started. Wait thirty seconds."
+      : "Runner round started. Survive for ten minutes."
+  );
+});
+
+  
   $("btn-territory-bot-toggle")?.addEventListener("click", () => {
     window.__territoryBotEnabled = !window.__territoryBotEnabled;
 
@@ -4650,10 +4713,9 @@ gameModes.leoids = {
   openPin(pin) {
     currentPin = pin;
     showActionButton(false);
-    speakText(`${pin.n}. LEOIDs zone selected.`);
+    openLeoidsPanel();
   },
 };
-
 /* ============================
    BOOT
 ============================ */
