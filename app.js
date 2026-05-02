@@ -3338,14 +3338,17 @@ function renderHomeLog() {
 
 function updateStartButtons() {
  
-  $("pill-game-explorer")?.classList.toggle(
-  "active",
-  activeGameMode === "explorer"
-);
-$("pill-game-territory")?.classList.toggle(
-  "active",
-  activeGameMode === "territory"
-);
+ $("pill-game-explorer")?.addEventListener("click", () => {
+  selectGameMode("explorer");
+});
+
+$("pill-game-territory")?.addEventListener("click", () => {
+  selectGameMode("territory");
+});
+
+$("pill-game-leoids")?.addEventListener("click", () => {
+  selectGameMode("leoids");
+});
 
   $("pill-full")?.classList.toggle(
     "active",
@@ -4008,6 +4011,36 @@ function runTerritoryBotTurn() {
   }
 }
 
+function selectGameMode(mode) {
+  activeGameMode = mode;
+
+  if (mode === "explorer") {
+    showActionButton(false);
+    updateStartButtons();
+    refreshAllPinMarkers();
+    speakText("Explorer mode selected.");
+    return;
+  }
+
+  if (mode === "territory") {
+    showActionButton(false);
+    updateStartButtons();
+    refreshAllPinMarkers();
+    speakText("Territory mode selected.");
+    return;
+  }
+
+  if (mode === "leoids") {
+    showActionButton(false);
+    updateStartButtons();
+    refreshAllPinMarkers();
+    speakText("LEOIDs mode selected. Hunters and runners ready.");
+    return;
+  }
+}
+
+
+
 function wireButtons() {
   window.__territoryBotEnabled = window.__territoryBotEnabled || false;
   window.__territoryBotDifficulty = window.__territoryBotDifficulty || "normal";
@@ -4588,28 +4621,36 @@ territorySystem = createTerritorySystem({
 }
 
 gameModes.explorer = {
-    openPin(pin) {
-      currentPin = pin;
-      showActionButton(true);
+  openPin(pin) {
+    currentPin = pin;
+    showActionButton(true);
 
-      const status = getCaptureStatus(pin);
-      updateCaptureText(
-        status.fullyCaptured
-          ? `${pin.n} • CAPTURED • REPLAY`
-          : `${pin.n} • ${status.completedCount}/${status.required} CAPTURED`
-      );
+    const status = getCaptureStatus(pin);
+    updateCaptureText(
+      status.fullyCaptured
+        ? `${pin.n} • CAPTURED • REPLAY`
+        : `${pin.n} • ${status.completedCount}/${status.required} CAPTURED`
+    );
 
-      speakText(
-        status.fullyCaptured
-          ? `${pin.n}. Fully captured. Replay available.`
-          : `${pin.n}. ${status.completedCount} out of ${status.required} captured.`
-      );
-    },
-  };
+    speakText(
+      status.fullyCaptured
+        ? `${pin.n}. Fully captured. Replay available.`
+        : `${pin.n}. ${status.completedCount} out of ${status.required} captured.`
+    );
+  },
+};
 
 gameModes.territory = {
   openPin(pin) {
     openTerritoryCommandPanel(pin);
+  },
+};
+
+gameModes.leoids = {
+  openPin(pin) {
+    currentPin = pin;
+    showActionButton(false);
+    speakText(`${pin.n}. LEOIDs zone selected.`);
   },
 };
 
