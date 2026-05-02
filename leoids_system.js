@@ -637,15 +637,29 @@ export function createLeoidsSystem({
   speakText?.("Tap the map where you want the jail base.");
 }
 
- function confirmBaseFromMap() {
-  if (!leoidsState.pendingBasePoint) {
+function confirmBaseFromMap() {
+  let point = leoidsState.pendingBasePoint;
+
+  if (!point) {
+    const map = getMapSafe();
+
+    if (map) {
+      const center = map.getCenter();
+      point = {
+        lat: center.lat,
+        lng: center.lng,
+      };
+    }
+  }
+
+  if (!point) {
     alert("Tap the map where you want the jail base first.");
     speakText?.("Tap the map to choose the jail base.");
     showLeoidsMapControls("base");
     return;
   }
 
-  leoidsState.basePoint = leoidsState.pendingBasePoint;
+  leoidsState.basePoint = point;
   leoidsState.pendingBasePoint = null;
   leoidsState.mapMode = "none";
 
@@ -656,9 +670,11 @@ export function createLeoidsSystem({
   showActionButton?.(false);
 
   openSetupPanel();
+  updatePanel();
 
   speakText?.("Jail base confirmed.");
 }
+
 
 
  function backToLeoidsPanelFromMap() {
