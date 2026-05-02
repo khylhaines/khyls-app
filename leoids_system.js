@@ -38,18 +38,54 @@ export function createLeoidsSystem({
     baseRadius: DEFAULT_BASE_RADIUS,
     tagRadius: DEFAULT_TAG_RADIUS,
 
+    players: [
+      {
+        id: "p1",
+        name: "You",
+        role: "runner",
+        status: "free",
+        isAI: false,
+        score: 0,
+        coins: 0,
+        position: null,
+      },
+      {
+        id: "ai_hunter_1",
+        name: "AI Hunter",
+        role: "hunter",
+        status: "free",
+        isAI: true,
+        score: 0,
+        coins: 0,
+        position: null,
+      },
+      {
+        id: "ai_runner_1",
+        name: "AI Runner",
+        role: "runner",
+        status: "free",
+        isAI: true,
+        score: 0,
+        coins: 0,
+        position: null,
+      },
+    ],
+
     boundaryLayer: null,
     boundaryMarker: null,
     polygonLayer: null,
     polygonPointMarkers: [],
     baseLayer: null,
     baseMarker: null,
+    playerMarkers: [],
+    mapClickHandler: null,
 
     score: 0,
     coins: 0,
     startedAt: null,
     endedAt: null,
     intervalId: null,
+    aiIntervalId: null,
   };
 
   function formatTime(seconds = 0) {
@@ -61,6 +97,73 @@ export function createLeoidsSystem({
 
   function getMapSafe() {
     return getMap?.() || null;
+  }
+
+  function distanceMeters(a, b) {
+    if (!a || !b) return Infinity;
+
+    const R = 6371000;
+    const toRad = (deg) => (deg * Math.PI) / 180;
+
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+
+    const x =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+    return R * (2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)));
+  }
+
+  function getLocalPlayer() {
+    return leoidsState.players.find((p) => !p.isAI) || leoidsState.players[0];
+  }
+
+  function getPlayerIcon(player) {
+    if (player.status === "jailed") return "🔒";
+    if (player.role === "hunter") return player.isAI ? "🔴" : "🟥";
+    return player.isAI ? "🔵" : "🟦";
+  }
+
+  function getBoundaryCentreFallback() {
+    const map = getMapSafe();
+    if (leoidsState.boundaryCenter) return leoidsState.boundaryCenter;
+    if (leoidsState.boundaryPoints.length) return leoidsState.boundaryPoints[0];
+    if (map) {
+      const c = map.getCenter();
+      return { lat: c.lat, lng: c.lng };
+    }
+    return { lat: 54.11371, lng: -3.218448 };
+  }
+
+  function randomNearbyPoint(center, radiusMeters = 40) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.random() * radiusMeters;
+
+    const latOffset = (Math.cos(angle) * distance) / 111000;
+    const lngOffset =
+      (Math.sin(angle) * distance) /
+      (111000 * Math.cos((center.lat * Math.PI) / 180));
+
+    return {
+      lat: center.lat + latOffset,
+      lng: center.lng + lngOffset,
+    };
+  }
+
+  function seedPlayerPositions() {
+    const center = getBoundaryCentreFallback();
+
+    leoidsState.players.forEach((player, index) => {
+      if (!player.position) {
+        player.position = randomNearbyPoint(center, 35 + index * 15);
+      }
+    });
+
+    drawPlayerMarkers();
   }
 
   function enterBattleMap() {
@@ -78,6 +181,8 @@ export function createLeoidsSystem({
 
   function exitBattleMap() {
     stopTimer();
+    stopAI();
+    disableMapPointAdding();
     clearAllMapObjects();
 
     const mapEl = $("map");
@@ -88,45 +193,6 @@ export function createLeoidsSystem({
     refreshAllPinMarkers?.();
   }
 
-function disableMapPointAdding() {
-  const map = getMapSafe();
-  if (!map || !leoidsState.mapClickHandler) return;
-
-  try {
-    map.off("click", leoidsState.mapClickHandler);
-  } catch {}
-
-  leoidsState.mapClickHandler = null;
-}
-  
-function enableMapPointAdding() {
-  const map = getMapSafe();
-  if (!map) return;
-
-  disableMapPointAdding();
-
-  leoidsState.mapClickHandler = (event) => {
-    if (leoidsState.boundaryMode !== "polygon") return;
-
-    const point = {
-      lat: event.latlng.lat,
-      lng: event.latlng.lng,
-    };
-
-    leoidsState.boundaryCenter = null;
-    leoidsState.boundaryPoints.push(point);
-
-    clearCircleBoundary();
-    drawPolygonBoundary();
-    updatePanel();
-
-    speakText?.(`Boundary point ${leoidsState.boundaryPoints.length} added.`);
-  };
-
-  map.on("click", leoidsState.mapClickHandler);
-}
-
-  
   function openSetupPanel() {
     enterBattleMap();
 
@@ -151,23 +217,30 @@ function enableMapPointAdding() {
     }
 
     setBoundaryMode(leoidsState.boundaryMode, false);
+    renderPlayers();
     updatePanel();
 
     showModal?.("leoids-modal");
-    speakText?.("LEOIDS battle map opened. Build your boundary.");
+    speakText?.("LEOIDs battle map opened.");
   }
 
-function closeSetupPanel() {
-  closeModal?.("leoids-modal");
+  function closeSetupPanel() {
+    closeModal?.("leoids-modal");
 
-  if (leoidsState.boundaryMode === "polygon") {
-    enableMapPointAdding();
-    speakText?.("Tap the map to add boundary points.");
+    if (leoidsState.boundaryMode === "polygon") {
+      enableMapPointAdding();
+      speakText?.("Tap the map to add boundary points.");
+    }
   }
-}
 
   function setRole(role = "runner") {
     leoidsState.role = role === "hunter" ? "hunter" : "runner";
+
+    const local = getLocalPlayer();
+    if (local) {
+      local.role = leoidsState.role;
+      local.status = "free";
+    }
 
     $("btn-leoids-runner")?.classList.toggle(
       "active",
@@ -179,6 +252,8 @@ function closeSetupPanel() {
       leoidsState.role === "hunter"
     );
 
+    renderPlayers();
+    drawPlayerMarkers();
     updatePanel();
 
     speakText?.(
@@ -186,46 +261,84 @@ function closeSetupPanel() {
     );
   }
 
-function setBoundaryMode(mode = "circle", announce = true) {
-  leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
+  function setBoundaryMode(mode = "circle", announce = true) {
+    leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
 
-  $("btn-leoids-boundary-circle")?.classList.toggle(
-    "active",
-    leoidsState.boundaryMode === "circle"
-  );
+    $("btn-leoids-boundary-circle")?.classList.toggle(
+      "active",
+      leoidsState.boundaryMode === "circle"
+    );
 
-  $("btn-leoids-boundary-polygon")?.classList.toggle(
-    "active",
-    leoidsState.boundaryMode === "polygon"
-  );
+    $("btn-leoids-boundary-polygon")?.classList.toggle(
+      "active",
+      leoidsState.boundaryMode === "polygon"
+    );
 
-  if ($("btn-leoids-set-boundary")) {
-    $("btn-leoids-set-boundary").style.display =
-      leoidsState.boundaryMode === "circle" ? "block" : "none";
+    if ($("btn-leoids-set-boundary")) {
+      $("btn-leoids-set-boundary").style.display =
+        leoidsState.boundaryMode === "circle" ? "block" : "none";
+    }
+
+    if ($("btn-leoids-add-point")) {
+      $("btn-leoids-add-point").style.display = "none";
+    }
+
+    if ($("btn-leoids-undo-point")) {
+      $("btn-leoids-undo-point").style.display =
+        leoidsState.boundaryMode === "polygon" ? "block" : "none";
+    }
+
+    if (leoidsState.boundaryMode === "polygon") {
+      closeModal?.("leoids-modal");
+      showActionButton?.(false);
+      enableMapPointAdding();
+      speakText?.("Street boundary mode. Tap the map to add boundary points.");
+    } else {
+      disableMapPointAdding();
+      showActionButton?.(false);
+      if (announce) speakText?.("Circle boundary mode.");
+    }
+
+    updatePanel();
   }
 
-  if ($("btn-leoids-add-point")) {
-    $("btn-leoids-add-point").style.display = "none";
-  }
+  function enableMapPointAdding() {
+    const map = getMapSafe();
+    if (!map) return;
 
-  if ($("btn-leoids-undo-point")) {
-    $("btn-leoids-undo-point").style.display =
-      leoidsState.boundaryMode === "polygon" ? "block" : "none";
-  }
-
-  updatePanel();
-
-  if (leoidsState.boundaryMode === "polygon") {
-    closeModal?.("leoids-modal");
-    showActionButton?.(false);
-    enableMapPointAdding();
-    speakText?.("Street boundary mode. Tap the map to add boundary points.");
-  } else {
     disableMapPointAdding();
-    showActionButton?.(false);
-    speakText?.("Circle boundary mode.");
+
+    leoidsState.mapClickHandler = (event) => {
+      if (leoidsState.boundaryMode !== "polygon") return;
+
+      const point = {
+        lat: event.latlng.lat,
+        lng: event.latlng.lng,
+      };
+
+      leoidsState.boundaryCenter = null;
+      leoidsState.boundaryPoints.push(point);
+
+      clearCircleBoundary();
+      drawPolygonBoundary();
+      updatePanel();
+
+      speakText?.(`Boundary point ${leoidsState.boundaryPoints.length} added.`);
+    };
+
+    map.on("click", leoidsState.mapClickHandler);
   }
-}
+
+  function disableMapPointAdding() {
+    const map = getMapSafe();
+    if (!map || !leoidsState.mapClickHandler) return;
+
+    try {
+      map.off("click", leoidsState.mapClickHandler);
+    } catch {}
+
+    leoidsState.mapClickHandler = null;
+  }
 
   function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
     leoidsState.roundTime = Number(seconds || DEFAULT_ROUND_SECONDS);
@@ -281,6 +394,7 @@ function setBoundaryMode(mode = "circle", announce = true) {
     clearPolygonBoundary();
     drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
     setBoundaryMode("circle", false);
+    seedPlayerPositions();
     updatePanel();
 
     speakText?.("Circle boundary set.");
@@ -318,6 +432,20 @@ function setBoundaryMode(mode = "circle", announce = true) {
     drawPolygonBoundary();
     updatePanel();
     speakText?.("Last boundary point removed.");
+  }
+
+  function confirmBoundary() {
+    if (!hasValidBoundary()) {
+      alert("Street boundary needs at least 3 points.");
+      speakText?.("Street boundary needs at least three points.");
+      return;
+    }
+
+    disableMapPointAdding();
+    seedPlayerPositions();
+    showActionButton?.(false);
+    openSetupPanel();
+    speakText?.("Boundary confirmed.");
   }
 
   function setBaseHere() {
@@ -436,6 +564,43 @@ function setBoundaryMode(mode = "circle", announce = true) {
       .addTo(map);
   }
 
+  function drawPlayerMarkers() {
+    const map = getMapSafe();
+    if (!map) return;
+
+    leoidsState.playerMarkers.forEach((marker) => {
+      try {
+        map.removeLayer(marker);
+      } catch {}
+    });
+
+    leoidsState.playerMarkers = [];
+
+    leoidsState.players.forEach((player) => {
+      if (!player.position) return;
+
+      const marker = L.circleMarker([player.position.lat, player.position.lng], {
+        radius: player.isAI ? 8 : 10,
+        color: player.role === "hunter" ? "#ff4d4d" : "#4da3ff",
+        weight: 4,
+        fillColor:
+          player.status === "jailed"
+            ? "#777"
+            : player.role === "hunter"
+            ? "#ff4d4d"
+            : "#4da3ff",
+        fillOpacity: 0.9,
+      })
+        .bindTooltip(`${getPlayerIcon(player)} ${player.name} • ${player.role} • ${player.status}`, {
+          permanent: false,
+          direction: "top",
+        })
+        .addTo(map);
+
+      leoidsState.playerMarkers.push(marker);
+    });
+  }
+
   function clearCircleBoundary() {
     const map = getMapSafe();
 
@@ -491,13 +656,25 @@ function setBoundaryMode(mode = "circle", announce = true) {
 
     leoidsState.baseLayer = null;
     leoidsState.baseMarker = null;
-    leoidsState.mapClickHandler = null; 
+  }
+
+  function clearPlayerMarkers() {
+    const map = getMapSafe();
+
+    leoidsState.playerMarkers.forEach((marker) => {
+      try {
+        map?.removeLayer(marker);
+      } catch {}
+    });
+
+    leoidsState.playerMarkers = [];
   }
 
   function clearAllMapObjects() {
     clearCircleBoundary();
     clearPolygonBoundary();
     clearBasePoint();
+    clearPlayerMarkers();
   }
 
   function clearBoundaryFull() {
@@ -508,7 +685,7 @@ function setBoundaryMode(mode = "circle", announce = true) {
     leoidsState.boundaryPoints = [];
 
     updatePanel();
-    speakText?.("LEOIDS boundary cleared.");
+    speakText?.("LEOIDs boundary cleared.");
   }
 
   function redrawAllMapObjects() {
@@ -523,6 +700,8 @@ function setBoundaryMode(mode = "circle", announce = true) {
     if (leoidsState.basePoint) {
       drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
     }
+
+    drawPlayerMarkers();
   }
 
   function hasValidBoundary() {
@@ -533,9 +712,248 @@ function setBoundaryMode(mode = "circle", announce = true) {
     return leoidsState.boundaryPoints.length >= 3;
   }
 
+  function addAIPlayer(role = "runner") {
+    const id = `ai_${role}_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+    const count = leoidsState.players.filter((p) => p.isAI).length + 1;
+
+    leoidsState.players.push({
+      id,
+      name: role === "hunter" ? `AI Hunter ${count}` : `AI Runner ${count}`,
+      role,
+      status: "free",
+      isAI: true,
+      score: 0,
+      coins: 0,
+      position: randomNearbyPoint(getBoundaryCentreFallback(), 60),
+    });
+
+    renderPlayers();
+    drawPlayerMarkers();
+    updatePanel();
+
+    speakText?.(`${role === "hunter" ? "Hunter" : "Runner"} AI added.`);
+  }
+
+  function resetLocalPlayers() {
+    leoidsState.players = [
+      {
+        id: "p1",
+        name: "You",
+        role: leoidsState.role,
+        status: "free",
+        isAI: false,
+        score: 0,
+        coins: 0,
+        position: randomNearbyPoint(getBoundaryCentreFallback(), 20),
+      },
+      {
+        id: "ai_hunter_1",
+        name: "AI Hunter",
+        role: "hunter",
+        status: "free",
+        isAI: true,
+        score: 0,
+        coins: 0,
+        position: randomNearbyPoint(getBoundaryCentreFallback(), 50),
+      },
+      {
+        id: "ai_runner_1",
+        name: "AI Runner",
+        role: "runner",
+        status: "free",
+        isAI: true,
+        score: 0,
+        coins: 0,
+        position: randomNearbyPoint(getBoundaryCentreFallback(), 50),
+      },
+    ];
+
+    renderPlayers();
+    drawPlayerMarkers();
+    updatePanel();
+
+    speakText?.("Local AI players reset.");
+  }
+
+  function moveAIPlayers() {
+    if (!leoidsState.active) return;
+
+    const center = getBoundaryCentreFallback();
+
+    leoidsState.players.forEach((player) => {
+      if (!player.isAI || player.status === "jailed") return;
+
+      player.position = randomNearbyPoint(player.position || center, 18);
+    });
+
+    drawPlayerMarkers();
+  }
+
+  function tagNearestRunner() {
+    const local = getLocalPlayer();
+    if (!local) return;
+
+    if (local.role !== "hunter") {
+      alert("Only hunters can tag runners.");
+      speakText?.("Only hunters can tag runners.");
+      return;
+    }
+
+    if (!leoidsState.huntersReleased) {
+      alert("Hunters have not been released yet.");
+      speakText?.("Hunters have not been released yet.");
+      return;
+    }
+
+    if (!local.position) {
+      local.position = getBoundaryCentreFallback();
+    }
+
+    const runners = leoidsState.players.filter(
+      (p) => p.role === "runner" && p.status === "free" && p.id !== local.id
+    );
+
+    if (!runners.length) {
+      alert("No free runners available.");
+      speakText?.("No free runners available.");
+      return;
+    }
+
+    let closest = null;
+    let closestDistance = Infinity;
+
+    runners.forEach((runner) => {
+      const d = distanceMeters(local.position, runner.position);
+      if (d < closestDistance) {
+        closest = runner;
+        closestDistance = d;
+      }
+    });
+
+    if (!closest || closestDistance > leoidsState.tagRadius) {
+      alert(`No runner inside ${leoidsState.tagRadius}m.`);
+      speakText?.("No runner in tag range.");
+      return;
+    }
+
+    closest.status = "jailed";
+    local.score += 50;
+    local.coins += 10;
+    leoidsState.score += 50;
+    leoidsState.coins += 10;
+
+    drawPlayerMarkers();
+    renderPlayers();
+    updatePanel();
+
+    speakText?.(`${closest.name} tagged and sent to jail.`);
+    checkHunterWin();
+  }
+
+  function rescueJailedRunners() {
+    const local = getLocalPlayer();
+    if (!local) return;
+
+    if (local.role !== "runner") {
+      alert("Only runners can rescue.");
+      speakText?.("Only runners can rescue.");
+      return;
+    }
+
+    if (!leoidsState.basePoint) {
+      alert("Set a jail/base first.");
+      speakText?.("Set the jail base first.");
+      return;
+    }
+
+    if (!local.position) {
+      local.position = leoidsState.basePoint;
+    }
+
+    const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
+
+    if (distanceToBase > leoidsState.baseRadius) {
+      alert(`You need to be inside the ${leoidsState.baseRadius}m base radius.`);
+      speakText?.("You are not close enough to the jail base.");
+      return;
+    }
+
+    const jailed = leoidsState.players.filter(
+      (p) => p.role === "runner" && p.status === "jailed"
+    );
+
+    if (!jailed.length) {
+      alert("No jailed runners to rescue.");
+      speakText?.("No jailed runners to rescue.");
+      return;
+    }
+
+    jailed.forEach((runner) => {
+      runner.status = "free";
+      runner.position = randomNearbyPoint(leoidsState.basePoint, 15);
+    });
+
+    local.score += 75;
+    local.coins += 15;
+    leoidsState.score += 75;
+    leoidsState.coins += 15;
+
+    drawPlayerMarkers();
+    renderPlayers();
+    updatePanel();
+
+    speakText?.("Jailed runners rescued.");
+  }
+
+  function runAITagChecks() {
+    if (!leoidsState.active || !leoidsState.huntersReleased) return;
+
+    const hunters = leoidsState.players.filter(
+      (p) => p.role === "hunter" && p.status === "free"
+    );
+
+    const runners = leoidsState.players.filter(
+      (p) => p.role === "runner" && p.status === "free"
+    );
+
+    hunters.forEach((hunter) => {
+      runners.forEach((runner) => {
+        if (runner.status !== "free") return;
+
+        const d = distanceMeters(hunter.position, runner.position);
+        if (d <= leoidsState.tagRadius) {
+          runner.status = "jailed";
+          hunter.score += 50;
+          hunter.coins += 10;
+          speakText?.(`${runner.name} tagged by ${hunter.name}.`);
+        }
+      });
+    });
+
+    checkHunterWin();
+  }
+
+  function checkHunterWin() {
+    const runners = leoidsState.players.filter((p) => p.role === "runner");
+    const allJailed = runners.length && runners.every((p) => p.status === "jailed");
+
+    if (!allJailed) return false;
+
+    leoidsState.players
+      .filter((p) => p.role === "hunter")
+      .forEach((hunter) => {
+        hunter.score += 200;
+        hunter.coins += 30;
+      });
+
+    endRound("hunters");
+    speakText?.("Hunters win. All runners jailed.");
+    return true;
+  }
+
   function startRound() {
     if (!hasValidBoundary()) {
-      alert("Set a LEOIDS boundary first. Street boundary needs at least 3 points.");
+      alert("Set a LEOIDs boundary first. Street boundary needs at least 3 points.");
       speakText?.("Set a valid boundary first.");
       return;
     }
@@ -547,6 +965,8 @@ function setBoundaryMode(mode = "circle", announce = true) {
     }
 
     stopTimer();
+    stopAI();
+    seedPlayerPositions();
 
     leoidsState.active = true;
     leoidsState.status = "free";
@@ -558,7 +978,15 @@ function setBoundaryMode(mode = "circle", announce = true) {
     leoidsState.startedAt = new Date().toISOString();
     leoidsState.endedAt = null;
 
+    leoidsState.players.forEach((player) => {
+      player.status = "free";
+      player.score = 0;
+      player.coins = 0;
+    });
+
     updatePanel();
+    renderPlayers();
+    drawPlayerMarkers();
 
     speakText?.(
       leoidsState.role === "hunter"
@@ -571,6 +999,13 @@ function setBoundaryMode(mode = "circle", announce = true) {
     );
 
     leoidsState.intervalId = setInterval(tickRound, 1000);
+    leoidsState.aiIntervalId = setInterval(() => {
+      moveAIPlayers();
+      runAITagChecks();
+      renderPlayers();
+      updatePanel();
+    }, 2500);
+
     saveState?.();
   }
 
@@ -601,18 +1036,27 @@ function setBoundaryMode(mode = "circle", announce = true) {
 
   function endRound(reason = "manual") {
     stopTimer();
+    stopAI();
 
     leoidsState.active = false;
     leoidsState.endedAt = new Date().toISOString();
 
-    if (reason === "timer" && leoidsState.role === "runner") {
-      leoidsState.score += 200;
-      leoidsState.coins += 30;
+    if (reason === "timer") {
+      leoidsState.players
+        .filter((p) => p.role === "runner" && p.status === "free")
+        .forEach((runner) => {
+          runner.score += 200;
+          runner.coins += 30;
+        });
+
       speakText?.("Runners survive. Round complete.");
+    } else if (reason === "hunters") {
+      speakText?.("Hunters win the round.");
     } else {
-      speakText?.("LEOIDS round ended.");
+      speakText?.("LEOIDs round ended.");
     }
 
+    renderPlayers();
     updatePanel();
     saveState?.();
   }
@@ -622,6 +1066,29 @@ function setBoundaryMode(mode = "circle", announce = true) {
       clearInterval(leoidsState.intervalId);
       leoidsState.intervalId = null;
     }
+  }
+
+  function stopAI() {
+    if (leoidsState.aiIntervalId) {
+      clearInterval(leoidsState.aiIntervalId);
+      leoidsState.aiIntervalId = null;
+    }
+  }
+
+  function renderPlayers() {
+    const list = $("leoids-player-list");
+    if (!list) return;
+
+    list.innerHTML = leoidsState.players
+      .map(
+        (player) => `
+          <div class="leoids-player-row">
+            <span>${getPlayerIcon(player)} ${player.name}</span>
+            <strong>${player.role.toUpperCase()} • ${player.status.toUpperCase()} • ${player.score} pts</strong>
+          </div>
+        `
+      )
+      .join("");
   }
 
   function updatePanel() {
@@ -652,15 +1119,24 @@ function setBoundaryMode(mode = "circle", announce = true) {
           : `Hunter release: ${formatTime(leoidsState.hunterDelayLeft)}`
         : `Hunter delay: ${formatTime(leoidsState.hunterDelay)}`;
 
+    const freeRunners = leoidsState.players.filter(
+      (p) => p.role === "runner" && p.status === "free"
+    ).length;
+
+    const jailedRunners = leoidsState.players.filter(
+      (p) => p.role === "runner" && p.status === "jailed"
+    ).length;
+
     $("leoids-status").innerText =
       `Mode: ${statusText}\n` +
       `Boundary: ${boundaryText}\n` +
       `Base: ${baseText}\n` +
-      `Role: ${roleText}\n` +
+      `Your Role: ${roleText}\n` +
       `Round Time: ${formatTime(leoidsState.timeLeft)}\n` +
       `${releaseText}\n` +
       `Tag Radius: ${leoidsState.tagRadius}m\n` +
-      `Status: ${leoidsState.status.toUpperCase()}\n` +
+      `Free Runners: ${freeRunners}\n` +
+      `Jailed Runners: ${jailedRunners}\n` +
       `Score: ${leoidsState.score}\n` +
       `Coins earned: ${leoidsState.coins}`;
   }
@@ -700,26 +1176,26 @@ function setBoundaryMode(mode = "circle", announce = true) {
       setTagRadius(Number(e.target.value || DEFAULT_TAG_RADIUS));
     });
 
-$("btn-leoids-confirm-boundary")?.addEventListener("click", () => {
-  if (!hasValidBoundary()) {
-    alert("Street boundary needs at least 3 points.");
-    speakText?.("Street boundary needs at least three points.");
-    return;
-  }
-
-  disableMapPointAdding();
-  showActionButton?.(false);
-  openSetupPanel();
-  speakText?.("Boundary confirmed.");
-});
-    
     $("btn-leoids-set-boundary")?.addEventListener("click", setCircleBoundaryHere);
     $("btn-leoids-add-point")?.addEventListener("click", addStreetBoundaryPointHere);
     $("btn-leoids-undo-point")?.addEventListener("click", undoStreetBoundaryPoint);
+    $("btn-leoids-confirm-boundary")?.addEventListener("click", confirmBoundary);
     $("btn-leoids-clear-boundary")?.addEventListener("click", clearBoundaryFull);
     $("btn-leoids-set-base")?.addEventListener("click", setBaseHere);
 
+    $("btn-leoids-add-ai-runner")?.addEventListener("click", () =>
+      addAIPlayer("runner")
+    );
+
+    $("btn-leoids-add-ai-hunter")?.addEventListener("click", () =>
+      addAIPlayer("hunter")
+    );
+
+    $("btn-leoids-reset-players")?.addEventListener("click", resetLocalPlayers);
+    $("btn-leoids-tag")?.addEventListener("click", tagNearestRunner);
+    $("btn-leoids-rescue")?.addEventListener("click", rescueJailedRunners);
     $("btn-leoids-start")?.addEventListener("click", startRound);
+    $("btn-leoids-end")?.addEventListener("click", () => endRound("manual"));
   }
 
   return {
@@ -738,11 +1214,17 @@ $("btn-leoids-confirm-boundary")?.addEventListener("click", () => {
     setCircleBoundaryHere,
     addStreetBoundaryPointHere,
     undoStreetBoundaryPoint,
+    confirmBoundary,
     setBaseHere,
     clearBoundaryFull,
+    addAIPlayer,
+    resetLocalPlayers,
+    tagNearestRunner,
+    rescueJailedRunners,
     startRound,
     endRound,
     updatePanel,
     wirePanelButtons,
   };
 }
+
