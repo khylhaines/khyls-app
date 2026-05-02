@@ -88,6 +88,45 @@ export function createLeoidsSystem({
     refreshAllPinMarkers?.();
   }
 
+function disableMapPointAdding() {
+  const map = getMapSafe();
+  if (!map || !leoidsState.mapClickHandler) return;
+
+  try {
+    map.off("click", leoidsState.mapClickHandler);
+  } catch {}
+
+  leoidsState.mapClickHandler = null;
+}
+  
+function enableMapPointAdding() {
+  const map = getMapSafe();
+  if (!map) return;
+
+  disableMapPointAdding();
+
+  leoidsState.mapClickHandler = (event) => {
+    if (leoidsState.boundaryMode !== "polygon") return;
+
+    const point = {
+      lat: event.latlng.lat,
+      lng: event.latlng.lng,
+    };
+
+    leoidsState.boundaryCenter = null;
+    leoidsState.boundaryPoints.push(point);
+
+    clearCircleBoundary();
+    drawPolygonBoundary();
+    updatePanel();
+
+    speakText?.(`Boundary point ${leoidsState.boundaryPoints.length} added.`);
+  };
+
+  map.on("click", leoidsState.mapClickHandler);
+}
+
+  
   function openSetupPanel() {
     enterBattleMap();
 
@@ -118,9 +157,14 @@ export function createLeoidsSystem({
     speakText?.("LEOIDS battle map opened. Build your boundary.");
   }
 
-  function closeSetupPanel() {
-    closeModal?.("leoids-modal");
+function closeSetupPanel() {
+  closeModal?.("leoids-modal");
+
+  if (leoidsState.boundaryMode === "polygon") {
+    enableMapPointAdding();
+    speakText?.("Tap the map to add boundary points.");
   }
+}
 
   function setRole(role = "runner") {
     leoidsState.role = role === "hunter" ? "hunter" : "runner";
@@ -142,7 +186,7 @@ export function createLeoidsSystem({
     );
   }
 
- function setBoundaryMode(mode = "circle", announce = true) {
+function setBoundaryMode(mode = "circle", announce = true) {
   leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
 
   $("btn-leoids-boundary-circle")?.classList.toggle(
@@ -161,8 +205,7 @@ export function createLeoidsSystem({
   }
 
   if ($("btn-leoids-add-point")) {
-    $("btn-leoids-add-point").style.display =
-      leoidsState.boundaryMode === "polygon" ? "block" : "none";
+    $("btn-leoids-add-point").style.display = "none";
   }
 
   if ($("btn-leoids-undo-point")) {
@@ -172,13 +215,13 @@ export function createLeoidsSystem({
 
   updatePanel();
 
-  // 🔥 KEY CHANGE: exit modal when entering street mode
   if (leoidsState.boundaryMode === "polygon") {
     closeModal?.("leoids-modal");
-    showActionButton?.(true);
-
-    speakText?.("Street boundary mode. Move the map and add points.");
+    showActionButton?.(false);
+    enableMapPointAdding();
+    speakText?.("Street boundary mode. Tap the map to add boundary points.");
   } else {
+    disableMapPointAdding();
     showActionButton?.(false);
     speakText?.("Circle boundary mode.");
   }
@@ -448,6 +491,7 @@ export function createLeoidsSystem({
 
     leoidsState.baseLayer = null;
     leoidsState.baseMarker = null;
+    mapClickHandler: null, 
   }
 
   function clearAllMapObjects() {
