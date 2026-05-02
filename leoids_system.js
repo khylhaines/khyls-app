@@ -333,38 +333,125 @@ export function createLeoidsSystem({
 
 
  function showLeoidsMapControls(mode = "boundary") {
-  const controls = $("leoids-map-controls");
-  const confirmBoundary = $("btn-leoids-map-confirm-boundary");
-  const confirmBase = $("btn-leoids-map-confirm-base");
-  const undo = $("btn-leoids-map-undo");
-  const back = $("btn-leoids-map-back");
+  let controls = $("leoids-map-controls");
 
-  if (!controls) return;
-
-  controls.classList.remove("hidden");
-
-  if (confirmBoundary) {
-    confirmBoundary.style.display = mode === "boundary" ? "block" : "none";
+  if (!controls) {
+    controls = document.createElement("div");
+    controls.id = "leoids-map-controls";
+    document.body.appendChild(controls);
   }
 
-  if (confirmBase) {
-    confirmBase.style.display = mode === "base" ? "block" : "none";
-  }
+  controls.className = "leoids-map-controls";
+  controls.style.position = "fixed";
+  controls.style.left = "50%";
+  controls.style.bottom = "112px";
+  controls.style.transform = "translateX(-50%)";
+  controls.style.zIndex = "999999";
+  controls.style.width = "min(92vw, 420px)";
+  controls.style.display = "grid";
+  controls.style.gap = "8px";
+  controls.style.pointerEvents = "auto";
 
-  if (undo) {
-    undo.style.display = mode === "boundary" ? "block" : "none";
-  }
+  controls.innerHTML = `
+    ${
+      mode === "boundary"
+        ? `
+          <button
+            id="btn-leoids-map-confirm-boundary"
+            type="button"
+            style="
+              width:100%;
+              min-height:48px;
+              border-radius:16px;
+              background:linear-gradient(180deg,#ffe27c,#ffd54a 55%,#efb000);
+              color:#111;
+              font-weight:900;
+              border:2px solid rgba(255,255,255,0.85);
+              box-shadow:0 12px 26px rgba(0,0,0,0.55);
+            "
+          >
+            CONFIRM BOUNDARY
+          </button>
 
-  if (back) {
-    back.style.display = "block";
-  }
+          <button
+            id="btn-leoids-map-undo"
+            type="button"
+            style="
+              width:100%;
+              min-height:44px;
+              border-radius:16px;
+              background:#111827;
+              color:#fff;
+              font-weight:900;
+              border:1px solid rgba(255,255,255,0.25);
+            "
+          >
+            UNDO POINT
+          </button>
+        `
+        : `
+          <button
+            id="btn-leoids-map-confirm-base"
+            type="button"
+            style="
+              width:100%;
+              min-height:48px;
+              border-radius:16px;
+              background:linear-gradient(180deg,#ffe27c,#ffd54a 55%,#efb000);
+              color:#111;
+              font-weight:900;
+              border:2px solid rgba(255,255,255,0.85);
+              box-shadow:0 12px 26px rgba(0,0,0,0.55);
+            "
+          >
+            CONFIRM JAIL / BASE
+          </button>
+        `
+    }
+
+    <button
+      id="btn-leoids-map-back"
+      type="button"
+      style="
+        width:100%;
+        min-height:44px;
+        border-radius:16px;
+        background:#202a3c;
+        color:#fff;
+        font-weight:900;
+        border:1px solid rgba(255,255,255,0.25);
+      "
+    >
+      BACK TO SETUP
+    </button>
+  `;
+
+  $("btn-leoids-map-confirm-boundary")?.addEventListener(
+    "click",
+    confirmBoundaryFromMap
+  );
+
+  $("btn-leoids-map-confirm-base")?.addEventListener(
+    "click",
+    confirmBaseFromMap
+  );
+
+  $("btn-leoids-map-undo")?.addEventListener("click", () => {
+    undoStreetBoundaryPoint();
+    showLeoidsMapControls("boundary");
+  });
+
+  $("btn-leoids-map-back")?.addEventListener(
+    "click",
+    backToLeoidsPanelFromMap
+  );
 }
 
 
-  function hideLeoidsMapControls() {
-    const controls = $("leoids-map-controls");
-    if (controls) controls.classList.add("hidden");
-  }
+ function hideLeoidsMapControls() {
+  const controls = $("leoids-map-controls");
+  if (controls) controls.remove();
+}
 
   function enableMapPointAdding() {
   const map = getMapSafe();
