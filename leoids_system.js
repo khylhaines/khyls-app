@@ -491,7 +491,7 @@ function setBoundaryMode(mode = "circle", announce = true) {
 
     leoidsState.baseLayer = null;
     leoidsState.baseMarker = null;
-    leoidsState.mapClickHandler = null, 
+    leoidsState.mapClickHandler = null; 
   }
 
   function clearAllMapObjects() {
