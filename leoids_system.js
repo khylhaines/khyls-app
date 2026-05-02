@@ -332,16 +332,12 @@ export function createLeoidsSystem({
 }
 
 
- function showLeoidsMapControls(mode = "boundary") {
-  let controls = $("leoids-map-controls");
+function showLeoidsMapControls(mode = "boundary") {
+  hideLeoidsMapControls();
 
-  if (!controls) {
-    controls = document.createElement("div");
-    controls.id = "leoids-map-controls";
-    document.body.appendChild(controls);
-  }
+  const controls = document.createElement("div");
+  controls.id = "leoids-map-controls";
 
-  controls.className = "leoids-map-controls";
   controls.style.position = "fixed";
   controls.style.left = "50%";
   controls.style.bottom = "112px";
@@ -352,100 +348,51 @@ export function createLeoidsSystem({
   controls.style.gap = "8px";
   controls.style.pointerEvents = "auto";
 
-  controls.innerHTML = `
-    ${
-      mode === "boundary"
-        ? `
-          <button
-            id="btn-leoids-map-confirm-boundary"
-            type="button"
-            style="
-              width:100%;
-              min-height:48px;
-              border-radius:16px;
-              background:linear-gradient(180deg,#ffe27c,#ffd54a 55%,#efb000);
-              color:#111;
-              font-weight:900;
-              border:2px solid rgba(255,255,255,0.85);
-              box-shadow:0 12px 26px rgba(0,0,0,0.55);
-            "
-          >
-            CONFIRM BOUNDARY
-          </button>
+  if (mode === "boundary") {
+    controls.innerHTML = `
+      <button id="btn-leoids-map-confirm-boundary" type="button" style="min-height:48px;border-radius:16px;background:#ffd54a;color:#111;font-weight:900;">
+        CONFIRM BOUNDARY
+      </button>
+      <button id="btn-leoids-map-undo" type="button" style="min-height:44px;border-radius:16px;background:#111827;color:#fff;font-weight:900;">
+        UNDO POINT
+      </button>
+      <button id="btn-leoids-map-back" type="button" style="min-height:44px;border-radius:16px;background:#202a3c;color:#fff;font-weight:900;">
+        BACK TO SETUP
+      </button>
+    `;
+  } else {
+    controls.innerHTML = `
+      <button id="btn-leoids-map-confirm-base" type="button" style="min-height:48px;border-radius:16px;background:#ffd54a;color:#111;font-weight:900;">
+        CONFIRM JAIL / BASE
+      </button>
+      <button id="btn-leoids-map-back" type="button" style="min-height:44px;border-radius:16px;background:#202a3c;color:#fff;font-weight:900;">
+        BACK TO SETUP
+      </button>
+    `;
+  }
 
-          <button
-            id="btn-leoids-map-undo"
-            type="button"
-            style="
-              width:100%;
-              min-height:44px;
-              border-radius:16px;
-              background:#111827;
-              color:#fff;
-              font-weight:900;
-              border:1px solid rgba(255,255,255,0.25);
-            "
-          >
-            UNDO POINT
-          </button>
-        `
-        : `
-          <button
-            id="btn-leoids-map-confirm-base"
-            type="button"
-            style="
-              width:100%;
-              min-height:48px;
-              border-radius:16px;
-              background:linear-gradient(180deg,#ffe27c,#ffd54a 55%,#efb000);
-              color:#111;
-              font-weight:900;
-              border:2px solid rgba(255,255,255,0.85);
-              box-shadow:0 12px 26px rgba(0,0,0,0.55);
-            "
-          >
-            CONFIRM JAIL / BASE
-          </button>
-        `
-    }
+  document.body.appendChild(controls);
 
-    <button
-      id="btn-leoids-map-back"
-      type="button"
-      style="
-        width:100%;
-        min-height:44px;
-        border-radius:16px;
-        background:#202a3c;
-        color:#fff;
-        font-weight:900;
-        border:1px solid rgba(255,255,255,0.25);
-      "
-    >
-      BACK TO SETUP
-    </button>
-  `;
+  document
+    .getElementById("btn-leoids-map-confirm-boundary")
+    ?.addEventListener("click", confirmBoundaryFromMap);
 
-  $("btn-leoids-map-confirm-boundary")?.addEventListener(
-    "click",
-    confirmBoundaryFromMap
-  );
+  document
+    .getElementById("btn-leoids-map-confirm-base")
+    ?.addEventListener("click", confirmBaseFromMap);
 
-  $("btn-leoids-map-confirm-base")?.addEventListener(
-    "click",
-    confirmBaseFromMap
-  );
+  document
+    .getElementById("btn-leoids-map-undo")
+    ?.addEventListener("click", () => {
+      undoStreetBoundaryPoint();
+      showLeoidsMapControls("boundary");
+    });
 
-  $("btn-leoids-map-undo")?.addEventListener("click", () => {
-    undoStreetBoundaryPoint();
-    showLeoidsMapControls("boundary");
-  });
-
-  $("btn-leoids-map-back")?.addEventListener(
-    "click",
-    backToLeoidsPanelFromMap
-  );
+  document
+    .getElementById("btn-leoids-map-back")
+    ?.addEventListener("click", backToLeoidsPanelFromMap);
 }
+
 
 
  function hideLeoidsMapControls() {
@@ -625,7 +572,7 @@ export function createLeoidsSystem({
   speakText?.("Boundary confirmed.");
 }
 
- function setBaseHere() {
+function setBaseHere() {
   leoidsState.mapMode = "base";
   leoidsState.pendingBasePoint = null;
 
@@ -634,32 +581,34 @@ export function createLeoidsSystem({
   showLeoidsMapControls("base");
   enableMapPointAdding();
 
-  speakText?.("Tap the map where you want the jail base.");
+  speakText?.("Tap the map where you want the jail base, then press confirm.");
 }
 
 function confirmBaseFromMap() {
+  const map = getMapSafe();
+
   let point = leoidsState.pendingBasePoint;
 
-  if (!point) {
-    const map = getMapSafe();
-
-    if (map) {
-      const center = map.getCenter();
-      point = {
-        lat: center.lat,
-        lng: center.lng,
-      };
-    }
+  if (!point && map) {
+    const center = map.getCenter();
+    point = {
+      lat: center.lat,
+      lng: center.lng,
+    };
   }
 
   if (!point) {
-    alert("Tap the map where you want the jail base first.");
-    speakText?.("Tap the map to choose the jail base.");
+    alert("Base could not be set. Try tapping the map again.");
+    speakText?.("Base could not be set. Tap the map again.");
     showLeoidsMapControls("base");
     return;
   }
 
-  leoidsState.basePoint = point;
+  leoidsState.basePoint = {
+    lat: Number(point.lat),
+    lng: Number(point.lng),
+  };
+
   leoidsState.pendingBasePoint = null;
   leoidsState.mapMode = "none";
 
@@ -669,8 +618,11 @@ function confirmBaseFromMap() {
   hideLeoidsMapControls();
   showActionButton?.(false);
 
-  openSetupPanel();
   updatePanel();
+  renderPlayers?.();
+  drawPlayerMarkers?.();
+
+  showModal?.("leoids-modal");
 
   speakText?.("Jail base confirmed.");
 }
