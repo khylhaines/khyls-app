@@ -599,15 +599,22 @@ function confirmBaseFromMap() {
 
   if (!point) {
     alert("Base could not be set. Try tapping the map again.");
-    speakText?.("Base could not be set. Tap the map again.");
+    speakText?.("Base not set.");
     showLeoidsMapControls("base");
     return;
   }
 
+  // ✅ FORCE SAVE INTO MAIN STATE
   leoidsState.basePoint = {
     lat: Number(point.lat),
     lng: Number(point.lng),
   };
+
+  // 🔥 CRITICAL — some parts of your system are checking this instead
+  leoidsState.base = leoidsState.basePoint;
+
+  // 🔥 ALSO store globally (backup for other systems)
+  window.__leoidsBasePoint = leoidsState.basePoint;
 
   leoidsState.pendingBasePoint = null;
   leoidsState.mapMode = "none";
@@ -618,15 +625,16 @@ function confirmBaseFromMap() {
   hideLeoidsMapControls();
   showActionButton?.(false);
 
-  updatePanel();
+  updatePanel?.();
   renderPlayers?.();
   drawPlayerMarkers?.();
 
   showModal?.("leoids-modal");
 
+  console.log("BASE SET:", leoidsState.basePoint); // 👈 debug
+
   speakText?.("Jail base confirmed.");
 }
-
 
 
  function backToLeoidsPanelFromMap() {
