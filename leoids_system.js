@@ -35,8 +35,11 @@ export function createLeoidsSystem({
     boundaryPoints: [],
 
     basePoint: null,
+    pendingBasePoint: null,
     baseRadius: DEFAULT_BASE_RADIUS,
     tagRadius: DEFAULT_TAG_RADIUS,
+
+    mapMode: "none", // none / boundary / base
 
     players: [
       {
@@ -132,10 +135,12 @@ export function createLeoidsSystem({
     const map = getMapSafe();
     if (leoidsState.boundaryCenter) return leoidsState.boundaryCenter;
     if (leoidsState.boundaryPoints.length) return leoidsState.boundaryPoints[0];
+
     if (map) {
       const c = map.getCenter();
       return { lat: c.lat, lng: c.lng };
     }
+
     return { lat: 54.11371, lng: -3.218448 };
   }
 
@@ -183,7 +188,11 @@ export function createLeoidsSystem({
     stopTimer();
     stopAI();
     disableMapPointAdding();
+    hideLeoidsMapControls();
     clearAllMapObjects();
+
+    leoidsState.mapMode = "none";
+    leoidsState.pendingBasePoint = null;
 
     const mapEl = $("map");
     if (mapEl) {
@@ -195,6 +204,9 @@ export function createLeoidsSystem({
 
   function openSetupPanel() {
     enterBattleMap();
+    disableMapPointAdding();
+    hideLeoidsMapControls();
+    leoidsState.mapMode = "none";
 
     if ($("leoids-round-length")) {
       $("leoids-round-length").value = String(leoidsState.roundTime);
@@ -216,20 +228,18 @@ export function createLeoidsSystem({
       $("leoids-tag-radius").value = String(leoidsState.tagRadius);
     }
 
-    setBoundaryMode(leoidsState.boundaryMode, false);
+    refreshBoundaryButtons();
     renderPlayers();
     updatePanel();
 
     showModal?.("leoids-modal");
-    speakText?.("LEOIDs battle map opened.");
   }
 
   function closeSetupPanel() {
     closeModal?.("leoids-modal");
 
-    if (leoidsState.boundaryMode === "polygon") {
+    if (leoidsState.mapMode === "boundary" || leoidsState.mapMode === "base") {
       enableMapPointAdding();
-      speakText?.("Tap the map to add boundary points.");
     }
   }
 
@@ -261,9 +271,7 @@ export function createLeoidsSystem({
     );
   }
 
-  function setBoundaryMode(mode = "circle", announce = true) {
-    leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
-
+  function refreshBoundaryButtons() {
     $("btn-leoids-boundary-circle")?.classList.toggle(
       "active",
       leoidsState.boundaryMode === "circle"
@@ -288,18 +296,65 @@ export function createLeoidsSystem({
         leoidsState.boundaryMode === "polygon" ? "block" : "none";
     }
 
+    if ($("btn-leoids-confirm-boundary")) {
+      $("btn-leoids-confirm-boundary").style.display = "none";
+    }
+  }
+
+  function setBoundaryMode(mode = "circle", announce = true) {
+    leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
+    refreshBoundaryButtons();
+    updatePanel();
+
     if (leoidsState.boundaryMode === "polygon") {
+      leoidsState.mapMode = "boundary";
       closeModal?.("leoids-modal");
       showActionButton?.(false);
+      showLeoidsMapControls("boundary");
       enableMapPointAdding();
       speakText?.("Street boundary mode. Tap the map to add boundary points.");
-    } else {
-      disableMapPointAdding();
-      showActionButton?.(false);
-      if (announce) speakText?.("Circle boundary mode.");
+      return;
     }
 
-    updatePanel();
+    leoidsState.mapMode = "none";
+    disableMapPointAdding();
+    hideLeoidsMapControls();
+    showActionButton?.(false);
+
+    if (announce) speakText?.("Circle boundary mode.");
+  }
+
+  function showLeoidsMapControls(mode = "boundary") {
+    const controls = $("leoids-map-controls");
+    const confirmBoundary = $("btn-leoids-map-confirm-boundary");
+    const confirmBase = $("btn-leoids-map-confirm-base");
+    const undo = $("btn-leoids-map-undo");
+    const back = $("btn-leoids-map-back");
+
+    if (!controls) return;
+
+    controls.classList.remove("hidden");
+
+    if (confirmBoundary) {
+      confirmBoundary.style.display = mode === "boundary" ? "block" : "none";
+    }
+
+    if (confirmBase) {
+      confirmBase.style.display = mode === "base" ? "block" : "none";
+    }
+
+    if (undo) {
+      undo.style.display = mode === "boundary" ? "block" : "none";
+    }
+
+    if (back) {
+      back.style.display = "block";
+    }
+  }
+
+  function hideLeoidsMapControls() {
+    const controls = $("leoids-map-controls");
+    if (controls) controls.classList.add("hidden");
   }
 
   function enableMapPointAdding() {
@@ -309,21 +364,31 @@ export function createLeoidsSystem({
     disableMapPointAdding();
 
     leoidsState.mapClickHandler = (event) => {
-      if (leoidsState.boundaryMode !== "polygon") return;
-
       const point = {
         lat: event.latlng.lat,
         lng: event.latlng.lng,
       };
 
-      leoidsState.boundaryCenter = null;
-      leoidsState.boundaryPoints.push(point);
+      if (leoidsState.mapMode === "boundary") {
+        leoidsState.boundaryMode = "polygon";
+        leoidsState.boundaryCenter = null;
+        leoidsState.boundaryPoints.push(point);
 
-      clearCircleBoundary();
-      drawPolygonBoundary();
-      updatePanel();
+        clearCircleBoundary();
+        drawPolygonBoundary();
+        updatePanel();
 
-      speakText?.(`Boundary point ${leoidsState.boundaryPoints.length} added.`);
+        speakText?.(`Boundary point ${leoidsState.boundaryPoints.length} added.`);
+        return;
+      }
+
+      if (leoidsState.mapMode === "base") {
+        leoidsState.pendingBasePoint = point;
+        drawBasePoint(point, leoidsState.baseRadius);
+        updatePanel();
+
+        speakText?.("Base point selected. Confirm base when ready.");
+      }
     };
 
     map.on("click", leoidsState.mapClickHandler);
@@ -390,10 +455,11 @@ export function createLeoidsSystem({
     };
 
     leoidsState.boundaryPoints = [];
+    leoidsState.mapMode = "none";
 
     clearPolygonBoundary();
     drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
-    setBoundaryMode("circle", false);
+    refreshBoundaryButtons();
     seedPlayerPositions();
     updatePanel();
 
@@ -416,7 +482,7 @@ export function createLeoidsSystem({
 
     clearCircleBoundary();
     drawPolygonBoundary();
-    setBoundaryMode("polygon", false);
+    refreshBoundaryButtons();
     updatePanel();
 
     speakText?.(`Boundary point ${leoidsState.boundaryPoints.length} added.`);
@@ -435,34 +501,70 @@ export function createLeoidsSystem({
   }
 
   function confirmBoundary() {
+    confirmBoundaryFromMap();
+  }
+
+  function confirmBoundaryFromMap() {
     if (!hasValidBoundary()) {
       alert("Street boundary needs at least 3 points.");
       speakText?.("Street boundary needs at least three points.");
       return;
     }
 
+    leoidsState.mapMode = "none";
+
     disableMapPointAdding();
+    hideLeoidsMapControls();
     seedPlayerPositions();
     showActionButton?.(false);
     openSetupPanel();
+
     speakText?.("Boundary confirmed.");
   }
 
   function setBaseHere() {
-    const map = getMapSafe();
-    if (!map) return;
+    leoidsState.mapMode = "base";
+    leoidsState.pendingBasePoint = null;
 
-    const center = map.getCenter();
+    closeModal?.("leoids-modal");
+    showActionButton?.(false);
+    showLeoidsMapControls("base");
+    enableMapPointAdding();
 
-    leoidsState.basePoint = {
-      lat: center.lat,
-      lng: center.lng,
-    };
+    speakText?.("Tap the map where you want the jail base.");
+  }
+
+  function confirmBaseFromMap() {
+    if (!leoidsState.pendingBasePoint) {
+      alert("Tap the map where you want the jail base first.");
+      speakText?.("Tap the map to choose the jail base.");
+      return;
+    }
+
+    leoidsState.basePoint = leoidsState.pendingBasePoint;
+    leoidsState.pendingBasePoint = null;
+    leoidsState.mapMode = "none";
 
     drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
-    updatePanel();
 
-    speakText?.("Jail base set.");
+    disableMapPointAdding();
+    hideLeoidsMapControls();
+    showActionButton?.(false);
+    openSetupPanel();
+
+    speakText?.("Jail base confirmed.");
+  }
+
+  function backToLeoidsPanelFromMap() {
+    leoidsState.mapMode = "none";
+    leoidsState.pendingBasePoint = null;
+
+    disableMapPointAdding();
+    hideLeoidsMapControls();
+    showActionButton?.(false);
+    openSetupPanel();
+
+    speakText?.("Returned to LEOIDs setup.");
   }
 
   function drawCircleBoundary(center, radius) {
@@ -591,10 +693,13 @@ export function createLeoidsSystem({
             : "#4da3ff",
         fillOpacity: 0.9,
       })
-        .bindTooltip(`${getPlayerIcon(player)} ${player.name} • ${player.role} • ${player.status}`, {
-          permanent: false,
-          direction: "top",
-        })
+        .bindTooltip(
+          `${getPlayerIcon(player)} ${player.name} • ${player.role} • ${player.status}`,
+          {
+            permanent: false,
+            direction: "top",
+          }
+        )
         .addTo(map);
 
       leoidsState.playerMarkers.push(marker);
@@ -683,6 +788,10 @@ export function createLeoidsSystem({
 
     leoidsState.boundaryCenter = null;
     leoidsState.boundaryPoints = [];
+    leoidsState.mapMode = "none";
+
+    hideLeoidsMapControls();
+    disableMapPointAdding();
 
     updatePanel();
     speakText?.("LEOIDs boundary cleared.");
@@ -713,7 +822,10 @@ export function createLeoidsSystem({
   }
 
   function addAIPlayer(role = "runner") {
-    const id = `ai_${role}_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+    const id = `ai_${role}_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 5)}`;
+
     const count = leoidsState.players.filter((p) => p.isAI).length + 1;
 
     leoidsState.players.push({
@@ -782,7 +894,6 @@ export function createLeoidsSystem({
 
     leoidsState.players.forEach((player) => {
       if (!player.isAI || player.status === "jailed") return;
-
       player.position = randomNearbyPoint(player.position || center, 18);
     });
 
@@ -841,6 +952,10 @@ export function createLeoidsSystem({
     local.coins += 10;
     leoidsState.score += 50;
     leoidsState.coins += 10;
+
+    if (leoidsState.basePoint) {
+      closest.position = randomNearbyPoint(leoidsState.basePoint, 5);
+    }
 
     drawPlayerMarkers();
     renderPlayers();
@@ -921,10 +1036,16 @@ export function createLeoidsSystem({
         if (runner.status !== "free") return;
 
         const d = distanceMeters(hunter.position, runner.position);
+
         if (d <= leoidsState.tagRadius) {
           runner.status = "jailed";
+          runner.position = leoidsState.basePoint
+            ? randomNearbyPoint(leoidsState.basePoint, 5)
+            : runner.position;
+
           hunter.score += 50;
           hunter.coins += 10;
+
           speakText?.(`${runner.name} tagged by ${hunter.name}.`);
         }
       });
@@ -935,7 +1056,8 @@ export function createLeoidsSystem({
 
   function checkHunterWin() {
     const runners = leoidsState.players.filter((p) => p.role === "runner");
-    const allJailed = runners.length && runners.every((p) => p.status === "jailed");
+    const allJailed =
+      runners.length && runners.every((p) => p.status === "jailed");
 
     if (!allJailed) return false;
 
@@ -999,6 +1121,7 @@ export function createLeoidsSystem({
     );
 
     leoidsState.intervalId = setInterval(tickRound, 1000);
+
     leoidsState.aiIntervalId = setInterval(() => {
       moveAIPlayers();
       runAITagChecks();
@@ -1183,6 +1306,23 @@ export function createLeoidsSystem({
     $("btn-leoids-clear-boundary")?.addEventListener("click", clearBoundaryFull);
     $("btn-leoids-set-base")?.addEventListener("click", setBaseHere);
 
+    $("btn-leoids-map-confirm-boundary")?.addEventListener(
+      "click",
+      confirmBoundaryFromMap
+    );
+
+    $("btn-leoids-map-confirm-base")?.addEventListener(
+      "click",
+      confirmBaseFromMap
+    );
+
+    $("btn-leoids-map-undo")?.addEventListener("click", undoStreetBoundaryPoint);
+
+    $("btn-leoids-map-back")?.addEventListener(
+      "click",
+      backToLeoidsPanelFromMap
+    );
+
     $("btn-leoids-add-ai-runner")?.addEventListener("click", () =>
       addAIPlayer("runner")
     );
@@ -1204,6 +1344,7 @@ export function createLeoidsSystem({
     exitBattleMap,
     openSetupPanel,
     closeSetupPanel,
+
     setRole,
     setBoundaryMode,
     setRoundLength,
@@ -1211,20 +1352,30 @@ export function createLeoidsSystem({
     setBoundaryRadius,
     setBaseRadius,
     setTagRadius,
+
     setCircleBoundaryHere,
     addStreetBoundaryPointHere,
     undoStreetBoundaryPoint,
     confirmBoundary,
+    confirmBoundaryFromMap,
+
     setBaseHere,
+    confirmBaseFromMap,
+    backToLeoidsPanelFromMap,
+
+    showLeoidsMapControls,
+    hideLeoidsMapControls,
+
     clearBoundaryFull,
+
     addAIPlayer,
     resetLocalPlayers,
     tagNearestRunner,
     rescueJailedRunners,
+
     startRound,
     endRound,
     updatePanel,
     wirePanelButtons,
   };
 }
-
