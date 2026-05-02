@@ -93,8 +93,6 @@
             <button class="pill" id="pill-teen" type="button">TEEN</button>
           </div>
 
-     
-          
           <div class="pill-row" style="margin-top: 12px">
             <button class="pill active" id="pill-full" type="button">
               FULL BARROW
@@ -105,7 +103,7 @@
             <button class="pill" id="pill-docks" type="button">ABBEY</button>
           </div>
         </div>
-        
+
         <div class="start-card">
           <h3>🕵️ RESTRICTED ARCHIVE</h3>
           <div class="start-mini">
@@ -154,7 +152,8 @@
           <h3>🎮 GAME MODE</h3>
           <div class="start-mini">
             Choose how you want to play on the map. Explorer uses your current
-            mission system. Territory is the strategy control mode.
+            mission system. Territory is the strategy control mode. LEOIDS is
+            the live chase and rescue mode.
           </div>
 
           <div class="pill-row" style="margin-top: 12px">
@@ -164,8 +163,8 @@
             <button class="pill" id="pill-game-territory" type="button">
               TERRITORY
             </button>
-             <button class="pill" id="pill-game-leoids" type="button">
-             LEOIDS
+            <button class="pill" id="pill-game-leoids" type="button">
+              LEOIDS
             </button>
           </div>
         </div>
@@ -691,16 +690,15 @@
         >
           🤖 BOT: OFF
         </button>
-          
-<button
-  id="btn-territory-bot-difficulty"
-  class="win-btn"
-  type="button"
-  style="margin: 0 0 10px; background: #111827; color: #fff"
->
-  🎚️ BOT DIFFICULTY: NORMAL
-</button>
 
+        <button
+          id="btn-territory-bot-difficulty"
+          class="win-btn"
+          type="button"
+          style="margin: 0 0 10px; background: #111827; color: #fff"
+        >
+          🎚️ BOT DIFFICULTY: NORMAL
+        </button>
 
         <div id="territory-scoreboard" class="territory-scoreboard">
           No territory claimed yet.
@@ -783,8 +781,6 @@
             ⚔️ ATTACK
           </button>
 
-         
-
           <button
             id="btn-territory-repair"
             class="territory-action-btn repair"
@@ -805,10 +801,82 @@
       </button>
     </div>
 
-<button class="pill" id="pill-game-leoids" type="button">
-  LEOIDS
-</button>
-    
+    <div id="leoids-modal" class="full-modal">
+      <div class="modal-header">
+        <h2 style="color: var(--gold)">🏃 LEOIDS GAME</h2>
+        <button
+          type="button"
+          class="close-x"
+          id="btn-leoids-close-x"
+          aria-label="Close LEOIDS"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="settings-card">
+        <h3>ROUND SETUP</h3>
+        <div class="settings-mini">
+          Hunters chase runners. Runners survive the timer or rescue jailed
+          teammates.
+        </div>
+
+        <div class="pill-row" style="margin-top: 12px">
+          <button class="pill active" id="btn-leoids-runner" type="button">
+            🏃 RUNNER
+          </button>
+          <button class="pill" id="btn-leoids-hunter" type="button">
+            🐺 HUNTER
+          </button>
+        </div>
+
+        <div style="margin-top: 14px">
+          <div class="case-label">Round Length</div>
+          <select id="leoids-round-length">
+            <option value="600">10 minutes</option>
+            <option value="900">15 minutes</option>
+            <option value="1200" selected>20 minutes</option>
+            <option value="1800">30 minutes</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 12px">
+          <div class="case-label">Hunter Delay</div>
+          <select id="leoids-hunter-delay">
+            <option value="30">30 seconds</option>
+            <option value="60">1 minute</option>
+            <option value="120" selected>2 minutes</option>
+            <option value="180">3 minutes</option>
+            <option value="300">5 minutes</option>
+          </select>
+        </div>
+
+        <button
+          class="win-btn"
+          id="btn-leoids-start"
+          type="button"
+          style="margin-top: 14px"
+        >
+          START LEOIDS ROUND
+        </button>
+      </div>
+
+      <div class="settings-card">
+        <h3>ROUND STATUS</h3>
+        <div id="leoids-status" class="settings-mini">
+          Choose a role and start the round.
+        </div>
+      </div>
+
+      <button
+        class="win-btn"
+        id="btn-leoids-close"
+        style="background: #222; color: #fff; margin-top: 16px"
+      >
+        CLOSE
+      </button>
+    </div>
+
     <div id="home-modal" class="full-modal">
       <div class="modal-header">
         <h2 style="color: var(--gold)">🏠 HOME BASE LOG</h2>
@@ -915,73 +983,78 @@
       </div>
     </div>
 
-<div id="territory-attack-cutscene" class="attack-cutscene hidden">
-  <div class="attack-cutscene-card">
-    <div class="attack-scene-title">⚔️ TERRITORY ATTACK</div>
+    <div id="territory-attack-cutscene" class="attack-cutscene hidden">
+      <div class="attack-cutscene-card">
+        <div class="attack-scene-title">⚔️ TERRITORY ATTACK</div>
 
-    <div class="attack-scene-stage">
-      <div class="attack-weapon">🐝🏹</div>
-      <div class="attack-projectile">➤➤➤</div>
-      <div class="attack-target">🛡️</div>
+        <div class="attack-scene-stage">
+          <div class="attack-weapon">🐝🏹</div>
+          <div class="attack-projectile">➤➤➤</div>
+          <div class="attack-target">🛡️</div>
+        </div>
+
+        <div id="attack-cutscene-text" class="attack-cutscene-text">
+          Firing on target...
+        </div>
+      </div>
     </div>
 
-    <div id="attack-cutscene-text" class="attack-cutscene-text">
-      Firing on target...
-    </div>
-  </div>
-</div>
+    <div id="territory-defence-cutscene" class="defence-cutscene hidden">
+      <div class="defence-cutscene-card">
+        <div id="defence-scene-title" class="defence-scene-title">
+          🛡️ DEFENCE BUILD
+        </div>
 
-<div id="territory-defence-cutscene" class="defence-cutscene hidden">
-  <div class="defence-cutscene-card">
-    <div id="defence-scene-title" class="defence-scene-title">
-      🛡️ DEFENCE BUILD
-    </div>
+        <div class="defence-scene-stage">
+          <div id="defence-builder" class="defence-builder">👷</div>
+          <div id="defence-effect" class="defence-effect">🛡️</div>
+          <div id="defence-node" class="defence-node">🏰</div>
+        </div>
 
-    <div class="defence-scene-stage">
-      <div id="defence-builder" class="defence-builder">👷</div>
-      <div id="defence-effect
-    
-
-<div id="territory-capture-cutscene" class="capture-cutscene hidden">
-  <div class="capture-cutscene-card">
-    <div id="capture-scene-title" class="capture-scene-title">
-      🏴 TERRITORY CAPTURED
+        <div id="defence-cutscene-text" class="defence-cutscene-text">
+          Building defence...
+        </div>
+      </div>
     </div>
 
-    <div class="capture-scene-stage">
-      <div class="capture-flag-old">🛡️</div>
-      <div class="capture-wave">⚡⚡⚡</div>
-      <div id="capture-flag-new" class="capture-flag-new">🏴</div>
+    <div id="territory-capture-cutscene" class="capture-cutscene hidden">
+      <div class="capture-cutscene-card">
+        <div id="capture-scene-title" class="capture-scene-title">
+          🏴 TERRITORY CAPTURED
+        </div>
+
+        <div class="capture-scene-stage">
+          <div class="capture-flag-old">🛡️</div>
+          <div class="capture-wave">⚡⚡⚡</div>
+          <div id="capture-flag-new" class="capture-flag-new">🏴</div>
+        </div>
+
+        <div id="capture-cutscene-text" class="capture-cutscene-text">
+          Territory secured.
+        </div>
+      </div>
     </div>
 
-    <div id="capture-cutscene-text" class="capture-cutscene-text">
-      Territory secured.
+    <div id="territory-victory-screen" class="territory-victory-screen hidden">
+      <div class="territory-victory-card">
+        <div class="territory-victory-crown">👑</div>
+
+        <h1 id="territory-victory-title">TERRITORY VICTORY</h1>
+
+        <div id="territory-victory-winner" class="territory-victory-winner">
+          Player wins the war.
+        </div>
+
+        <div id="territory-victory-stats" class="territory-victory-stats">
+          Final score loading...
+        </div>
+
+        <button id="btn-territory-victory-close" class="win-btn" type="button">
+          KEEP VIEWING MAP
+        </button>
+      </div>
     </div>
-  </div>
-</div>
 
-<div id="territory-victory-screen" class="territory-victory-screen hidden">
-  <div class="territory-victory-card">
-    <div class="territory-victory-crown">👑</div>
-
-    <h1 id="territory-victory-title">TERRITORY VICTORY</h1>
-
-    <div id="territory-victory-winner" class="territory-victory-winner">
-      Player wins the war.
-    </div>
-
-    <div id="territory-victory-stats" class="territory-victory-stats">
-      Final score loading...
-    </div>
-
-    <button id="btn-territory-victory-close" class="win-btn" type="button">
-      KEEP VIEWING MAP
-    </button>
-  </div>
-</div>
-
-      
-        
     <div id="welcome-overlay" class="welcome-overlay hidden">
       <div class="welcome-box">
         <h2>🧭 Barrow Quest</h2>
