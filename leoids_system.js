@@ -400,7 +400,7 @@ function showLeoidsMapControls(mode = "boundary") {
   if (controls) controls.remove();
 }
 
-  function enableMapPointAdding() {
+function enableMapPointAdding() {
   const map = getMapSafe();
   if (!map) return;
 
@@ -408,8 +408,8 @@ function showLeoidsMapControls(mode = "boundary") {
 
   leoidsState.mapClickHandler = (event) => {
     const point = {
-      lat: event.latlng.lat,
-      lng: event.latlng.lng,
+      lat: Number(event.latlng.lat),
+      lng: Number(event.latlng.lng),
     };
 
     if (leoidsState.mapMode === "boundary") {
@@ -427,13 +427,18 @@ function showLeoidsMapControls(mode = "boundary") {
     }
 
     if (leoidsState.mapMode === "base") {
+      // IMPORTANT: save it immediately, not just pending
       leoidsState.pendingBasePoint = point;
+      leoidsState.basePoint = point;
+      window.__leoidsBasePoint = point;
 
       drawBasePoint(point, leoidsState.baseRadius);
       showLeoidsMapControls("base");
       updatePanel();
 
-      speakText?.("Base point selected. Confirm base when ready.");
+      console.log("LEOIDS BASE CHOSEN:", point);
+
+      speakText?.("Base selected. Press confirm jail base.");
     }
   };
 
@@ -587,37 +592,36 @@ function setBaseHere() {
 function confirmBaseFromMap() {
   const map = getMapSafe();
 
-  let point = leoidsState.pendingBasePoint;
+  let point =
+    leoidsState.pendingBasePoint ||
+    leoidsState.basePoint ||
+    window.__leoidsBasePoint ||
+    null;
 
   if (!point && map) {
     const center = map.getCenter();
     point = {
-      lat: center.lat,
-      lng: center.lng,
+      lat: Number(center.lat),
+      lng: Number(center.lng),
     };
   }
 
   if (!point) {
-    alert("Base could not be set. Try tapping the map again.");
-    speakText?.("Base not set.");
+    alert("Base could not be set. Tap the map again.");
+    speakText?.("Base could not be set. Tap the map again.");
     showLeoidsMapControls("base");
     return;
   }
 
-  // ✅ FORCE SAVE INTO MAIN STATE
   leoidsState.basePoint = {
     lat: Number(point.lat),
     lng: Number(point.lng),
   };
 
-  // 🔥 CRITICAL — some parts of your system are checking this instead
-  leoidsState.base = leoidsState.basePoint;
-
-  // 🔥 ALSO store globally (backup for other systems)
-  window.__leoidsBasePoint = leoidsState.basePoint;
-
   leoidsState.pendingBasePoint = null;
   leoidsState.mapMode = "none";
+
+  window.__leoidsBasePoint = leoidsState.basePoint;
 
   drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
 
@@ -625,17 +629,16 @@ function confirmBaseFromMap() {
   hideLeoidsMapControls();
   showActionButton?.(false);
 
-  updatePanel?.();
+  updatePanel();
   renderPlayers?.();
   drawPlayerMarkers?.();
 
   showModal?.("leoids-modal");
 
-  console.log("BASE SET:", leoidsState.basePoint); // 👈 debug
+  console.log("LEOIDS BASE CONFIRMED:", leoidsState.basePoint);
 
   speakText?.("Jail base confirmed.");
 }
-
 
  function backToLeoidsPanelFromMap() {
   leoidsState.mapMode = "none";
@@ -1057,50 +1060,31 @@ function confirmBaseFromMap() {
       return;
     }
 
-    if (!leoidsState.basePoint) {
-      alert("Set a jail/base first.");
-      speakText?.("Set the jail base first.");
-      return;
-    }
+   if (!leoidsState.basePoint && window.__leoidsBasePoint) {
+  leoidsState.basePoint = window.__leoidsBasePoint;
+}
 
-    if (!local.position) {
-      local.position = leoidsState.basePoint;
-    }
+if (!leoidsState.basePoint) {
+  const map = getMapSafe();
 
-    const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
+  if (map) {
+    const center = map.getCenter();
+    leoidsState.basePoint = {
+      lat: Number(center.lat),
+      lng: Number(center.lng),
+    };
 
-    if (distanceToBase > leoidsState.baseRadius) {
-      alert(`You need to be inside the ${leoidsState.baseRadius}m base radius.`);
-      speakText?.("You are not close enough to the jail base.");
-      return;
-    }
-
-    const jailed = leoidsState.players.filter(
-      (p) => p.role === "runner" && p.status === "jailed"
-    );
-
-    if (!jailed.length) {
-      alert("No jailed runners to rescue.");
-      speakText?.("No jailed runners to rescue.");
-      return;
-    }
-
-    jailed.forEach((runner) => {
-      runner.status = "free";
-      runner.position = randomNearbyPoint(leoidsState.basePoint, 15);
-    });
-
-    local.score += 75;
-    local.coins += 15;
-    leoidsState.score += 75;
-    leoidsState.coins += 15;
-
-    drawPlayerMarkers();
-    renderPlayers();
-    updatePanel();
-
-    speakText?.("Jailed runners rescued.");
+    drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
+    speakText?.("Jail base was missing, so I set it at the map centre.");
   }
+}
+
+if (!leoidsState.basePoint) {
+  alert("Set the Jail / Base point first.");
+  speakText?.("Set the jail base first.");
+  return;
+}
+
 
   function runAITagChecks() {
     if (!leoidsState.active || !leoidsState.huntersReleased) return;
