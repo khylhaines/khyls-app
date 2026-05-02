@@ -3450,6 +3450,38 @@ function getTerritoryOwnerText(ownerId) {
   return player?.name || "UNKNOWN";
 }
 
+function playTerritoryVictoryScreen(winner) {
+  const modal = $("territory-victory-screen");
+  const title = $("territory-victory-title");
+  const winnerText = $("territory-victory-winner");
+  const stats = $("territory-victory-stats");
+
+  if (!winner) return;
+
+  if (title) {
+    title.innerText = "👑 TERRITORY VICTORY";
+  }
+
+  if (winnerText) {
+    winnerText.innerText = `${winner.playerName} controls the territory war.`;
+  }
+
+  if (stats) {
+    stats.innerText =
+      `Final Score: ${winner.score} points\n` +
+      `Nodes Controlled: ${winner.nodes}\n` +
+      `Zones Controlled: ${winner.zones || 0}\n` +
+      `Income: +${winner.income}/min`;
+  }
+
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+
+  speakText(`${winner.playerName} wins the territory war.`);
+}
+
+
 function checkTerritoryVictory(scores = []) {
   const victoryScore = 500;
 
@@ -3459,9 +3491,9 @@ function checkTerritoryVictory(scores = []) {
   if (!winner) return false;
 
   window.__territoryWinnerId = winner.playerId;
+  window.__territoryBotEnabled = false;
 
-  speakText(`${winner.playerName} wins the territory war.`);
-  alert(`${winner.playerName} wins the territory war with ${winner.score} points!`);
+  playTerritoryVictoryScreen(winner);
 
   return true;
 }
@@ -4067,6 +4099,9 @@ $("btn-territory-attack")?.addEventListener("click", async () => {
   openTerritoryCommandPanel(targetPin);
 });
 
+$("btn-territory-victory-close")?.addEventListener("click", () => {
+  closeModal("territory-victory-screen");
+});
 
 
   $("btn-territory-repair")?.addEventListener("click", () => {
