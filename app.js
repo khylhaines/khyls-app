@@ -4042,9 +4042,21 @@ function selectGameMode(mode) {
 function openLeoidsPanel() {
   showActionButton(false);
 
+  window.__leoidsRole = window.__leoidsRole || "runner";
+  window.__leoidsRoundLength = Number(window.__leoidsRoundLength || 1200);
+  window.__leoidsHunterDelay = Number(window.__leoidsHunterDelay || 120);
+
+  if ($("leoids-round-length")) {
+    $("leoids-round-length").value = String(window.__leoidsRoundLength);
+  }
+
+  if ($("leoids-hunter-delay")) {
+    $("leoids-hunter-delay").value = String(window.__leoidsHunterDelay);
+  }
+
   if ($("leoids-status")) {
     $("leoids-status").innerText =
-      "LEOIDs ready. Choose Hunter or Runner, then start the round.";
+      "LEOIDs ready. Choose Hunter or Runner, set the timers, then start the round.";
   }
 
   showModal("leoids-modal");
@@ -4055,6 +4067,32 @@ function wireButtons() {
   window.__territoryBotEnabled = window.__territoryBotEnabled || false;
   window.__territoryBotDifficulty = window.__territoryBotDifficulty || "normal";
 
+$("leoids-round-length")?.addEventListener("change", (e) => {
+  window.__leoidsRoundLength = Number(e.target.value || 1200);
+
+  if ($("leoids-status")) {
+    $("leoids-status").innerText = `Round length set to ${Math.round(
+      window.__leoidsRoundLength / 60
+    )} minutes.`;
+  }
+
+  speakText(`Round length ${Math.round(window.__leoidsRoundLength / 60)} minutes.`);
+});
+
+$("leoids-hunter-delay")?.addEventListener("change", (e) => {
+  window.__leoidsHunterDelay = Number(e.target.value || 120);
+
+  if ($("leoids-status")) {
+    $("leoids-status").innerText = `Hunter delay set to ${Math.round(
+      window.__leoidsHunterDelay / 60
+    )} minutes.`;
+  }
+
+  speakText(`Hunter delay ${Math.round(window.__leoidsHunterDelay / 60)} minutes.`);
+});
+
+
+  
 $("btn-leoids-close")?.addEventListener("click", () =>
   closeModal("leoids-modal")
 );
@@ -4092,18 +4130,26 @@ $("btn-leoids-hunter")?.addEventListener("click", () => {
 
 $("btn-leoids-start")?.addEventListener("click", () => {
   const role = window.__leoidsRole || "runner";
+  const roundLength = Number($("leoids-round-length")?.value || 1200);
+  const hunterDelay = Number($("leoids-hunter-delay")?.value || 120);
+
+  window.__leoidsRoundLength = roundLength;
+  window.__leoidsHunterDelay = hunterDelay;
+
+  const roundMinutes = Math.round(roundLength / 60);
+  const delayMinutes = Math.round(hunterDelay / 60);
 
   if ($("leoids-status")) {
     $("leoids-status").innerText =
       role === "hunter"
-        ? "Hunter round started. Release delay: 30 seconds."
-        : "Runner round started. Survive for 10 minutes.";
+        ? `Hunter round started. Release delay: ${delayMinutes} minute(s). Round length: ${roundMinutes} minutes.`
+        : `Runner round started. Survive for ${roundMinutes} minutes. Hunter delay: ${delayMinutes} minute(s).`;
   }
 
   speakText(
     role === "hunter"
-      ? "Hunter round started. Wait thirty seconds."
-      : "Runner round started. Survive for ten minutes."
+      ? `Hunter round started. Wait ${delayMinutes} minutes.`
+      : `Runner round started. Survive for ${roundMinutes} minutes.`
   );
 });
 
