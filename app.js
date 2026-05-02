@@ -3993,34 +3993,33 @@ function selectGameMode(mode) {
   activeGameMode = mode;
 
   if (mode === "explorer") {
-    leoidsSystem?.exitBattleMap?.();
     showActionButton(false);
     updateStartButtons();
-    renderPins();
     refreshAllPinMarkers();
     speakText("Explorer mode selected.");
     return;
   }
 
   if (mode === "territory") {
-    leoidsSystem?.exitBattleMap?.();
     showActionButton(false);
     updateStartButtons();
-    renderPins();
     refreshAllPinMarkers();
     speakText("Territory mode selected.");
     return;
   }
 
   if (mode === "leoids") {
-    currentPin = null;
-    leoidsSystem?.enterBattleMap?.();
     showActionButton(false);
     updateStartButtons();
-    renderPins();
-    leoidsSystem?.openSetupPanel?.();
-    speakText("LEOIDS battle map selected.");
-    return;
+    refreshAllPinMarkers();
+
+    if (leoidsSystem?.openSetupPanel) {
+      leoidsSystem.openSetupPanel();
+    } else {
+      showModal("leoids-modal");
+    }
+
+    speakText("LEOIDS battle map opened.");
   }
 }
 
@@ -4600,18 +4599,20 @@ function setupSystems() {
     refreshAllPinMarkers,
     speakText,
   });
+  
+leoidsSystem = createLeoidsSystem({
+  getState: () => state,
+  saveState,
+  getMap: () => map,
+  showModal,
+  closeModal,
+  showActionButton,
+  refreshAllPinMarkers,
+  speakText,
+  $,
+});
 
-  leoidsSystem = createLeoidsSystem({
-    getState: () => state,
-    saveState,
-    getMap: () => map,
-    showModal,
-    closeModal,
-    showActionButton,
-    refreshAllPinMarkers,
-    speakText,
-    $,
-  });
+leoidsSystem.wirePanelButtons();
 
   bossSystem = createBossSystem({
     getState: () => state,
