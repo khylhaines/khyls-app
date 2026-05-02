@@ -1139,64 +1139,83 @@ if (!leoidsState.basePoint) {
     return true;
   }
 
-  function startRound() {
-    if (!hasValidBoundary()) {
-      alert("Set a LEOIDs boundary first. Street boundary needs at least 3 points.");
-      speakText?.("Set a valid boundary first.");
-      return;
-    }
-
-    if (!leoidsState.basePoint) {
-      alert("Set the Jail / Base point first.");
-      speakText?.("Set the jail base first.");
-      return;
-    }
-
-    stopTimer();
-    stopAI();
-    seedPlayerPositions();
-
-    leoidsState.active = true;
-    leoidsState.status = "free";
-    leoidsState.score = 0;
-    leoidsState.coins = 0;
-    leoidsState.timeLeft = leoidsState.roundTime;
-    leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
-    leoidsState.huntersReleased = leoidsState.role !== "hunter";
-    leoidsState.startedAt = new Date().toISOString();
-    leoidsState.endedAt = null;
-
-    leoidsState.players.forEach((player) => {
-      player.status = "free";
-      player.score = 0;
-      player.coins = 0;
-    });
-
-    updatePanel();
-    renderPlayers();
-    drawPlayerMarkers();
-
-    speakText?.(
-      leoidsState.role === "hunter"
-        ? `Hunter round started. Release in ${Math.round(
-            leoidsState.hunterDelay / 60
-          )} minutes.`
-        : `Runner round started. Survive for ${Math.round(
-            leoidsState.roundTime / 60
-          )} minutes.`
-    );
-
-    leoidsState.intervalId = setInterval(tickRound, 1000);
-
-    leoidsState.aiIntervalId = setInterval(() => {
-      moveAIPlayers();
-      runAITagChecks();
-      renderPlayers();
-      updatePanel();
-    }, 2500);
-
-    saveState?.();
+ function startRound() {
+  if (!hasValidBoundary()) {
+    alert("Set a LEOIDs boundary first. Street boundary needs at least 3 points.");
+    speakText?.("Set a valid boundary first.");
+    return;
   }
+
+  if (!leoidsState.basePoint && window.__leoidsBasePoint) {
+    leoidsState.basePoint = window.__leoidsBasePoint;
+  }
+
+  if (!leoidsState.basePoint) {
+    const map = getMapSafe();
+
+    if (map) {
+      const center = map.getCenter();
+      leoidsState.basePoint = {
+        lat: Number(center.lat),
+        lng: Number(center.lng),
+      };
+
+      drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
+      speakText?.("Jail base was missing, so I set it at the map centre.");
+    }
+  }
+
+  if (!leoidsState.basePoint) {
+    alert("Set the Jail / Base point first.");
+    speakText?.("Set the jail base first.");
+    return;
+  }
+
+  stopTimer();
+  stopAI();
+  seedPlayerPositions();
+
+  leoidsState.active = true;
+  leoidsState.status = "free";
+  leoidsState.score = 0;
+  leoidsState.coins = 0;
+  leoidsState.timeLeft = leoidsState.roundTime;
+  leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
+  leoidsState.huntersReleased = leoidsState.role !== "hunter";
+  leoidsState.startedAt = new Date().toISOString();
+  leoidsState.endedAt = null;
+
+  leoidsState.players.forEach((player) => {
+    player.status = "free";
+    player.score = 0;
+    player.coins = 0;
+  });
+
+  updatePanel();
+  renderPlayers();
+  drawPlayerMarkers();
+
+  speakText?.(
+    leoidsState.role === "hunter"
+      ? `Hunter round started. Release in ${Math.round(
+          leoidsState.hunterDelay / 60
+        )} minutes.`
+      : `Runner round started. Survive for ${Math.round(
+          leoidsState.roundTime / 60
+        )} minutes.`
+  );
+
+  leoidsState.intervalId = setInterval(tickRound, 1000);
+
+  leoidsState.aiIntervalId = setInterval(() => {
+    moveAIPlayers();
+    runAITagChecks();
+    renderPlayers();
+    updatePanel();
+  }, 2500);
+
+  saveState?.();
+}
 
   function tickRound() {
     if (!leoidsState.active) return;
