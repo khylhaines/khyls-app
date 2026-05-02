@@ -1467,4 +1467,4 @@ function wirePanelButtons() {
     updatePanel,
     wirePanelButtons,
   };
-}
+  }
