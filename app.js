@@ -3988,7 +3988,6 @@ function runTerritoryBotTurn() {
     renderTerritoryZones();
   }
 }
-
 function selectGameMode(mode) {
   activeGameMode = mode;
 
@@ -4022,6 +4021,7 @@ function selectGameMode(mode) {
     speakText("LEOIDS battle map opened.");
   }
 }
+
 
 function openLeoidsPanel() {
   showActionButton(false);
@@ -4600,23 +4600,21 @@ function setupSystems() {
     speakText,
   });
 
+  leoidsSystem = createLeoidsSystem({
+    getState: () => state,
+    saveState,
+    getMap: () => map,
+    showModal,
+    closeModal,
+    showActionButton,
+    refreshAllPinMarkers,
+    speakText,
+    $,
+  });
 
-leoidsSystem = createLeoidsSystem({
-  getState: () => state,
-  saveState,
-  getMap: () => map,
-  showModal,
-  closeModal,
-  showActionButton,
-  refreshAllPinMarkers,
-  speakText,
-  $,
-});
-
-// ✅ ONLY call if it exists
-if (leoidsSystem && leoidsSystem.wirePanelButtons) {
-  leoidsSystem.wirePanelButtons();
-}
+  if (leoidsSystem?.wirePanelButtons) {
+    leoidsSystem.wirePanelButtons();
+  }
 
   bossSystem = createBossSystem({
     getState: () => state,
