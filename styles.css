@@ -2135,3 +2135,16 @@ input[type="range"] {
     flex-direction: column;
   }
 }
+
+.leoids-modal .pill.active {
+  background: linear-gradient(180deg, #ffdf6e, #ffb800);
+  color: #160d00;
+}
+
+.leoids-modal select {
+  border-color: rgba(255, 59, 59, 0.28);
+}
+
+.leoids-modal .settings-mini {
+  white-space: pre-line;
+}
