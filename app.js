@@ -3454,45 +3454,12 @@ function handleActionTrigger() {
     return;
   }
 
+  if (activeGameMode === "leoids") {
+    window.leoidsSystem?.openSetupPanel();
+    return;
+  }
+
   openMissionMenu();
-}
-
-function getTerritoryOwnerText(ownerId) {
-  if (!ownerId) return "FREE";
-
-  const player = state.players.find(p => p.id === ownerId);
-  return player?.name || "UNKNOWN";
-}
-
-function playTerritoryVictoryScreen(winner) {
-  const modal = $("territory-victory-screen");
-  const title = $("territory-victory-title");
-  const winnerText = $("territory-victory-winner");
-  const stats = $("territory-victory-stats");
-
-  if (!winner) return;
-
-  if (title) {
-    title.innerText = "👑 TERRITORY VICTORY";
-  }
-
-  if (winnerText) {
-    winnerText.innerText = `${winner.playerName} controls the territory war.`;
-  }
-
-  if (stats) {
-    stats.innerText =
-      `Final Score: ${winner.score} points\n` +
-      `Nodes Controlled: ${winner.nodes}\n` +
-      `Zones Controlled: ${winner.zones || 0}\n` +
-      `Income: +${winner.income}/min`;
-  }
-
-  if (modal) {
-    modal.classList.remove("hidden");
-  }
-
-  speakText(`${winner.playerName} wins the territory war.`);
 }
 
 
@@ -4060,25 +4027,9 @@ function selectGameMode(mode) {
 function openLeoidsPanel() {
   showActionButton(false);
 
-  window.__leoidsRole = window.__leoidsRole || "runner";
-  window.__leoidsRoundLength = Number(window.__leoidsRoundLength || 1200);
-  window.__leoidsHunterDelay = Number(window.__leoidsHunterDelay || 120);
+  if (!window.leoidsSystem) return;
 
-  if ($("leoids-round-length")) {
-    $("leoids-round-length").value = String(window.__leoidsRoundLength);
-  }
-
-  if ($("leoids-hunter-delay")) {
-    $("leoids-hunter-delay").value = String(window.__leoidsHunterDelay);
-  }
-
-  if ($("leoids-status")) {
-    $("leoids-status").innerText =
-      "LEOIDs ready. Choose Hunter or Runner, set the timers, then start the round.";
-  }
-
-  showModal("leoids-modal");
-  speakText("LEOIDs game panel opened.");
+  window.leoidsSystem.openSetupPanel();
 }
 
 function wireButtons() {
