@@ -2171,3 +2171,44 @@ input[type="range"] {
   color: var(--gold);
   text-align: right;
 }
+
+.leoids-map-tools {
+  position: fixed;
+  left: 50%;
+  bottom: 112px;
+  transform: translateX(-50%);
+  z-index: 9000;
+  display: grid;
+  gap: 8px;
+  width: min(92vw, 360px);
+  pointer-events: auto;
+}
+
+.leoids-map-tools.hidden {
+  display: none !important;
+}
+
+.leoids-map-tools button {
+  min-height: 48px;
+  border-radius: 16px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+#btn-leoids-map-confirm-boundary {
+  background: linear-gradient(180deg, #ffe27c, #ffd54a);
+  color: #111;
+}
+
+#btn-leoids-map-confirm-base {
+  background: linear-gradient(180deg, #4da3ff, #173b6b);
+  color: #fff;
+}
+
+#btn-leoids-map-cancel {
+  background: #111827;
+  color: #fff;
+}
+
