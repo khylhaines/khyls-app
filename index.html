@@ -801,9 +801,9 @@
       </button>
     </div>
 
-   <div id="leoids-modal" class="full-modal leoids-modal">
+  <div id="leoids-modal" class="full-modal leoids-modal">
   <div class="modal-header">
-    <h2 style="color: var(--gold)">🏃 LEOIDS BATTLE MAP</h2>
+    <h2 style="color: var(--gold)">LEOIDS BATTLE MAP</h2>
     <button
       type="button"
       class="close-x"
@@ -815,14 +815,23 @@
   </div>
 
   <div class="settings-card">
-    <h3>BOUNDARY SETUP</h3>
+    <h3>BOUNDARY BUILDER</h3>
     <div class="settings-mini">
-      Set the battle zone before the round starts. This is the play area for
-      Hunters and Runners.
+      Choose circle mode for quick setup, or street boundary mode to build a
+      custom play area around roads, parks, and safe zones.
+    </div>
+
+    <div class="pill-row" style="margin-top: 12px">
+      <button class="pill active" id="btn-leoids-boundary-circle" type="button">
+        CIRCLE
+      </button>
+      <button class="pill" id="btn-leoids-boundary-polygon" type="button">
+        STREET BOUNDARY
+      </button>
     </div>
 
     <div style="margin-top: 14px">
-      <div class="case-label">Boundary Size</div>
+      <div class="case-label">Circle Boundary Size</div>
       <select id="leoids-boundary-size">
         <option value="100">Small battle zone - 100m</option>
         <option value="200" selected>Normal battle zone - 200m</option>
@@ -837,17 +846,61 @@
       type="button"
       style="margin-top: 14px"
     >
-      SET BOUNDARY HERE
+      SET CIRCLE HERE
+    </button>
+
+    <button
+      class="win-btn"
+      id="btn-leoids-add-point"
+      type="button"
+      style="background: #172033; color: #fff; margin-top: 10px"
+    >
+      ADD STREET POINT HERE
+    </button>
+
+    <button
+      class="win-btn"
+      id="btn-leoids-undo-point"
+      type="button"
+      style="background: #222; color: #fff; margin-top: 10px"
+    >
+      UNDO LAST POINT
     </button>
 
     <button
       class="win-btn"
       id="btn-leoids-clear-boundary"
       type="button"
-      style="background: #222; color: #fff; margin-top: 10px"
+      style="background: #111; color: #fff; margin-top: 10px"
     >
       CLEAR BOUNDARY
     </button>
+  </div>
+
+  <div class="settings-card">
+    <h3>JAIL / BASE</h3>
+    <div class="settings-mini">
+      Set the jail/base point. Tagged runners go here. Free runners can rescue
+      teammates by reaching this point.
+    </div>
+
+    <button
+      class="win-btn"
+      id="btn-leoids-set-base"
+      type="button"
+      style="margin-top: 14px"
+    >
+      SET JAIL / BASE HERE
+    </button>
+
+    <div style="margin-top: 14px">
+      <div class="case-label">Jail/Base Radius</div>
+      <select id="leoids-base-radius">
+        <option value="10">10m tight base</option>
+        <option value="15" selected>15m normal base</option>
+        <option value="25">25m easy rescue base</option>
+      </select>
+    </div>
   </div>
 
   <div class="settings-card">
@@ -883,6 +936,15 @@
       </select>
     </div>
 
+    <div style="margin-top: 12px">
+      <div class="case-label">Tag Detection Radius</div>
+      <select id="leoids-tag-radius">
+        <option value="5">5m hard tag</option>
+        <option value="10" selected>10m normal tag</option>
+        <option value="15">15m easy tag</option>
+      </select>
+    </div>
+
     <button
       class="win-btn"
       id="btn-leoids-start"
@@ -896,7 +958,7 @@
   <div class="settings-card">
     <h3>BATTLE STATUS</h3>
     <div id="leoids-status" class="settings-mini">
-      Set a boundary, choose a role, then start the round.
+      Set a boundary, set jail/base, choose a role, then start.
     </div>
   </div>
 
@@ -908,6 +970,7 @@
     CLOSE
   </button>
 </div>
+
 
 
     <div id="home-modal" class="full-modal">
