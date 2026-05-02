@@ -700,6 +700,19 @@ function setBoundaryMode(mode = "circle", announce = true) {
       setTagRadius(Number(e.target.value || DEFAULT_TAG_RADIUS));
     });
 
+$("btn-leoids-confirm-boundary")?.addEventListener("click", () => {
+  if (!hasValidBoundary()) {
+    alert("Street boundary needs at least 3 points.");
+    speakText?.("Street boundary needs at least three points.");
+    return;
+  }
+
+  disableMapPointAdding();
+  showActionButton?.(false);
+  openSetupPanel();
+  speakText?.("Boundary confirmed.");
+});
+    
     $("btn-leoids-set-boundary")?.addEventListener("click", setCircleBoundaryHere);
     $("btn-leoids-add-point")?.addEventListener("click", addStreetBoundaryPointHere);
     $("btn-leoids-undo-point")?.addEventListener("click", undoStreetBoundaryPoint);
