@@ -203,37 +203,40 @@ export function createLeoidsSystem({
   }
 
   function openSetupPanel() {
-    enterBattleMap();
-    disableMapPointAdding();
-    hideLeoidsMapControls();
-    leoidsState.mapMode = "none";
+  enterBattleMap();
+  disableMapPointAdding();
+  hideLeoidsMapControls();
+  leoidsState.mapMode = "none";
 
-    if ($("leoids-round-length")) {
-      $("leoids-round-length").value = String(leoidsState.roundTime);
-    }
-
-    if ($("leoids-hunter-delay")) {
-      $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
-    }
-
-    if ($("leoids-boundary-size")) {
-      $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
-    }
-
-    if ($("leoids-base-radius")) {
-      $("leoids-base-radius").value = String(leoidsState.baseRadius);
-    }
-
-    if ($("leoids-tag-radius")) {
-      $("leoids-tag-radius").value = String(leoidsState.tagRadius);
-    }
-
-    refreshBoundaryButtons();
-    renderPlayers();
-    updatePanel();
-
-    showModal?.("leoids-modal");
+  if ($("leoids-round-length")) {
+    $("leoids-round-length").value = String(leoidsState.roundTime);
   }
+
+  if ($("leoids-hunter-delay")) {
+    $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
+  }
+
+  if ($("leoids-boundary-size")) {
+    $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
+  }
+
+  if ($("leoids-base-radius")) {
+    $("leoids-base-radius").value = String(leoidsState.baseRadius);
+  }
+
+  if ($("leoids-tag-radius")) {
+    $("leoids-tag-radius").value = String(leoidsState.tagRadius);
+  }
+
+  refreshBoundaryButtons();
+  renderPlayers();
+  updatePanel();
+
+  showModal?.("leoids-modal");
+
+  // IMPORTANT: wire buttons AFTER the modal is open
+  wirePanelButtons();
+}
 
   function closeSetupPanel() {
     closeModal?.("leoids-modal");
@@ -1350,80 +1353,97 @@ if (!leoidsState.basePoint) {
   }
 
 function wirePanelButtons() {
-  $("btn-leoids-close")?.addEventListener("click", closeSetupPanel);
-  $("btn-leoids-close-x")?.addEventListener("click", closeSetupPanel);
+  const setClick = (id, fn) => {
+    const el = $(id);
+    if (!el) {
+      console.warn("Missing LEOIDS button:", id);
+      return;
+    }
 
-  $("btn-leoids-runner")?.addEventListener("click", () => setRole("runner"));
-  $("btn-leoids-hunter")?.addEventListener("click", () => setRole("hunter"));
+    el.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      fn();
+    };
+  };
 
-  $("btn-leoids-boundary-circle")?.addEventListener("click", () =>
-    setBoundaryMode("circle")
-  );
+  setClick("btn-leoids-close", closeSetupPanel);
+  setClick("btn-leoids-close-x", closeSetupPanel);
 
-  $("btn-leoids-boundary-polygon")?.addEventListener("click", () =>
-    setBoundaryMode("polygon")
-  );
+  setClick("btn-leoids-runner", () => setRole("runner"));
+  setClick("btn-leoids-hunter", () => setRole("hunter"));
 
-  $("leoids-round-length")?.addEventListener("change", (e) => {
-    setRoundLength(Number(e.target.value || DEFAULT_ROUND_SECONDS));
+  setClick("btn-leoids-boundary-circle", () => {
+    setBoundaryMode("circle");
   });
 
-  $("leoids-hunter-delay")?.addEventListener("change", (e) => {
-    setHunterDelay(Number(e.target.value || DEFAULT_HUNTER_DELAY_SECONDS));
+  setClick("btn-leoids-boundary-polygon", () => {
+    setBoundaryMode("polygon");
   });
 
-  $("leoids-boundary-size")?.addEventListener("change", (e) => {
-    setBoundaryRadius(Number(e.target.value || DEFAULT_BOUNDARY_RADIUS));
-  });
+  const roundLength = $("leoids-round-length");
+  if (roundLength) {
+    roundLength.onchange = (e) => {
+      setRoundLength(Number(e.target.value || DEFAULT_ROUND_SECONDS));
+    };
+  }
 
-  $("leoids-base-radius")?.addEventListener("change", (e) => {
-    setBaseRadius(Number(e.target.value || DEFAULT_BASE_RADIUS));
-  });
+  const hunterDelay = $("leoids-hunter-delay");
+  if (hunterDelay) {
+    hunterDelay.onchange = (e) => {
+      setHunterDelay(Number(e.target.value || DEFAULT_HUNTER_DELAY_SECONDS));
+    };
+  }
 
-  $("leoids-tag-radius")?.addEventListener("change", (e) => {
-    setTagRadius(Number(e.target.value || DEFAULT_TAG_RADIUS));
-  });
+  const boundarySize = $("leoids-boundary-size");
+  if (boundarySize) {
+    boundarySize.onchange = (e) => {
+      setBoundaryRadius(Number(e.target.value || DEFAULT_BOUNDARY_RADIUS));
+    };
+  }
 
-  $("btn-leoids-set-boundary")?.addEventListener("click", setCircleBoundaryHere);
-  $("btn-leoids-add-point")?.addEventListener("click", addStreetBoundaryPointHere);
-  $("btn-leoids-undo-point")?.addEventListener("click", undoStreetBoundaryPoint);
-  $("btn-leoids-confirm-boundary")?.addEventListener("click", confirmBoundary);
-  $("btn-leoids-clear-boundary")?.addEventListener("click", clearBoundaryFull);
-  $("btn-leoids-set-base")?.addEventListener("click", setBaseHere);
+  const baseRadius = $("leoids-base-radius");
+  if (baseRadius) {
+    baseRadius.onchange = (e) => {
+      setBaseRadius(Number(e.target.value || DEFAULT_BASE_RADIUS));
+    };
+  }
 
-  $("btn-leoids-map-confirm-boundary")?.addEventListener(
-    "click",
-    confirmBoundaryFromMap
-  );
+  const tagRadius = $("leoids-tag-radius");
+  if (tagRadius) {
+    tagRadius.onchange = (e) => {
+      setTagRadius(Number(e.target.value || DEFAULT_TAG_RADIUS));
+    };
+  }
 
-  $("btn-leoids-map-confirm-base")?.addEventListener(
-    "click",
-    confirmBaseFromMap
-  );
+  setClick("btn-leoids-set-boundary", setCircleBoundaryHere);
 
-  $("btn-leoids-map-undo")?.addEventListener("click", () => {
-    undoStreetBoundaryPoint();
+  setClick("btn-leoids-add-point", () => {
+    leoidsState.mapMode = "boundary";
+    closeModal?.("leoids-modal");
+    showActionButton?.(false);
     showLeoidsMapControls("boundary");
+    enableMapPointAdding();
+    speakText?.("Tap the map to add boundary points.");
   });
 
-  $("btn-leoids-map-back")?.addEventListener(
-    "click",
-    backToLeoidsPanelFromMap
-  );
+  setClick("btn-leoids-undo-point", undoStreetBoundaryPoint);
+  setClick("btn-leoids-confirm-boundary", confirmBoundary);
+  setClick("btn-leoids-clear-boundary", clearBoundaryFull);
 
-  $("btn-leoids-add-ai-runner")?.addEventListener("click", () =>
-    addAIPlayer("runner")
-  );
+  setClick("btn-leoids-set-base", setBaseHere);
 
-  $("btn-leoids-add-ai-hunter")?.addEventListener("click", () =>
-    addAIPlayer("hunter")
-  );
+  setClick("btn-leoids-add-ai-runner", () => addAIPlayer("runner"));
+  setClick("btn-leoids-add-ai-hunter", () => addAIPlayer("hunter"));
+  setClick("btn-leoids-reset-players", resetLocalPlayers);
 
-  $("btn-leoids-reset-players")?.addEventListener("click", resetLocalPlayers);
-  $("btn-leoids-tag")?.addEventListener("click", tagNearestRunner);
-  $("btn-leoids-rescue")?.addEventListener("click", rescueJailedRunners);
-  $("btn-leoids-start")?.addEventListener("click", startRound);
-  $("btn-leoids-end")?.addEventListener("click", () => endRound("manual"));
+  setClick("btn-leoids-tag", tagNearestRunner);
+  setClick("btn-leoids-rescue", rescueJailedRunners);
+
+  setClick("btn-leoids-start", startRound);
+  setClick("btn-leoids-end", () => endRound("manual"));
+
+  console.log("LEOIDS buttons wired");
 }
 
 
