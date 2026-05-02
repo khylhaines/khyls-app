@@ -801,81 +801,114 @@
       </button>
     </div>
 
-    <div id="leoids-modal" class="full-modal">
-      <div class="modal-header">
-        <h2 style="color: var(--gold)">🏃 LEOIDS GAME</h2>
-        <button
-          type="button"
-          class="close-x"
-          id="btn-leoids-close-x"
-          aria-label="Close LEOIDS"
-        >
-          ✕
-        </button>
-      </div>
+   <div id="leoids-modal" class="full-modal leoids-modal">
+  <div class="modal-header">
+    <h2 style="color: var(--gold)">🏃 LEOIDS BATTLE MAP</h2>
+    <button
+      type="button"
+      class="close-x"
+      id="btn-leoids-close-x"
+      aria-label="Close LEOIDS"
+    >
+      ✕
+    </button>
+  </div>
 
-      <div class="settings-card">
-        <h3>ROUND SETUP</h3>
-        <div class="settings-mini">
-          Hunters chase runners. Runners survive the timer or rescue jailed
-          teammates.
-        </div>
+  <div class="settings-card">
+    <h3>BOUNDARY SETUP</h3>
+    <div class="settings-mini">
+      Set the battle zone before the round starts. This is the play area for
+      Hunters and Runners.
+    </div>
 
-        <div class="pill-row" style="margin-top: 12px">
-          <button class="pill active" id="btn-leoids-runner" type="button">
-            🏃 RUNNER
-          </button>
-          <button class="pill" id="btn-leoids-hunter" type="button">
-            🐺 HUNTER
-          </button>
-        </div>
+    <div style="margin-top: 14px">
+      <div class="case-label">Boundary Size</div>
+      <select id="leoids-boundary-size">
+        <option value="100">Small battle zone - 100m</option>
+        <option value="200" selected>Normal battle zone - 200m</option>
+        <option value="350">Large battle zone - 350m</option>
+        <option value="500">Huge battle zone - 500m</option>
+      </select>
+    </div>
 
-        <div style="margin-top: 14px">
-          <div class="case-label">Round Length</div>
-          <select id="leoids-round-length">
-            <option value="600">10 minutes</option>
-            <option value="900">15 minutes</option>
-            <option value="1200" selected>20 minutes</option>
-            <option value="1800">30 minutes</option>
-          </select>
-        </div>
+    <button
+      class="win-btn"
+      id="btn-leoids-set-boundary"
+      type="button"
+      style="margin-top: 14px"
+    >
+      SET BOUNDARY HERE
+    </button>
 
-        <div style="margin-top: 12px">
-          <div class="case-label">Hunter Delay</div>
-          <select id="leoids-hunter-delay">
-            <option value="30">30 seconds</option>
-            <option value="60">1 minute</option>
-            <option value="120" selected>2 minutes</option>
-            <option value="180">3 minutes</option>
-            <option value="300">5 minutes</option>
-          </select>
-        </div>
+    <button
+      class="win-btn"
+      id="btn-leoids-clear-boundary"
+      type="button"
+      style="background: #222; color: #fff; margin-top: 10px"
+    >
+      CLEAR BOUNDARY
+    </button>
+  </div>
 
-        <button
-          class="win-btn"
-          id="btn-leoids-start"
-          type="button"
-          style="margin-top: 14px"
-        >
-          START LEOIDS ROUND
-        </button>
-      </div>
+  <div class="settings-card">
+    <h3>ROUND SETUP</h3>
 
-      <div class="settings-card">
-        <h3>ROUND STATUS</h3>
-        <div id="leoids-status" class="settings-mini">
-          Choose a role and start the round.
-        </div>
-      </div>
-
-      <button
-        class="win-btn"
-        id="btn-leoids-close"
-        style="background: #222; color: #fff; margin-top: 16px"
-      >
-        CLOSE
+    <div class="pill-row" style="margin-top: 12px">
+      <button class="pill active" id="btn-leoids-runner" type="button">
+        RUNNER
+      </button>
+      <button class="pill" id="btn-leoids-hunter" type="button">
+        HUNTER
       </button>
     </div>
+
+    <div style="margin-top: 14px">
+      <div class="case-label">Round Length</div>
+      <select id="leoids-round-length">
+        <option value="600">10 minutes</option>
+        <option value="900">15 minutes</option>
+        <option value="1200" selected>20 minutes</option>
+        <option value="1800">30 minutes</option>
+      </select>
+    </div>
+
+    <div style="margin-top: 12px">
+      <div class="case-label">Hunter Delay</div>
+      <select id="leoids-hunter-delay">
+        <option value="30">30 seconds</option>
+        <option value="60">1 minute</option>
+        <option value="120" selected>2 minutes</option>
+        <option value="180">3 minutes</option>
+        <option value="300">5 minutes</option>
+      </select>
+    </div>
+
+    <button
+      class="win-btn"
+      id="btn-leoids-start"
+      type="button"
+      style="margin-top: 14px"
+    >
+      START LEOIDS ROUND
+    </button>
+  </div>
+
+  <div class="settings-card">
+    <h3>BATTLE STATUS</h3>
+    <div id="leoids-status" class="settings-mini">
+      Set a boundary, choose a role, then start the round.
+    </div>
+  </div>
+
+  <button
+    class="win-btn"
+    id="btn-leoids-close"
+    style="background: #222; color: #fff; margin-top: 16px"
+  >
+    CLOSE
+  </button>
+</div>
+
 
     <div id="home-modal" class="full-modal">
       <div class="modal-header">
