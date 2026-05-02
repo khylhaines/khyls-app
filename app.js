@@ -3992,6 +3992,7 @@ function selectGameMode(mode) {
   activeGameMode = mode;
 
   if (mode === "explorer") {
+    leoidsSystem?.exitBattleMap?.();
     showActionButton(false);
     updateStartButtons();
     refreshAllPinMarkers();
@@ -4000,6 +4001,7 @@ function selectGameMode(mode) {
   }
 
   if (mode === "territory") {
+    leoidsSystem?.exitBattleMap?.();
     showActionButton(false);
     updateStartButtons();
     refreshAllPinMarkers();
@@ -4012,10 +4014,14 @@ function selectGameMode(mode) {
     updateStartButtons();
     refreshAllPinMarkers();
 
+    console.log("Opening LEOIDS:", leoidsSystem);
+
     if (leoidsSystem?.openSetupPanel) {
       leoidsSystem.openSetupPanel();
+      leoidsSystem.wirePanelButtons?.();
     } else {
       showModal("leoids-modal");
+      console.warn("LEOIDS system missing, opened modal only.");
     }
 
     speakText("LEOIDS battle map opened.");
@@ -4026,9 +4032,20 @@ function selectGameMode(mode) {
 function openLeoidsPanel() {
   showActionButton(false);
 
-  if (!window.leoidsSystem) return;
+  if (leoidsSystem?.openSetupPanel) {
+    leoidsSystem.openSetupPanel();
+    leoidsSystem.wirePanelButtons?.();
+    return;
+  }
 
-  window.leoidsSystem.openSetupPanel();
+  if (window.leoidsSystem?.openSetupPanel) {
+    window.leoidsSystem.openSetupPanel();
+    window.leoidsSystem.wirePanelButtons?.();
+    return;
+  }
+
+  showModal("leoids-modal");
+  console.warn("LEOIDS panel opened without system wiring.");
 }
 
 function wireButtons() {
@@ -4612,9 +4629,7 @@ function setupSystems() {
     $,
   });
 
-  if (leoidsSystem?.wirePanelButtons) {
-    leoidsSystem.wirePanelButtons();
-  }
+  window.leoidsSystem = leoidsSystem;
 
   bossSystem = createBossSystem({
     getState: () => state,
@@ -4646,40 +4661,6 @@ function setupSystems() {
   });
 }
 
-
-gameModes.explorer = {
-  openPin(pin) {
-    currentPin = pin;
-    showActionButton(true);
-
-    const status = getCaptureStatus(pin);
-    updateCaptureText(
-      status.fullyCaptured
-        ? `${pin.n} • CAPTURED • REPLAY`
-        : `${pin.n} • ${status.completedCount}/${status.required} CAPTURED`
-    );
-
-    speakText(
-      status.fullyCaptured
-        ? `${pin.n}. Fully captured. Replay available.`
-        : `${pin.n}. ${status.completedCount} out of ${status.required} captured.`
-    );
-  },
-};
-
-gameModes.territory = {
-  openPin(pin) {
-    openTerritoryCommandPanel(pin);
-  },
-};
-
-gameModes.leoids = {
-  openPin() {
-    currentPin = null;
-    showActionButton(false);
-    leoidsSystem?.openSetupPanel?.();
-  },
-};
 /* ============================
    BOOT
 ============================ */
