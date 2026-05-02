@@ -4599,7 +4599,11 @@ function setupSystems() {
     refreshAllPinMarkers,
     speakText,
   });
-  
+
+khyl haines <khylhaines@gmail.com>
+10:59 PM (0 minutes ago)
+to me
+
 leoidsSystem = createLeoidsSystem({
   getState: () => state,
   saveState,
@@ -4612,7 +4616,10 @@ leoidsSystem = createLeoidsSystem({
   $,
 });
 
-leoidsSystem.wirePanelButtons();
+// ✅ ONLY call if it exists
+if (leoidsSystem && leoidsSystem.wirePanelButtons) {
+  leoidsSystem.wirePanelButtons();
+}
 
   bossSystem = createBossSystem({
     getState: () => state,
