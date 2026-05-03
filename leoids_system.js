@@ -105,6 +105,100 @@ export function createLeoidsSystem({
     return getMap?.() || null;
   }
 
+function isPointInsideBoundary(point) {
+  if (!point) return false;
+
+  if (leoidsState.boundaryMode === "circle") {
+    if (!leoidsState.boundaryCenter) return false;
+
+    return (
+      distanceMeters(point, leoidsState.boundaryCenter) <=
+      Number(leoidsState.boundaryRadius || DEFAULT_BOUNDARY_RADIUS)
+    );
+  }
+
+  if (leoidsState.boundaryMode === "polygon") {
+    if (!leoidsState.boundaryPoints.length || leoidsState.boundaryPoints.length < 3) {
+      return false;
+    }
+
+    let inside = false;
+    const x = Number(point.lng);
+    const y = Number(point.lat);
+
+    for (
+      let i = 0, j = leoidsState.boundaryPoints.length - 1;
+      i < leoidsState.boundaryPoints.length;
+      j = i++
+    ) {
+      const xi = Number(leoidsState.boundaryPoints[i].lng);
+      const yi = Number(leoidsState.boundaryPoints[i].lat);
+      const xj = Number(leoidsState.boundaryPoints[j].lng);
+      const yj = Number(leoidsState.boundaryPoints[j].lat);
+
+      const intersect =
+        yi > y !== yj > y &&
+        x < ((xj - xi) * (y - yi)) / ((yj - yi) || 0.0000001) + xi;
+
+      if (intersect) inside = !inside;
+    }
+
+    return inside;
+  }
+
+  return false;
+}
+
+function getDistanceToCircleEdge(point) {
+  if (!point || !leoidsState.boundaryCenter) return Infinity;
+
+  const distanceFromCenter = distanceMeters(point, leoidsState.boundaryCenter);
+  return Number(leoidsState.boundaryRadius || DEFAULT_BOUNDARY_RADIUS) - distanceFromCenter;
+}
+
+function checkBoundaryRules() {
+  if (!leoidsState.active) return;
+  if (!hasValidBoundary()) return;
+
+  const now = Date.now();
+
+  leoidsState.players.forEach((player) => {
+    if (!player.position) return;
+    if (player.status === "jailed") return;
+
+    player.lastBoundaryWarningAt = player.lastBoundaryWarningAt || 0;
+    player.lastBoundaryPenaltyAt = player.lastBoundaryPenaltyAt || 0;
+
+    const inside = isPointInsideBoundary(player.position);
+
+    if (!inside) {
+      if (now - player.lastBoundaryPenaltyAt > 10000) {
+        player.lastBoundaryPenaltyAt = now;
+
+        player.score = Math.max(0, Number(player.score || 0) - 25);
+        leoidsState.score = Math.max(0, Number(leoidsState.score || 0) - 25);
+
+        speakText?.(`${player.name} is out of bounds. Twenty five points deducted.`);
+      }
+
+      return;
+    }
+
+    if (leoidsState.boundaryMode === "circle") {
+      const edgeDistance = getDistanceToCircleEdge(player.position);
+
+      if (edgeDistance <= 20 && now - player.lastBoundaryWarningAt > 12000) {
+        player.lastBoundaryWarningAt = now;
+        speakText?.(`${player.name}, warning. You are close to the boundary.`);
+      }
+    }
+  });
+
+  renderPlayers();
+  updatePanel();
+}
+
+  
   function distanceMeters(a, b) {
     if (!a || !b) return Infinity;
 
@@ -1267,12 +1361,13 @@ export function createLeoidsSystem({
 
   leoidsState.intervalId = setInterval(tickRound, 1000);
 
-  leoidsState.aiIntervalId = setInterval(() => {
-    moveAIPlayers();
-    runAITagChecks();
-    renderPlayers();
-    updatePanel();
-  }, 2500);
+leoidsState.aiIntervalId = setInterval(() => {
+  moveAIPlayers();
+  checkBoundaryRules();
+  runAITagChecks();
+  renderPlayers();
+  updatePanel();
+}, 2500);
 
   saveState?.();
 }
