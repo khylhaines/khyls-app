@@ -1601,6 +1601,10 @@ function rememberQuestionTags(tags = []) {
 }
 
 function getCurrentPins() {
+  if (activeGameMode === "leoids") {
+    return [];
+  }
+
   if (state.activePack === "adult") {
     if (!state.activeAdultCategory) return ADULT_PINS.filter(hasValidCoords);
     return ADULT_PINS.filter(
@@ -3993,18 +3997,26 @@ function selectGameMode(mode) {
 
   if (mode === "explorer") {
     leoidsSystem?.exitBattleMap?.();
+
     showActionButton(false);
     updateStartButtons();
+
+    resetMap();
     refreshAllPinMarkers();
+
     speakText("Explorer mode selected.");
     return;
   }
 
   if (mode === "territory") {
     leoidsSystem?.exitBattleMap?.();
+
     showActionButton(false);
     updateStartButtons();
+
+    resetMap();
     refreshAllPinMarkers();
+
     speakText("Territory mode selected.");
     return;
   }
@@ -4012,21 +4024,38 @@ function selectGameMode(mode) {
   if (mode === "leoids") {
     showActionButton(false);
     updateStartButtons();
-    refreshAllPinMarkers();
 
-    console.log("Opening LEOIDS:", leoidsSystem);
+    Object.values(activeMarkers).forEach((marker) => {
+      try {
+        map?.removeLayer(marker);
+      } catch {}
+    });
+
+    activeMarkers = {};
+    currentPin = null;
+    lastTerritoryAutoOpenPinId = null;
+
+    if (typeof renderTerritoryZones === "function") {
+      territoryZoneLayers.forEach((layer) => {
+        try {
+          map?.removeLayer(layer);
+        } catch {}
+      });
+
+      territoryZoneLayers = [];
+    }
 
     if (leoidsSystem?.openSetupPanel) {
       leoidsSystem.openSetupPanel();
       leoidsSystem.wirePanelButtons?.();
     } else {
       showModal("leoids-modal");
-      console.warn("LEOIDS system missing, opened modal only.");
     }
 
     speakText("LEOIDS battle map opened.");
   }
 }
+
 
 
 function openLeoidsPanel() {
