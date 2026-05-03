@@ -2,7 +2,7 @@
 // Barrow Quest - LEOIDS Supabase Multiplayer Layer
 
 const LEOIDS_SUPABASE_CONFIG = {
-  url: "https://tdrcnvtnqedzommffmq.supabase.co",
+  url: "https://tdrcnvtnqedzommfffmq.supabase.co",
   key: "sb_publishable_YPSe_GdMCdfteff1-A-G4g_Y7cvA5Eb"
 };
 
