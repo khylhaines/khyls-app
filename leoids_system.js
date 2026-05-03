@@ -2121,6 +2121,177 @@ export function createLeoidsSystem({
       `Coins earned: ${leoidsState.coins}`;
   }
 
+async function openOnlineSessionBrowser() {
+  const supabase = window.LEOIDSSupabase;
+
+  if (!supabase) {
+    alert("Supabase is not loaded.");
+    return;
+  }
+
+  if (!supabase.client && typeof supabase.init === "function") {
+    supabase.init();
+  }
+
+  const sessions = await supabase.listPublicSessions();
+
+  const old = document.getElementById("leoids-session-browser");
+  if (old) old.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "leoids-session-browser";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.zIndex = "999999";
+  modal.style.background = "rgba(0,0,0,.88)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "18px";
+
+  const rows = sessions.length
+    ? sessions
+        .map(
+          (session) => `
+            <button
+              class="leoids-session-join-btn"
+              data-session-id="${session.id}"
+              data-session-name="${session.name || "LEOIDS Game"}"
+              type="button"
+              style="
+                width:100%;
+                text-align:left;
+                margin-top:10px;
+                padding:14px;
+                border-radius:16px;
+                border:1px solid rgba(255,213,74,.55);
+                background:rgba(255,255,255,.08);
+                color:white;
+                font-weight:800;
+              "
+            >
+              <div style="font-size:16px;color:#ffd54a;">
+                ${session.name || "LEOIDS Game"}
+              </div>
+              <div style="font-size:13px;opacity:.85;margin-top:4px;">
+                Host: ${session.host_name || "Unknown"} • Players: ${
+            session.player_count || 0
+          }/${session.max_players || 12} • ${session.status || "lobby"}
+              </div>
+            </button>
+          `
+        )
+        .join("")
+    : `<div style="opacity:.8;margin-top:12px;">No public games found.</div>`;
+
+  modal.innerHTML = `
+    <div style="
+      width:min(94vw,560px);
+      max-height:86vh;
+      overflow:auto;
+      border:2px solid rgba(255,213,74,.85);
+      border-radius:26px;
+      background:linear-gradient(180deg,#171b2b,#06070b);
+      color:white;
+      padding:22px;
+      box-shadow:0 0 35px rgba(255,213,74,.25);
+    ">
+      <h2 style="margin:0;color:#ffd54a;">Browse LEOIDS Games</h2>
+      <p style="opacity:.8;margin:8px 0 14px;">
+        Tap a public game to join it.
+      </p>
+
+      <button id="btn-leoids-refresh-sessions" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:14px;
+        background:#202a3c;
+        color:white;
+        font-weight:900;
+        margin-bottom:8px;
+      ">
+        REFRESH GAMES
+      </button>
+
+      <button id="btn-leoids-host-public-session" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:14px;
+        background:#ffd54a;
+        color:#111;
+        font-weight:900;
+        margin-bottom:10px;
+      ">
+        HOST NEW PUBLIC GAME
+      </button>
+
+      <div>${rows}</div>
+
+      <button id="btn-leoids-close-session-browser" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:14px;
+        background:#111827;
+        color:white;
+        font-weight:900;
+        margin-top:16px;
+      ">
+        CLOSE
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document
+    .getElementById("btn-leoids-close-session-browser")
+    ?.addEventListener("click", () => modal.remove());
+
+  document
+    .getElementById("btn-leoids-refresh-sessions")
+    ?.addEventListener("click", () => {
+      modal.remove();
+      openOnlineSessionBrowser();
+    });
+
+  document
+    .getElementById("btn-leoids-host-public-session")
+    ?.addEventListener("click", async () => {
+      const name = prompt("Game name?", "Barrow LEOIDS Game") || "Barrow LEOIDS Game";
+      const hostName = prompt("Your name?", "Kyle") || "Host";
+
+      const session = await createOnlineSession(name);
+
+      if (!session) return;
+
+      await joinOnlineSession({
+        sessionId: session.id,
+        displayName: hostName,
+        role: leoidsState.role || "runner",
+      });
+
+      modal.remove();
+      openSetupPanel();
+    });
+
+  modal.querySelectorAll(".leoids-session-join-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const sessionId = btn.dataset.sessionId;
+      const displayName = prompt("Your name?", "Kyle") || "Player";
+
+      await joinOnlineSession({
+        sessionId,
+        displayName,
+        role: leoidsState.role || "runner",
+      });
+
+      modal.remove();
+      openSetupPanel();
+    });
+  });
+}
+
+  
   function wirePanelButtons() {
     const setClick = (id, fn) => {
       const el = $(id);
@@ -2139,6 +2310,7 @@ export function createLeoidsSystem({
     setClick("btn-leoids-runner", () => setRole("runner"));
     setClick("btn-leoids-hunter", () => setRole("hunter"));
 
+    setClick("btn-leoids-browse-games", openOnlineSessionBrowser);
     setClick("btn-leoids-boundary-circle", () => {
       setBoundaryMode("circle");
     });
@@ -2253,6 +2425,7 @@ export function createLeoidsSystem({
     startGpsOnlineSync,
     stopGpsOnlineSync,
 
+    openOnlineSessionBrowser,
     startRound,
     endRound,
     updatePanel,
