@@ -754,22 +754,28 @@ function confirmBaseFromMap() {
       .addTo(map);
   }
 
-  function drawPlayerMarkers() {
-    const map = getMapSafe();
-    if (!map) return;
+leoidsState.baseMarker.on("click", () => {
+  handleBaseTap();
+});
+  
+ function drawPlayerMarkers() {
+  const map = getMapSafe();
+  if (!map) return;
 
-    leoidsState.playerMarkers.forEach((marker) => {
-      try {
-        map.removeLayer(marker);
-      } catch {}
-    });
+  leoidsState.playerMarkers.forEach((marker) => {
+    try {
+      map.removeLayer(marker);
+    } catch {}
+  });
 
-    leoidsState.playerMarkers = [];
+  leoidsState.playerMarkers = [];
 
-    leoidsState.players.forEach((player) => {
-      if (!player.position) return;
+  leoidsState.players.forEach((player) => {
+    if (!player.position) return;
 
-      const marker = L.circleMarker([player.position.lat, player.position.lng], {
+    const marker = L.circleMarker(
+      [player.position.lat, player.position.lng],
+      {
         radius: player.isAI ? 8 : 10,
         color: player.role === "hunter" ? "#ff4d4d" : "#4da3ff",
         weight: 4,
@@ -780,20 +786,86 @@ function confirmBaseFromMap() {
             ? "#ff4d4d"
             : "#4da3ff",
         fillOpacity: 0.9,
-      })
-        .bindTooltip(
-          `${getPlayerIcon(player)} ${player.name} • ${player.role} • ${player.status}`,
-          {
-            permanent: false,
-            direction: "top",
-          }
-        )
-        .addTo(map);
+      }
+    )
+      .bindTooltip(
+        `${getPlayerIcon(player)} ${player.name} • ${player.role} • ${player.status}`,
+        {
+          permanent: false,
+          direction: "top",
+        }
+      )
+      .addTo(map);
 
-      leoidsState.playerMarkers.push(marker);
+    // 🔥 NEW: TAP PLAYER INTERACTION
+    marker.on("click", () => {
+      handlePlayerTap(player);
     });
+
+    leoidsState.playerMarkers.push(marker);
+  });
+}
+
+function handlePlayerTap(targetPlayer) {
+  const local = getLocalPlayer();
+  if (!local || !targetPlayer) return;
+
+  if (!local.position || !targetPlayer.position) return;
+
+  const distance = distanceMeters(local.position, targetPlayer.position);
+
+  // 👉 TAGGING
+  if (
+    local.role === "hunter" &&
+    targetPlayer.role === "runner" &&
+    targetPlayer.status === "free"
+  ) {
+    if (!leoidsState.huntersReleased) {
+      speakText?.("Hunters not released yet.");
+      return;
+    }
+
+function handleBaseTap() {
+  const local = getLocalPlayer();
+  if (!local || !leoidsState.basePoint) return;
+
+  if (local.role !== "runner") {
+    speakText?.("Only runners can rescue.");
+    return;
   }
 
+  const distance = distanceMeters(local.position, leoidsState.basePoint);
+
+  if (distance > leoidsState.baseRadius) {
+    speakText?.("Move closer to base.");
+    return;
+  }
+
+  const jailed = leoidsState.players.filter(
+    (p) => p.role === "runner" && p.status === "jailed"
+  );
+
+  if (!jailed.length) {
+    speakText?.("No one to rescue.");
+    return;
+  }
+
+  jailed.forEach((runner) => {
+    runner.status = "free";
+    runner.position = randomNearbyPoint(leoidsState.basePoint, 15);
+  });
+
+  local.score += 75;
+  local.coins += 15;
+
+  drawPlayerMarkers();
+  renderPlayers();
+  updatePanel();
+
+  speakText?.("Runners rescued.");
+}
+
+    
   function clearCircleBoundary() {
     const map = getMapSafe();
 
