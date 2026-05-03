@@ -2248,3 +2248,22 @@ input[type="range"] {
   color: #fff;
 }
 
+.leoids-menu-btn {
+  position: fixed;
+  right: 18px;
+  bottom: 112px;
+  z-index: 50000;
+  min-height: 46px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 213, 74, 0.85);
+  background: linear-gradient(180deg, #111827, #05070b);
+  color: #ffd54a;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+}
+
+.leoids-menu-btn.hidden {
+  display: none !important;
+}
