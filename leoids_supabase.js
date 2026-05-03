@@ -1,9 +1,8 @@
 // leoids_supabase.js
 // Barrow Quest - LEOIDS Supabase Multiplayer Layer
-// Phase 1: connect, create/join session, sync player position, listen to players
 
 const LEOIDS_SUPABASE_CONFIG = {
- url: "https://tdrcnvtnqedzommffmq.supabase.co",
+  url: "https://tdrcnvtnqedzommffmq.supabase.co",
   key: "sb_publishable_YPSe_GdMCdfteff1-A-G4g_Y7cvA5Eb"
 };
 
@@ -22,16 +21,6 @@ const LEOIDSSupabase = {
       return false;
     }
 
-    if (
-      !LEOIDS_SUPABASE_CONFIG.url ||
-      LEOIDS_SUPABASE_CONFIG.url.includes("PASTE_") ||
-      !LEOIDS_SUPABASE_CONFIG.key ||
-      LEOIDS_SUPABASE_CONFIG.key.includes("PASTE_")
-    ) {
-      console.error("Supabase config missing. Add your project URL and publishable key.");
-      return false;
-    }
-
     this.client = window.supabase.createClient(
       LEOIDS_SUPABASE_CONFIG.url,
       LEOIDS_SUPABASE_CONFIG.key
@@ -42,8 +31,6 @@ const LEOIDSSupabase = {
   },
 
   async createSession(name = "Barrow LEOIDS Test Session") {
-    if (!this.client) return null;
-
     const { data, error } = await this.client
       .from("leoids_sessions")
       .insert({
@@ -64,8 +51,6 @@ const LEOIDSSupabase = {
   },
 
   async joinSession({ sessionId, displayName = "Player", role = "runner" }) {
-    if (!this.client) return null;
-
     this.sessionId = sessionId;
     this.playerName = displayName;
     this.playerRole = role;
@@ -94,7 +79,7 @@ const LEOIDSSupabase = {
   },
 
   async syncMyPosition(lat, lng, accuracy = null, heading = null) {
-    if (!this.client || !this.playerId) return false;
+    if (!this.playerId) return;
 
     const { error } = await this.client
       .from("leoids_players")
@@ -110,34 +95,14 @@ const LEOIDSSupabase = {
 
     if (error) {
       console.error("Failed to sync player position:", error);
-      return false;
     }
-
-    return true;
-  },
-
-  async loadPlayers() {
-    if (!this.client || !this.sessionId) return [];
-
-    const { data, error } = await this.client
-      .from("leoids_players")
-      .select("*")
-      .eq("session_id", this.sessionId);
-
-    if (error) {
-      console.error("Failed to load LEOIDS players:", error);
-      return [];
-    }
-
-    return data || [];
   },
 
   subscribeToPlayers(onChange) {
-    if (!this.client || !this.sessionId) return null;
+    if (!this.sessionId) return;
 
     if (this.playersChannel) {
       this.client.removeChannel(this.playersChannel);
-      this.playersChannel = null;
     }
 
     this.playersChannel = this.client
@@ -151,26 +116,18 @@ const LEOIDSSupabase = {
           filter: `session_id=eq.${this.sessionId}`
         },
         (payload) => {
-          console.log("LEOIDS player realtime change:", payload);
-
-          if (typeof onChange === "function") {
-            onChange(payload);
-          }
+          console.log("Realtime player update:", payload);
+          if (onChange) onChange(payload);
         }
       )
-      .subscribe((status) => {
-        console.log("LEOIDS players realtime status:", status);
-      });
+      .subscribe();
 
-    return this.playersChannel;
+    console.log("Subscribed to player updates.");
   },
 
   async leaveSession() {
-    if (!this.client) return;
-
     if (this.playersChannel) {
       await this.client.removeChannel(this.playersChannel);
-      this.playersChannel = null;
     }
 
     if (this.playerId) {
@@ -184,7 +141,6 @@ const LEOIDSSupabase = {
     this.playerId = null;
     this.playerName = null;
     this.playerRole = "runner";
-    this.remotePlayers = {};
   }
 };
 
