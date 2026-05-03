@@ -2862,7 +2862,7 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
     applyOnlineSessionConfig(session);
   }
 
-  await refreshLobbyScreen();
+  refreshLobbyScreen();
 
   if (leoidsState.lobbyRefreshIntervalId) {
     clearInterval(leoidsState.lobbyRefreshIntervalId);
