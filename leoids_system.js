@@ -2812,7 +2812,7 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
   Date.now() - (leoidsState.lastRescueAt || 0) > 3000
 ) {
   leoidsState.lastRescueAt = Date.now();
-  }, 2000);
+ 
 
   startOnlinePlayerSync();
   startOnlineSessionSync();
