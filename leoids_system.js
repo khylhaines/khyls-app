@@ -119,7 +119,10 @@ export function createLeoidsSystem({
 
     const x =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      Math.cos(lat1) *
+        Math.cos(lat2) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
 
     return R * (2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)));
   }
@@ -176,88 +179,86 @@ export function createLeoidsSystem({
     drawPlayerMarkers();
   }
 
-function enterBattleMap() {
-  showActionButton?.(false);
+  function enterBattleMap() {
+    showActionButton?.(false);
 
-  const mapEl = $("map");
-  if (mapEl) {
-    mapEl.classList.add("leoids-battle-map");
+    const mapEl = $("map");
+    if (mapEl) {
+      mapEl.classList.add("leoids-battle-map");
+    }
+
+    const menuBtn = $("leoids-menu-btn");
+    if (menuBtn) {
+      menuBtn.classList.remove("hidden");
+      menuBtn.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openSetupPanel();
+      };
+    }
+
+    refreshAllPinMarkers?.();
+    redrawAllMapObjects();
+    updatePanel();
   }
 
-  const menuBtn = $("leoids-menu-btn");
-  if (menuBtn) {
-    menuBtn.classList.remove("hidden");
-    menuBtn.onclick = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      openSetupPanel();
-    };
+  function exitBattleMap() {
+    stopTimer();
+    stopAI();
+    disableMapPointAdding();
+    hideLeoidsMapControls();
+    clearAllMapObjects();
+
+    leoidsState.mapMode = "none";
+    leoidsState.pendingBasePoint = null;
+
+    const mapEl = $("map");
+    if (mapEl) {
+      mapEl.classList.remove("leoids-battle-map");
+    }
+
+    const menuBtn = $("leoids-menu-btn");
+    if (menuBtn) {
+      menuBtn.classList.add("hidden");
+      menuBtn.onclick = null;
+    }
+
+    refreshAllPinMarkers?.();
   }
 
-  refreshAllPinMarkers?.();
-  redrawAllMapObjects();
-  updatePanel();
-}
+  function openSetupPanel() {
+    enterBattleMap();
+    disableMapPointAdding();
+    hideLeoidsMapControls();
+    leoidsState.mapMode = "none";
 
+    if ($("leoids-round-length")) {
+      $("leoids-round-length").value = String(leoidsState.roundTime);
+    }
 
- function exitBattleMap() {
-  stopTimer();
-  stopAI();
-  disableMapPointAdding();
-  hideLeoidsMapControls();
-  clearAllMapObjects();
+    if ($("leoids-hunter-delay")) {
+      $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
+    }
 
-  leoidsState.mapMode = "none";
-  leoidsState.pendingBasePoint = null;
+    if ($("leoids-boundary-size")) {
+      $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
+    }
 
-  const mapEl = $("map");
-  if (mapEl) {
-    mapEl.classList.remove("leoids-battle-map");
+    if ($("leoids-base-radius")) {
+      $("leoids-base-radius").value = String(leoidsState.baseRadius);
+    }
+
+    if ($("leoids-tag-radius")) {
+      $("leoids-tag-radius").value = String(leoidsState.tagRadius);
+    }
+
+    refreshBoundaryButtons();
+    renderPlayers();
+    updatePanel();
+
+    showModal?.("leoids-modal");
+    wirePanelButtons();
   }
-
-  const menuBtn = $("leoids-menu-btn");
-  if (menuBtn) {
-    menuBtn.classList.add("hidden");
-    menuBtn.onclick = null;
-  }
-
-  refreshAllPinMarkers?.();
-}
-
-
-function openSetupPanel() {
-  enterBattleMap();
-  disableMapPointAdding();
-  hideLeoidsMapControls();
-  leoidsState.mapMode = "none";
-
-  if ($("leoids-round-length")) {
-    $("leoids-round-length").value = String(leoidsState.roundTime);
-  }
-
-  if ($("leoids-hunter-delay")) {
-    $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
-  }
-
-  if ($("leoids-boundary-size")) {
-    $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
-  }
-
-  if ($("leoids-base-radius")) {
-    $("leoids-base-radius").value = String(leoidsState.baseRadius);
-  }
-
-  if ($("leoids-tag-radius")) {
-    $("leoids-tag-radius").value = String(leoidsState.tagRadius);
-  }
-
-  refreshBoundaryButtons();
-  renderPlayers();
-  updatePanel();
-
-  showModal?.("leoids-modal");
-  wirePanelButtons();
-}
 
   function closeSetupPanel() {
     closeModal?.("leoids-modal");
@@ -893,7 +894,7 @@ function openSetupPanel() {
     disableMapPointAdding();
 
     updatePanel();
-    speakText?.("LEOIDs boundary cleared.");
+    speakText?.("LEOIDS boundary cleared.");
   }
 
   function redrawAllMapObjects() {
@@ -1425,10 +1426,7 @@ function openSetupPanel() {
   function wirePanelButtons() {
     const setClick = (id, fn) => {
       const el = $(id);
-      if (!el) {
-        console.warn("Missing LEOIDS button:", id);
-        return;
-      }
+      if (!el) return;
 
       el.onclick = (event) => {
         event.preventDefault();
@@ -1507,9 +1505,6 @@ function openSetupPanel() {
     setClick("btn-leoids-add-ai-hunter", () => addAIPlayer("hunter"));
     setClick("btn-leoids-reset-players", resetLocalPlayers);
 
-    setClick("btn-leoids-tag", tagNearestRunner);
-    setClick("btn-leoids-rescue", rescueJailedRunners);
-
     setClick("btn-leoids-start", startRound);
     setClick("btn-leoids-end", () => endRound("manual"));
   }
@@ -1556,4 +1551,3 @@ function openSetupPanel() {
     wirePanelButtons,
   };
 }
-
