@@ -2551,7 +2551,7 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
           font-weight:900;
           margin-top:8px;
         ">
-          START LOCATION / SHOW ME ON MAP
+          START LOCATION & OPEN GAME MAP
         </button>
       </div>
 
@@ -2656,7 +2656,19 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
         font-weight:900;
         margin-top:18px;
       ">
-        VIEW MAP / SETUP
+        OPEN GAME MAP
+      </button>
+
+      <button id="btn-leoids-lobby-host-setup" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:14px;
+        background:#202a3c;
+        color:white;
+        font-weight:900;
+        margin-top:10px;
+      ">
+        HOST SETUP / EDIT GAME
       </button>
 
       <button id="btn-leoids-lobby-close" type="button" style="
@@ -2674,6 +2686,191 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
   `;
 
   document.body.appendChild(modal);
+
+  async function refreshLobbyScreen() {
+    const activeSessionId = leoidsState.onlineSessionId || supabase.sessionId;
+
+    if (!activeSessionId) return;
+
+    const session = await supabase.getSession(activeSessionId);
+    const players = await supabase.loadPlayers();
+
+    if (!document.getElementById("leoids-online-lobby-screen")) return;
+
+    const title = document.getElementById("leoids-lobby-title");
+    const host = document.getElementById("leoids-lobby-host");
+    const status = document.getElementById("leoids-lobby-status");
+    const playerList = document.getElementById("leoids-lobby-player-list");
+
+    if (title) title.innerText = session?.name || "LEOIDS Lobby";
+    if (host) host.innerText = `Host: ${session?.host_name || "Unknown"}`;
+
+    if (status) {
+      if (session?.status === "countdown" && session?.game_starts_at) {
+        const secondsLeft = Math.max(
+          0,
+          Math.ceil((new Date(session.game_starts_at).getTime() - Date.now()) / 1000)
+        );
+
+        status.innerText = `Starting in ${secondsLeft}s`;
+      } else if (session?.status === "active") {
+        status.innerText = "Game active";
+      } else {
+        status.innerText = `Waiting in lobby • Runner visibility: ${leoidsState.runnerVisibilityMode || "always"}`;
+      }
+    }
+
+    if (playerList) {
+      playerList.innerHTML = players.length
+        ? players
+            .map(
+              (player) => `
+                <div style="
+                  display:flex;
+                  justify-content:space-between;
+                  gap:10px;
+                  padding:10px;
+                  border-radius:12px;
+                  background:rgba(255,255,255,.07);
+                  margin-top:8px;
+                ">
+                  <span>${player.avatar || "🧍"} ${player.display_name || "Player"}</span>
+                  <strong>${(player.role || "runner").toUpperCase()}</strong>
+                </div>
+              `
+            )
+            .join("")
+        : `<div style="opacity:.75;margin-top:10px;">No players yet.</div>`;
+    }
+
+    if (session && typeof applyOnlineSessionConfig === "function") {
+      applyOnlineSessionConfig(session);
+    }
+  }
+
+  function closeLobbyScreen() {
+    if (leoidsState.lobbyRefreshIntervalId) {
+      clearInterval(leoidsState.lobbyRefreshIntervalId);
+      leoidsState.lobbyRefreshIntervalId = null;
+    }
+
+    modal.remove();
+  }
+
+  function openGameMapFromLobby({ startLocation = false } = {}) {
+    closeLobbyScreen();
+
+    enterBattleMap();
+    hideLeoidsMapControls();
+    closeModal?.("leoids-modal");
+
+    loadAndApplyOnlineSession?.();
+    loadOnlinePlayers?.();
+
+    if (startLocation) {
+      startGpsOnlineSync();
+      speakText?.("Location sharing started. Game map opened.");
+    } else {
+      speakText?.("Game map opened.");
+    }
+
+    setTimeout(() => {
+      redrawAllMapObjects();
+      drawPlayerMarkers();
+
+      const map = getMapSafe();
+      if (map && leoidsState.basePoint) {
+        map.setView([leoidsState.basePoint.lat, leoidsState.basePoint.lng], Math.max(map.getZoom(), 17));
+      }
+    }, 300);
+  }
+
+  refreshLobbyScreen();
+
+  if (leoidsState.lobbyRefreshIntervalId) {
+    clearInterval(leoidsState.lobbyRefreshIntervalId);
+  }
+
+  leoidsState.lobbyRefreshIntervalId = setInterval(() => {
+    refreshLobbyScreen();
+    drawPlayerMarkers();
+  }, 2000);
+
+  startOnlinePlayerSync();
+  startOnlineSessionSync();
+
+  document.getElementById("btn-leoids-lobby-close")?.addEventListener("click", () => {
+    closeLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-lobby-map")?.addEventListener("click", () => {
+    openGameMapFromLobby({ startLocation: false });
+  });
+
+  document.getElementById("btn-leoids-lobby-host-setup")?.addEventListener("click", () => {
+    closeLobbyScreen();
+    openSetupPanel();
+  });
+
+  document.getElementById("btn-leoids-lobby-gps")?.addEventListener("click", () => {
+    openGameMapFromLobby({ startLocation: true });
+  });
+
+  document.getElementById("btn-leoids-lobby-help")?.addEventListener("click", () => {
+    alert("This will later become the Help, Rules, Shop, Items and Power-ups area.");
+  });
+
+  document.getElementById("btn-leoids-lobby-runner")?.addEventListener("click", async () => {
+    setRole("runner");
+
+    if (supabase.playerId) {
+      await supabase.joinSession({
+        sessionId: leoidsState.onlineSessionId,
+        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        role: "runner",
+      });
+    }
+
+    refreshLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-lobby-hunter")?.addEventListener("click", async () => {
+    setRole("hunter");
+
+    if (supabase.playerId) {
+      await supabase.joinSession({
+        sessionId: leoidsState.onlineSessionId,
+        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        role: "hunter",
+      });
+    }
+
+    refreshLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-vis-always")?.addEventListener("click", () => {
+    setRunnerVisibilityMode("always");
+    refreshLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-vis-pulse")?.addEventListener("click", () => {
+    leoidsState.runnerVisibleSeconds = 5;
+    leoidsState.runnerHiddenSeconds = 55;
+    setRunnerVisibilityMode("pulse");
+    refreshLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-vis-hidden")?.addEventListener("click", () => {
+    setRunnerVisibilityMode("hidden");
+    refreshLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-vis-hunters-only")?.addEventListener("click", () => {
+    setRunnerVisibilityMode("hunters_only");
+    refreshLobbyScreen();
+  });
+}
+
 
   async function refreshLobbyScreen() {
     const activeSessionId = leoidsState.onlineSessionId || supabase.sessionId;
