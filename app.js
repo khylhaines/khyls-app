@@ -2266,9 +2266,8 @@ function handlePinOpen(pin) {
   }
 
   currentPin = pin;
-  openMissionMenu();
+  showActionButton(true);
 }
-
 /* ============================
    MAP
 ============================ */
@@ -3454,12 +3453,12 @@ function handleActionTrigger() {
   if (!currentPin) return;
 
   if (activeGameMode === "territory") {
-    territorySystem?.handleAction(currentPin, getActivePlayer());
+    territorySystem?.handleAction?.(currentPin, getActivePlayer());
     return;
   }
 
   if (activeGameMode === "leoids") {
-    window.leoidsSystem?.openSetupPanel();
+    leoidsSystem?.openSetupPanel?.();
     return;
   }
 
@@ -3998,11 +3997,11 @@ function selectGameMode(mode) {
   if (mode === "explorer") {
     leoidsSystem?.exitBattleMap?.();
 
+    currentPin = null;
     showActionButton(false);
     updateStartButtons();
 
     resetMap();
-    refreshAllPinMarkers();
 
     speakText("Explorer mode selected.");
     return;
@@ -4011,17 +4010,18 @@ function selectGameMode(mode) {
   if (mode === "territory") {
     leoidsSystem?.exitBattleMap?.();
 
+    currentPin = null;
     showActionButton(false);
     updateStartButtons();
 
     resetMap();
-    refreshAllPinMarkers();
 
     speakText("Territory mode selected.");
     return;
   }
 
   if (mode === "leoids") {
+    currentPin = null;
     showActionButton(false);
     updateStartButtons();
 
@@ -4032,31 +4032,22 @@ function selectGameMode(mode) {
     });
 
     activeMarkers = {};
-    currentPin = null;
     lastTerritoryAutoOpenPinId = null;
 
-    if (typeof renderTerritoryZones === "function") {
-      territoryZoneLayers.forEach((layer) => {
-        try {
-          map?.removeLayer(layer);
-        } catch {}
-      });
+    territoryZoneLayers.forEach((layer) => {
+      try {
+        map?.removeLayer(layer);
+      } catch {}
+    });
 
-      territoryZoneLayers = [];
-    }
+    territoryZoneLayers = [];
 
-    if (leoidsSystem?.openSetupPanel) {
-      leoidsSystem.openSetupPanel();
-      leoidsSystem.wirePanelButtons?.();
-    } else {
-      showModal("leoids-modal");
-    }
+    leoidsSystem?.openSetupPanel?.();
+    leoidsSystem?.wirePanelButtons?.();
 
     speakText("LEOIDS battle map opened.");
   }
 }
-
-
 
 function openLeoidsPanel() {
   showActionButton(false);
@@ -4660,6 +4651,42 @@ function setupSystems() {
 
   window.leoidsSystem = leoidsSystem;
 
+  gameModes.explorer = {
+    openPin(pin) {
+      currentPin = pin;
+
+      const status = getCaptureStatus(pin);
+
+      updateCaptureText(
+        status.fullyCaptured
+          ? `${pin.n} • CAPTURED • REPLAY`
+          : `${pin.n} • ${status.completedCount}/${status.required} CAPTURED`
+      );
+
+      showActionButton(true);
+
+      speakText(
+        status.fullyCaptured
+          ? `${pin.n}. Fully captured. Press the lightning button to replay.`
+          : `${pin.n}. Press the lightning button to open missions.`
+      );
+    },
+  };
+
+  gameModes.territory = {
+    openPin(pin) {
+      openTerritoryCommandPanel(pin);
+    },
+  };
+
+  gameModes.leoids = {
+    openPin() {
+      currentPin = null;
+      showActionButton(false);
+      leoidsSystem?.openSetupPanel?.();
+    },
+  };
+
   bossSystem = createBossSystem({
     getState: () => state,
     getCurrentTask: () => currentTask,
@@ -4689,6 +4716,7 @@ function setupSystems() {
     $,
   });
 }
+
 
 /* ============================
    BOOT
