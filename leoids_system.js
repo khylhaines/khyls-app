@@ -2412,7 +2412,7 @@ function startOnlineSessionSync() {
   }
 
 
-  async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
+ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
   const supabase = window.LEOIDSSupabase;
 
   if (!supabase || !sessionId) {
@@ -2424,49 +2424,11 @@ function startOnlineSessionSync() {
     supabase.init();
   }
 
-  const session = await supabase.getSession(sessionId);
-  const players = await supabase.loadPlayers();
+  supabase.sessionId = sessionId;
+  leoidsState.onlineSessionId = sessionId;
 
   const old = document.getElementById("leoids-online-lobby-screen");
   if (old) old.remove();
-
-  const getStatusText = () => {
-    if (!session) return "Lobby unavailable";
-
-    if (session.status === "countdown" && session.game_starts_at) {
-      const secondsLeft = Math.max(
-        0,
-        Math.ceil((new Date(session.game_starts_at).getTime() - Date.now()) / 1000)
-      );
-
-      return `Starting in ${secondsLeft}s`;
-    }
-
-    if (session.status === "active") return "Game active";
-
-    return "Waiting in lobby";
-  };
-
-  const playerRows = players.length
-    ? players
-        .map(
-          (player) => `
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              gap:10px;
-              padding:10px;
-              border-radius:12px;
-              background:rgba(255,255,255,.07);
-              margin-top:8px;
-            ">
-              <span>${player.display_name || "Player"}</span>
-              <strong>${(player.role || "runner").toUpperCase()}</strong>
-            </div>
-          `
-        )
-        .join("")
-    : `<div style="opacity:.75;margin-top:10px;">No players yet.</div>`;
 
   const modal = document.createElement("div");
   modal.id = "leoids-online-lobby-screen";
@@ -2491,10 +2453,10 @@ function startOnlineSessionSync() {
       padding:22px;
       box-shadow:0 0 38px rgba(255,213,74,.25);
     ">
-      <h2 style="margin:0;color:#ffd54a;">${session?.name || "LEOIDS Lobby"}</h2>
+      <h2 id="leoids-lobby-title" style="margin:0;color:#ffd54a;">LEOIDS Lobby</h2>
 
-      <div style="opacity:.85;margin-top:8px;">
-        Host: ${session?.host_name || "Unknown"}
+      <div id="leoids-lobby-host" style="opacity:.85;margin-top:8px;">
+        Host: loading...
       </div>
 
       <div id="leoids-lobby-status" style="
@@ -2506,13 +2468,13 @@ function startOnlineSessionSync() {
         font-weight:900;
         text-align:center;
       ">
-        ${getStatusText()}
+        Loading lobby...
       </div>
 
       <div style="margin-top:18px;">
         <h3 style="margin:0 0 8px;color:#ffd54a;">Players</h3>
         <div id="leoids-lobby-player-list">
-          ${playerRows}
+          <div style="opacity:.75;margin-top:10px;">Loading players...</div>
         </div>
       </div>
 
@@ -2584,11 +2546,84 @@ function startOnlineSessionSync() {
 
   document.body.appendChild(modal);
 
+  async function refreshLobbyScreen() {
+    const session = await supabase.getSession(sessionId);
+    const players = await supabase.loadPlayers();
+
+    if (!document.getElementById("leoids-online-lobby-screen")) return;
+
+    const title = document.getElementById("leoids-lobby-title");
+    const host = document.getElementById("leoids-lobby-host");
+    const status = document.getElementById("leoids-lobby-status");
+    const playerList = document.getElementById("leoids-lobby-player-list");
+
+    if (title) title.innerText = session?.name || "LEOIDS Lobby";
+    if (host) host.innerText = `Host: ${session?.host_name || "Unknown"}`;
+
+    if (status) {
+      if (session?.status === "countdown" && session?.game_starts_at) {
+        const secondsLeft = Math.max(
+          0,
+          Math.ceil((new Date(session.game_starts_at).getTime() - Date.now()) / 1000)
+        );
+        status.innerText = `Starting in ${secondsLeft}s`;
+      } else if (session?.status === "active") {
+        status.innerText = "Game active";
+      } else {
+        status.innerText = "Waiting in lobby";
+      }
+    }
+
+    if (playerList) {
+      playerList.innerHTML = players.length
+        ? players
+            .map(
+              (player) => `
+                <div style="
+                  display:flex;
+                  justify-content:space-between;
+                  gap:10px;
+                  padding:10px;
+                  border-radius:12px;
+                  background:rgba(255,255,255,.07);
+                  margin-top:8px;
+                ">
+                  <span>${player.display_name || "Player"}</span>
+                  <strong>${(player.role || "runner").toUpperCase()}</strong>
+                </div>
+              `
+            )
+            .join("")
+        : `<div style="opacity:.75;margin-top:10px;">No players yet.</div>`;
+    }
+
+    applyOnlineSessionConfig(session);
+  }
+
+  await refreshLobbyScreen();
+
+  if (leoidsState.lobbyRefreshIntervalId) {
+    clearInterval(leoidsState.lobbyRefreshIntervalId);
+  }
+
+  leoidsState.lobbyRefreshIntervalId = setInterval(refreshLobbyScreen, 2000);
+
+  startOnlinePlayerSync();
+  startOnlineSessionSync();
+
   document.getElementById("btn-leoids-lobby-close")?.addEventListener("click", () => {
+    if (leoidsState.lobbyRefreshIntervalId) {
+      clearInterval(leoidsState.lobbyRefreshIntervalId);
+      leoidsState.lobbyRefreshIntervalId = null;
+    }
     modal.remove();
   });
 
   document.getElementById("btn-leoids-lobby-map")?.addEventListener("click", () => {
+    if (leoidsState.lobbyRefreshIntervalId) {
+      clearInterval(leoidsState.lobbyRefreshIntervalId);
+      leoidsState.lobbyRefreshIntervalId = null;
+    }
     modal.remove();
     openSetupPanel();
   });
@@ -2597,16 +2632,31 @@ function startOnlineSessionSync() {
     alert("This will later become the Help, Rules, Shop, Items and Power-ups area.");
   });
 
-  document.getElementById("btn-leoids-lobby-runner")?.addEventListener("click", () => {
+  document.getElementById("btn-leoids-lobby-runner")?.addEventListener("click", async () => {
     setRole("runner");
-    speakText?.("Runner selected.");
+    if (supabase.playerId) {
+      await supabase.joinSession({
+        sessionId,
+        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        role: "runner",
+      });
+    }
+    await refreshLobbyScreen();
   });
 
-  document.getElementById("btn-leoids-lobby-hunter")?.addEventListener("click", () => {
+  document.getElementById("btn-leoids-lobby-hunter")?.addEventListener("click", async () => {
     setRole("hunter");
-    speakText?.("Hunter selected.");
+    if (supabase.playerId) {
+      await supabase.joinSession({
+        sessionId,
+        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        role: "hunter",
+      });
+    }
+    await refreshLobbyScreen();
   });
 }
+
 
   
  async function openOnlineSessionBrowser() {
