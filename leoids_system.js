@@ -2411,7 +2411,205 @@ function startOnlineSessionSync() {
       `Coins earned: ${leoidsState.coins}`;
   }
 
-async function openOnlineSessionBrowser() {
+
+  async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
+  const supabase = window.LEOIDSSupabase;
+
+  if (!supabase || !sessionId) {
+    alert("No online lobby selected.");
+    return;
+  }
+
+  if (!supabase.client && typeof supabase.init === "function") {
+    supabase.init();
+  }
+
+  const session = await supabase.getSession(sessionId);
+  const players = await supabase.loadPlayers();
+
+  const old = document.getElementById("leoids-online-lobby-screen");
+  if (old) old.remove();
+
+  const getStatusText = () => {
+    if (!session) return "Lobby unavailable";
+
+    if (session.status === "countdown" && session.game_starts_at) {
+      const secondsLeft = Math.max(
+        0,
+        Math.ceil((new Date(session.game_starts_at).getTime() - Date.now()) / 1000)
+      );
+
+      return `Starting in ${secondsLeft}s`;
+    }
+
+    if (session.status === "active") return "Game active";
+
+    return "Waiting in lobby";
+  };
+
+  const playerRows = players.length
+    ? players
+        .map(
+          (player) => `
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              gap:10px;
+              padding:10px;
+              border-radius:12px;
+              background:rgba(255,255,255,.07);
+              margin-top:8px;
+            ">
+              <span>${player.display_name || "Player"}</span>
+              <strong>${(player.role || "runner").toUpperCase()}</strong>
+            </div>
+          `
+        )
+        .join("")
+    : `<div style="opacity:.75;margin-top:10px;">No players yet.</div>`;
+
+  const modal = document.createElement("div");
+  modal.id = "leoids-online-lobby-screen";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.zIndex = "999999";
+  modal.style.background = "rgba(0,0,0,.9)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "18px";
+
+  modal.innerHTML = `
+    <div style="
+      width:min(94vw,560px);
+      max-height:88vh;
+      overflow:auto;
+      border:2px solid rgba(255,213,74,.85);
+      border-radius:28px;
+      background:linear-gradient(180deg,#171b2b,#05070b);
+      color:white;
+      padding:22px;
+      box-shadow:0 0 38px rgba(255,213,74,.25);
+    ">
+      <h2 style="margin:0;color:#ffd54a;">${session?.name || "LEOIDS Lobby"}</h2>
+
+      <div style="opacity:.85;margin-top:8px;">
+        Host: ${session?.host_name || "Unknown"}
+      </div>
+
+      <div id="leoids-lobby-status" style="
+        margin-top:12px;
+        padding:12px;
+        border-radius:14px;
+        background:rgba(255,213,74,.12);
+        color:#ffd54a;
+        font-weight:900;
+        text-align:center;
+      ">
+        ${getStatusText()}
+      </div>
+
+      <div style="margin-top:18px;">
+        <h3 style="margin:0 0 8px;color:#ffd54a;">Players</h3>
+        <div id="leoids-lobby-player-list">
+          ${playerRows}
+        </div>
+      </div>
+
+      <div style="margin-top:18px;">
+        <h3 style="margin:0 0 8px;color:#ffd54a;">Prepare</h3>
+
+        <button id="btn-leoids-lobby-runner" type="button" style="
+          width:100%;
+          min-height:44px;
+          border-radius:14px;
+          background:#4da3ff;
+          color:white;
+          font-weight:900;
+          margin-top:8px;
+        ">
+          PLAY AS RUNNER
+        </button>
+
+        <button id="btn-leoids-lobby-hunter" type="button" style="
+          width:100%;
+          min-height:44px;
+          border-radius:14px;
+          background:#ff4d4d;
+          color:white;
+          font-weight:900;
+          margin-top:8px;
+        ">
+          PLAY AS HUNTER
+        </button>
+
+        <button id="btn-leoids-lobby-help" type="button" style="
+          width:100%;
+          min-height:44px;
+          border-radius:14px;
+          background:#202a3c;
+          color:white;
+          font-weight:900;
+          margin-top:12px;
+        ">
+          HELP / RULES / ITEMS COMING SOON
+        </button>
+      </div>
+
+      <button id="btn-leoids-lobby-map" type="button" style="
+        width:100%;
+        min-height:46px;
+        border-radius:14px;
+        background:#ffd54a;
+        color:#111;
+        font-weight:900;
+        margin-top:18px;
+      ">
+        VIEW MAP / SETUP
+      </button>
+
+      <button id="btn-leoids-lobby-close" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:14px;
+        background:#111827;
+        color:white;
+        font-weight:900;
+        margin-top:10px;
+      ">
+        CLOSE
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById("btn-leoids-lobby-close")?.addEventListener("click", () => {
+    modal.remove();
+  });
+
+  document.getElementById("btn-leoids-lobby-map")?.addEventListener("click", () => {
+    modal.remove();
+    openSetupPanel();
+  });
+
+  document.getElementById("btn-leoids-lobby-help")?.addEventListener("click", () => {
+    alert("This will later become the Help, Rules, Shop, Items and Power-ups area.");
+  });
+
+  document.getElementById("btn-leoids-lobby-runner")?.addEventListener("click", () => {
+    setRole("runner");
+    speakText?.("Runner selected.");
+  });
+
+  document.getElementById("btn-leoids-lobby-hunter")?.addEventListener("click", () => {
+    setRole("hunter");
+    speakText?.("Hunter selected.");
+  });
+}
+
+  
+  async function openOnlineSessionBrowser() {
   const supabase = window.LEOIDSSupabase;
 
   if (!supabase) {
@@ -2749,10 +2947,13 @@ return {
   startOnlineSessionSync,
   startOnlineCountdown,
 
+  
   startRound,
   endRound,
   updatePanel,
   wirePanelButtons,
+  
   openOnlineSessionBrowser,
+  openOnlineLobbyScreen,
 };
 }
