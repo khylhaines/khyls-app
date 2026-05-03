@@ -3116,7 +3116,7 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
 
     setClick("btn-leoids-start", startRound);
     setClick("btn-leoids-end", () => endRound("manual"));
-  
+  }
 
 return {
     state: leoidsState,
