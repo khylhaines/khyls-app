@@ -4330,12 +4330,20 @@ function wireButtons() {
     closeModal("settings-modal")
   );
 
-  $("btn-commander")?.addEventListener("click", () => {
-    renderHomeLog();
-    renderCaptainNotes();
-    showModal("commander-hub");
-    speakText("Commander hub opened.");
-  });
+ $("btn-commander")?.addEventListener("click", () => {
+  if (activeGameMode === "leoids") {
+    leoidsSystem?.openSetupPanel?.();
+    leoidsSystem?.wirePanelButtons?.();
+    speakText("LEOIDS control panel opened.");
+    return;
+  }
+
+  renderHomeLog();
+  renderCaptainNotes();
+  showModal("commander-hub");
+  speakText("Commander hub opened.");
+});
+
 
   $("btn-close-commander")?.addEventListener("click", () =>
     closeModal("commander-hub")
