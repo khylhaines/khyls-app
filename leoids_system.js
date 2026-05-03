@@ -2656,7 +2656,7 @@ async function openOnlineSessionBrowser() {
     });
 
     setClick("btn-leoids-undo-point", undoStreetBoundaryPoint);
-    setClick("btn-leoids-confirm-boundary", confirmBoundary);
+   setClick("btn-leoids-confirm-boundary", confirmBoundaryFromMap);
     setClick("btn-leoids-clear-boundary", clearBoundaryFull);
 
     setClick("btn-leoids-set-base", setBaseHere);
