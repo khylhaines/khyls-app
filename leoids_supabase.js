@@ -31,6 +31,11 @@ const LEOIDSSupabase = {
   },
 
   async createSession(name = "Barrow LEOIDS Test Session") {
+    if (!this.client) {
+      console.warn("Supabase not initialised. Run LEOIDSSupabase.init() first.");
+      return null;
+    }
+
     const { data, error } = await this.client
       .from("leoids_sessions")
       .insert({
@@ -51,6 +56,11 @@ const LEOIDSSupabase = {
   },
 
   async joinSession({ sessionId, displayName = "Player", role = "runner" }) {
+    if (!this.client) {
+      console.warn("Supabase not initialised. Run LEOIDSSupabase.init() first.");
+      return null;
+    }
+
     this.sessionId = sessionId;
     this.playerName = displayName;
     this.playerRole = role;
@@ -78,10 +88,13 @@ const LEOIDSSupabase = {
     return data;
   },
 
-  async syncMyPosition(lat, lng, accuracy = null, heading = null) {
-    if (!this.playerId) return;
+  async updatePosition(lat, lng, accuracy = null, heading = null) {
+    if (!this.client || !this.playerId) {
+      console.warn("Supabase not ready or player not joined.");
+      return null;
+    }
 
-    const { error } = await this.client
+    const { data, error } = await this.client
       .from("leoids_players")
       .update({
         lat,
@@ -91,18 +104,32 @@ const LEOIDSSupabase = {
         last_seen: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
-      .eq("id", this.playerId);
+      .eq("id", this.playerId)
+      .select()
+      .single();
 
     if (error) {
-      console.error("Failed to sync player position:", error);
+      console.error("Failed to update position:", error);
+      return null;
     }
+
+    console.log("LEOIDS position updated:", data);
+    return data;
+  },
+
+  async syncMyPosition(lat, lng, accuracy = null, heading = null) {
+    return this.updatePosition(lat, lng, accuracy, heading);
   },
 
   subscribeToPlayers(onChange) {
-    if (!this.sessionId) return;
+    if (!this.client || !this.sessionId) {
+      console.warn("Supabase not ready or no session joined.");
+      return null;
+    }
 
     if (this.playersChannel) {
       this.client.removeChannel(this.playersChannel);
+      this.playersChannel = null;
     }
 
     this.playersChannel = this.client
@@ -117,17 +144,45 @@ const LEOIDSSupabase = {
         },
         (payload) => {
           console.log("Realtime player update:", payload);
-          if (onChange) onChange(payload);
+
+          if (typeof onChange === "function") {
+            onChange(payload);
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("LEOIDS players realtime status:", status);
+      });
 
     console.log("Subscribed to player updates.");
+    return this.playersChannel;
+  },
+
+  async loadPlayers() {
+    if (!this.client || !this.sessionId) {
+      console.warn("Supabase not ready or no session joined.");
+      return [];
+    }
+
+    const { data, error } = await this.client
+      .from("leoids_players")
+      .select("*")
+      .eq("session_id", this.sessionId);
+
+    if (error) {
+      console.error("Failed to load LEOIDS players:", error);
+      return [];
+    }
+
+    return data || [];
   },
 
   async leaveSession() {
+    if (!this.client) return;
+
     if (this.playersChannel) {
       await this.client.removeChannel(this.playersChannel);
+      this.playersChannel = null;
     }
 
     if (this.playerId) {
@@ -141,6 +196,9 @@ const LEOIDSSupabase = {
     this.playerId = null;
     this.playerName = null;
     this.playerRole = "runner";
+    this.remotePlayers = {};
+
+    console.log("Left LEOIDS Supabase session.");
   }
 };
 
