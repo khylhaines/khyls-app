@@ -2428,6 +2428,19 @@ async function openOnlineSessionBrowser() {
   const old = document.getElementById("leoids-session-browser");
   if (old) old.remove();
 
+  const getCountdownText = (session) => {
+    if (session.status !== "countdown" || !session.game_starts_at) {
+      return session.status || "lobby";
+    }
+
+    const secondsLeft = Math.max(
+      0,
+      Math.ceil((new Date(session.game_starts_at).getTime() - Date.now()) / 1000)
+    );
+
+    return `Starts in ${secondsLeft}s`;
+  };
+
   const modal = document.createElement("div");
   modal.id = "leoids-session-browser";
   modal.style.position = "fixed";
@@ -2443,32 +2456,47 @@ async function openOnlineSessionBrowser() {
     ? sessions
         .map(
           (session) => `
-            <button
-              class="leoids-session-join-btn"
-              data-session-id="${session.id}"
-              data-session-name="${session.name || "LEOIDS Game"}"
-              type="button"
-              style="
-                width:100%;
-                text-align:left;
-                margin-top:10px;
-                padding:14px;
-                border-radius:16px;
-                border:1px solid rgba(255,213,74,.55);
-                background:rgba(255,255,255,.08);
-                color:white;
-                font-weight:800;
-              "
-            >
-              <div style="font-size:16px;color:#ffd54a;">
+            <div style="
+              margin-top:10px;
+              padding:14px;
+              border-radius:16px;
+              border:1px solid rgba(255,213,74,.55);
+              background:rgba(255,255,255,.08);
+              color:white;
+            ">
+              <div style="font-size:16px;color:#ffd54a;font-weight:900;">
                 ${session.name || "LEOIDS Game"}
               </div>
-              <div style="font-size:13px;opacity:.85;margin-top:4px;">
-                Host: ${session.host_name || "Unknown"} • Players: ${
-            session.player_count || 0
-          }/${session.max_players || 12} • ${session.status || "lobby"}
+
+              <div style="font-size:13px;opacity:.9;margin-top:5px;">
+                Host: ${session.host_name || "Unknown"}
               </div>
-            </button>
+
+              <div style="font-size:13px;opacity:.9;margin-top:3px;">
+                Players: ${session.player_count || 0}/${session.max_players || 12}
+              </div>
+
+              <div style="font-size:13px;opacity:.9;margin-top:3px;">
+                Status: ${getCountdownText(session)}
+              </div>
+
+              <button
+                class="leoids-session-join-btn"
+                data-session-id="${session.id}"
+                type="button"
+                style="
+                  width:100%;
+                  min-height:44px;
+                  margin-top:12px;
+                  border-radius:14px;
+                  background:#ffd54a;
+                  color:#111;
+                  font-weight:900;
+                "
+              >
+                JOIN LOBBY
+              </button>
+            </div>
           `
         )
         .join("")
@@ -2486,9 +2514,9 @@ async function openOnlineSessionBrowser() {
       padding:22px;
       box-shadow:0 0 35px rgba(255,213,74,.25);
     ">
-      <h2 style="margin:0;color:#ffd54a;">Browse LEOIDS Games</h2>
+      <h2 style="margin:0;color:#ffd54a;">Online LEOIDS Lobbies</h2>
       <p style="opacity:.8;margin:8px 0 14px;">
-        Tap a public game to join it.
+        Join a public lobby or host a new one.
       </p>
 
       <button id="btn-leoids-refresh-sessions" type="button" style="
@@ -2500,7 +2528,7 @@ async function openOnlineSessionBrowser() {
         font-weight:900;
         margin-bottom:8px;
       ">
-        REFRESH GAMES
+        REFRESH LOBBIES
       </button>
 
       <button id="btn-leoids-host-public-session" type="button" style="
@@ -2512,7 +2540,7 @@ async function openOnlineSessionBrowser() {
         font-weight:900;
         margin-bottom:10px;
       ">
-        HOST NEW PUBLIC GAME
+        HOST NEW PUBLIC LOBBY
       </button>
 
       <div>${rows}</div>
@@ -2547,8 +2575,10 @@ async function openOnlineSessionBrowser() {
   document
     .getElementById("btn-leoids-host-public-session")
     ?.addEventListener("click", async () => {
-      const name = prompt("Game name?", "Barrow LEOIDS Game") || "Barrow LEOIDS Game";
+      const name = prompt("Lobby name?", "Barrow LEOIDS Game") || "Barrow LEOIDS Game";
       const hostName = prompt("Your name?", "Kyle") || "Host";
+
+      leoidsState.onlinePlayerName = hostName;
 
       const session = await createOnlineSession(name);
 
