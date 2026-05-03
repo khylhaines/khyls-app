@@ -3328,7 +3328,9 @@ return {
 
     openOnlineSessionBrowser,
     openOnlineLobbyScreen,
-
+    openLeoidsLeaderboard,
+    tryReleaseJailedRunners,
+    
     startRound,
     endRound,
     updatePanel,
