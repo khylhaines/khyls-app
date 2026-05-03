@@ -30,7 +30,7 @@ const LEOIDSSupabase = {
     return true;
   },
 
-  async createSession(name = "Barrow LEOIDS Test Session") {
+  async createSession(name = "Barrow LEOIDS Session", options = {}) {
     if (!this.client) {
       console.warn("Supabase not initialised. Run LEOIDSSupabase.init() first.");
       return null;
@@ -40,7 +40,11 @@ const LEOIDSSupabase = {
       .from("leoids_sessions")
       .insert({
         name,
-        status: "lobby"
+        status: options.status || "lobby",
+        host_name: options.hostName || options.host_name || "Host",
+        max_players: Number(options.maxPlayers || options.max_players || 12),
+        is_public: options.isPublic ?? options.is_public ?? true,
+        last_seen: new Date().toISOString()
       })
       .select()
       .single();
@@ -53,6 +57,94 @@ const LEOIDSSupabase = {
     this.sessionId = data.id;
     console.log("LEOIDS session created:", data);
     return data;
+  },
+
+  async listPublicSessions() {
+    if (!this.client) {
+      console.warn("Supabase not initialised. Run LEOIDSSupabase.init() first.");
+      return [];
+    }
+
+    const { data: sessions, error: sessionError } = await this.client
+      .from("leoids_sessions")
+      .select("*")
+      .eq("is_public", true)
+      .in("status", ["lobby", "active"])
+      .order("last_seen", { ascending: false })
+      .limit(20);
+
+    if (sessionError) {
+      console.error("Failed to list public LEOIDS sessions:", sessionError);
+      return [];
+    }
+
+    const sessionIds = (sessions || []).map((session) => session.id);
+
+    if (!sessionIds.length) {
+      return [];
+    }
+
+    const { data: players, error: playerError } = await this.client
+      .from("leoids_players")
+      .select("id, session_id")
+      .in("session_id", sessionIds);
+
+    if (playerError) {
+      console.error("Failed to fetch LEOIDS session player counts:", playerError);
+
+      return sessions.map((session) => ({
+        ...session,
+        player_count: 0
+      }));
+    }
+
+    const counts = {};
+
+    (players || []).forEach((player) => {
+      counts[player.session_id] = (counts[player.session_id] || 0) + 1;
+    });
+
+    return sessions.map((session) => ({
+      ...session,
+      player_count: counts[session.id] || 0
+    }));
+  },
+
+  async updateSessionHeartbeat(sessionId = this.sessionId) {
+    if (!this.client || !sessionId) return false;
+
+    const { error } = await this.client
+      .from("leoids_sessions")
+      .update({
+        last_seen: new Date().toISOString()
+      })
+      .eq("id", sessionId);
+
+    if (error) {
+      console.error("Failed to update LEOIDS session heartbeat:", error);
+      return false;
+    }
+
+    return true;
+  },
+
+  async updateSessionStatus(status = "lobby", sessionId = this.sessionId) {
+    if (!this.client || !sessionId) return false;
+
+    const { error } = await this.client
+      .from("leoids_sessions")
+      .update({
+        status,
+        last_seen: new Date().toISOString()
+      })
+      .eq("id", sessionId);
+
+    if (error) {
+      console.error("Failed to update LEOIDS session status:", error);
+      return false;
+    }
+
+    return true;
   },
 
   async joinSession({ sessionId, displayName = "Player", role = "runner" }) {
@@ -84,6 +176,9 @@ const LEOIDSSupabase = {
     }
 
     this.playerId = data.id;
+
+    await this.updateSessionHeartbeat(sessionId);
+
     console.log("Joined LEOIDS session as player:", data);
     return data;
   },
@@ -112,6 +207,8 @@ const LEOIDSSupabase = {
       console.error("Failed to update position:", error);
       return null;
     }
+
+    await this.updateSessionHeartbeat(this.sessionId);
 
     console.log("LEOIDS position updated:", data);
     return data;
@@ -191,6 +288,8 @@ const LEOIDSSupabase = {
         .delete()
         .eq("id", this.playerId);
     }
+
+    await this.updateSessionHeartbeat(this.sessionId);
 
     this.sessionId = null;
     this.playerId = null;
