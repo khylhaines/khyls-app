@@ -1155,54 +1155,7 @@ export function createLeoidsSystem({
     speakText?.("Tap the map where you want the jail base, then press confirm.");
   }
 
-  function confirmBaseFromMap() {
-    const map = getMapSafe();
-
-    let point =
-      leoidsState.pendingBasePoint ||
-      leoidsState.basePoint ||
-      window.__leoidsBasePoint ||
-      null;
-
-    if (!point && map) {
-      const center = map.getCenter();
-      point = {
-        lat: Number(center.lat),
-        lng: Number(center.lng),
-      };
-    }
-
-    if (!point) {
-      alert("Base could not be set. Tap the map again.");
-      speakText?.("Base could not be set. Tap the map again.");
-      showLeoidsMapControls("base");
-      return;
-    }
-
-    leoidsState.basePoint = {
-      lat: Number(point.lat),
-      lng: Number(point.lng),
-    };
-
-    leoidsState.pendingBasePoint = null;
-    leoidsState.mapMode = "none";
-    window.__leoidsBasePoint = leoidsState.basePoint;
-
-    drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
-
-    disableMapPointAdding();
-    hideLeoidsMapControls();
-    showActionButton?.(false);
-
-    updatePanel();
-    renderPlayers();
-    drawPlayerMarkers();
-
-    showModal?.("leoids-modal");
-
-    speakText?.("Jail base confirmed.");
-  }
-
+ 
   function backToLeoidsPanelFromMap() {
     leoidsState.mapMode = "none";
     leoidsState.pendingBasePoint = null;
