@@ -46,7 +46,7 @@ export function createLeoidsSystem({
     pendingBasePoint: null,
     baseRadius: DEFAULT_BASE_RADIUS,
     tagRadius: DEFAULT_TAG_RADIUS,
-
+    lastRescueAt: 0,
     runnerVisibilityMode: "always",
     runnerVisibleSeconds: 5,
     runnerHiddenSeconds: 55,
@@ -2313,51 +2313,64 @@ function startOnlineSessionSync() {
 }
 
 
-  function tickRound() {
-    if (!leoidsState.active) return;
+ function tickRound() {
+  if (!leoidsState.active) return;
 
-    leoidsState.timeLeft = Math.max(0, leoidsState.timeLeft - 1);
+  leoidsState.timeLeft = Math.max(0, leoidsState.timeLeft - 1);
 
-    if (!leoidsState.huntersReleased) {
-      leoidsState.hunterDelayLeft = Math.max(
-        0,
-        leoidsState.hunterDelayLeft - 1
-      );
+  if (!leoidsState.huntersReleased) {
+    leoidsState.hunterDelayLeft = Math.max(
+      0,
+      leoidsState.hunterDelayLeft - 1
+    );
 
-      if (leoidsState.hunterDelayLeft <= 0) {
-        leoidsState.huntersReleased = true;
+    if (leoidsState.hunterDelayLeft <= 0) {
+      leoidsState.huntersReleased = true;
 
-        const local = getLocalPlayer();
+      const local = getLocalPlayer();
 
-        if (local?.role === "hunter") {
-          showLeoidsEvent(
-            "HUNTERS RELEASED",
-            "Go and catch the runners.",
-            "🟥"
-          );
-          speakText?.("Hunters released. Go and catch the runners.");
-        } else {
-          showLeoidsEvent(
-            "HUNTERS RELEASED",
-            "Runners, keep moving. Do not get caught.",
-            "🏃"
-          );
-          speakText?.("Hunters have been released. Runners, keep moving.");
-        }
+      if (local?.role === "hunter") {
+        showLeoidsEvent(
+          "HUNTERS RELEASED",
+          "Go and catch the runners.",
+          "🟥"
+        );
+        speakText?.("Hunters released. Go and catch the runners.");
+      } else {
+        showLeoidsEvent(
+          "HUNTERS RELEASED",
+          "Runners, keep moving. Do not get caught.",
+          "🏃"
+        );
+        speakText?.("Hunters have been released. Runners, keep moving.");
       }
     }
-
-    if (typeof checkBoundaryRules === "function") {
-      checkBoundaryRules();
-    }
-
-    if (leoidsState.timeLeft <= 0) {
-      endRound("timer");
-      return;
-    }
-
-    updatePanel();
   }
+
+  // 🔥 AUTO RESCUE SYSTEM
+  const local = getLocalPlayer();
+  if (local?.role === "runner" && leoidsState.basePoint && local.position) {
+    const distance = distanceMeters(local.position, leoidsState.basePoint);
+
+   if (
+  distance <= leoidsState.baseRadius &&
+  Date.now() - (leoidsState.lastRescueAt || 0) > 3000
+) {
+  leoidsState.lastRescueAt = Date.now();
+      rescueJailedRunners();
+    }
+  }
+
+  checkBoundaryRules();
+
+  if (leoidsState.timeLeft <= 0) {
+    endRound("timer");
+    return;
+  }
+
+  updatePanel();
+}
+
 
   function endRound(reason = "manual") {
     stopTimer();
@@ -2794,6 +2807,11 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
   leoidsState.lobbyRefreshIntervalId = setInterval(() => {
     refreshLobbyScreen();
     drawPlayerMarkers();
+    if (
+  distance <= leoidsState.baseRadius &&
+  Date.now() - (leoidsState.lastRescueAt || 0) > 3000
+) {
+  leoidsState.lastRescueAt = Date.now();
   }, 2000);
 
   startOnlinePlayerSync();
