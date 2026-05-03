@@ -47,6 +47,10 @@ export function createLeoidsSystem({
     baseRadius: DEFAULT_BASE_RADIUS,
     tagRadius: DEFAULT_TAG_RADIUS,
 
+    runnerVisibilityMode: "always",
+    runnerVisibleSeconds: 5,
+    runnerHiddenSeconds: 55,
+    
     mapMode: "none",
 
     players: [
@@ -1268,49 +1272,101 @@ export function createLeoidsSystem({
       .addTo(map);
   }
 
-  function drawPlayerMarkers() {
-    const map = getMapSafe();
-    if (!map) return;
+function shouldShowPlayerOnMap(player) {
+  if (!player) return false;
 
-    leoidsState.playerMarkers.forEach((marker) => {
-      try {
-        map.removeLayer(marker);
-      } catch {}
-    });
+  const local = getLocalPlayer();
 
-    leoidsState.playerMarkers = [];
+  if (!local) return true;
 
-    leoidsState.players.forEach((player) => {
-      if (!player.position) return;
+  // Always show yourself
+  if (player.id === local.id) return true;
 
-      const marker = L.circleMarker([player.position.lat, player.position.lng], {
-        radius: player.isAI ? 8 : player.isLocal ? 11 : 10,
-        color: player.role === "hunter" ? "#ff4d4d" : "#4da3ff",
-        weight: player.isLocal ? 5 : 4,
-        fillColor:
-          player.status === "jailed"
-            ? "#777"
-            : player.role === "hunter"
-            ? "#ff4d4d"
-            : "#4da3ff",
-        fillOpacity: 0.9,
-      })
-        .bindTooltip(
-          `${getPlayerIcon(player)} ${player.name} • ${player.role} • ${player.status}`,
-          {
-            permanent: false,
-            direction: "top",
-          }
-        )
-        .addTo(map);
+  // Always show hunters for now
+  if (player.role === "hunter") return true;
 
-      marker.on("click", () => {
-        handlePlayerMarkerTap(player);
-      });
+  // Runner visibility rules
+  if (player.role === "runner") {
+    if (leoidsState.runnerVisibilityMode === "always") return true;
 
-      leoidsState.playerMarkers.push(marker);
-    });
+    if (leoidsState.runnerVisibilityMode === "hidden") return false;
+
+    if (leoidsState.runnerVisibilityMode === "hunters_only") {
+      return local.role === "hunter";
+    }
+
+    if (leoidsState.runnerVisibilityMode === "pulse") {
+      const visibleSeconds = Number(leoidsState.runnerVisibleSeconds || 5);
+      const hiddenSeconds = Number(leoidsState.runnerHiddenSeconds || 55);
+      const cycle = visibleSeconds + hiddenSeconds;
+
+      if (cycle <= 0) return false;
+
+      const elapsed = Math.floor(Date.now() / 1000) % cycle;
+
+      return elapsed < visibleSeconds;
+    }
   }
+
+  return true;
+}
+
+function setRunnerVisibilityMode(mode = "always") {
+  const allowed = ["always", "pulse", "hidden", "hunters_only"];
+
+  leoidsState.runnerVisibilityMode = allowed.includes(mode) ? mode : "always";
+
+  drawPlayerMarkers();
+  updatePanel();
+
+  speakText?.(`Runner visibility set to ${leoidsState.runnerVisibilityMode}.`);
+}
+
+  
+  function drawPlayerMarkers() {
+  const map = getMapSafe();
+  if (!map) return;
+
+  leoidsState.playerMarkers.forEach((marker) => {
+    try {
+      map.removeLayer(marker);
+    } catch {}
+  });
+
+  leoidsState.playerMarkers = [];
+
+  leoidsState.players.forEach((player) => {
+    if (!player.position) return;
+    if (!shouldShowPlayerOnMap(player)) return;
+
+    const marker = L.circleMarker([player.position.lat, player.position.lng], {
+      radius: player.isAI ? 8 : player.isLocal ? 11 : 10,
+      color: player.role === "hunter" ? "#ff4d4d" : "#4da3ff",
+      weight: player.isLocal ? 5 : 4,
+      fillColor:
+        player.status === "jailed"
+          ? "#777"
+          : player.role === "hunter"
+          ? "#ff4d4d"
+          : "#4da3ff",
+      fillOpacity: 0.9,
+    })
+      .bindTooltip(
+        `${getPlayerIcon(player)} ${player.name} • ${player.role} • ${player.status}`,
+        {
+          permanent: false,
+          direction: "top",
+        }
+      )
+      .addTo(map);
+
+    marker.on("click", () => {
+      handlePlayerMarkerTap(player);
+    });
+
+    leoidsState.playerMarkers.push(marker);
+  });
+}
 
   function handlePlayerMarkerTap(player) {
     const local = getLocalPlayer();
@@ -2412,7 +2468,7 @@ function startOnlineSessionSync() {
   }
 
 
- async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
+async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
   const supabase = window.LEOIDSSupabase;
 
   if (!supabase || !sessionId) {
@@ -2476,6 +2532,74 @@ function startOnlineSessionSync() {
         <div id="leoids-lobby-player-list">
           <div style="opacity:.75;margin-top:10px;">Loading players...</div>
         </div>
+      </div>
+
+      <div style="margin-top:18px;">
+        <h3 style="margin:0 0 8px;color:#ffd54a;">Location</h3>
+
+        <button id="btn-leoids-lobby-gps" type="button" style="
+          width:100%;
+          min-height:46px;
+          border-radius:14px;
+          background:#ffd54a;
+          color:#111;
+          font-weight:900;
+          margin-top:8px;
+        ">
+          START LOCATION / SHOW ME ON MAP
+        </button>
+      </div>
+
+      <div style="margin-top:18px;">
+        <h3 style="margin:0 0 8px;color:#ffd54a;">Runner Visibility</h3>
+
+        <button id="btn-leoids-vis-always" type="button" style="
+          width:100%;
+          min-height:42px;
+          border-radius:14px;
+          background:#202a3c;
+          color:white;
+          font-weight:900;
+          margin-top:8px;
+        ">
+          RUNNERS ALWAYS VISIBLE
+        </button>
+
+        <button id="btn-leoids-vis-pulse" type="button" style="
+          width:100%;
+          min-height:42px;
+          border-radius:14px;
+          background:#202a3c;
+          color:white;
+          font-weight:900;
+          margin-top:8px;
+        ">
+          RUNNERS PULSE: 5s EVERY 60s
+        </button>
+
+        <button id="btn-leoids-vis-hidden" type="button" style="
+          width:100%;
+          min-height:42px;
+          border-radius:14px;
+          background:#202a3c;
+          color:white;
+          font-weight:900;
+          margin-top:8px;
+        ">
+          RUNNERS HIDDEN
+        </button>
+
+        <button id="btn-leoids-vis-hunters-only" type="button" style="
+          width:100%;
+          min-height:42px;
+          border-radius:14px;
+          background:#202a3c;
+          color:white;
+          font-weight:900;
+          margin-top:8px;
+        ">
+          RUNNERS VISIBLE TO HUNTERS ONLY
+        </button>
       </div>
 
       <div style="margin-top:18px;">
@@ -2545,6 +2669,144 @@ function startOnlineSessionSync() {
   `;
 
   document.body.appendChild(modal);
+
+  async function refreshLobbyScreen() {
+    const session = await supabase.getSession(sessionId);
+    const players = await supabase.loadPlayers();
+
+    if (!document.getElementById("leoids-online-lobby-screen")) return;
+
+    const title = document.getElementById("leoids-lobby-title");
+    const host = document.getElementById("leoids-lobby-host");
+    const status = document.getElementById("leoids-lobby-status");
+    const playerList = document.getElementById("leoids-lobby-player-list");
+
+    if (title) title.innerText = session?.name || "LEOIDS Lobby";
+    if (host) host.innerText = `Host: ${session?.host_name || "Unknown"}`;
+
+    if (status) {
+      if (session?.status === "countdown" && session?.game_starts_at) {
+        const secondsLeft = Math.max(
+          0,
+          Math.ceil((new Date(session.game_starts_at).getTime() - Date.now()) / 1000)
+        );
+        status.innerText = `Starting in ${secondsLeft}s`;
+      } else if (session?.status === "active") {
+        status.innerText = "Game active";
+      } else {
+        status.innerText = `Waiting in lobby • Runner visibility: ${leoidsState.runnerVisibilityMode}`;
+      }
+    }
+
+    if (playerList) {
+      playerList.innerHTML = players.length
+        ? players
+            .map(
+              (player) => `
+                <div style="
+                  display:flex;
+                  justify-content:space-between;
+                  gap:10px;
+                  padding:10px;
+                  border-radius:12px;
+                  background:rgba(255,255,255,.07);
+                  margin-top:8px;
+                ">
+                  <span>${player.display_name || "Player"}</span>
+                  <strong>${(player.role || "runner").toUpperCase()}</strong>
+                </div>
+              `
+            )
+            .join("")
+        : `<div style="opacity:.75;margin-top:10px;">No players yet.</div>`;
+    }
+
+    if (session) applyOnlineSessionConfig(session);
+  }
+
+  await refreshLobbyScreen();
+
+  if (leoidsState.lobbyRefreshIntervalId) {
+    clearInterval(leoidsState.lobbyRefreshIntervalId);
+  }
+
+  leoidsState.lobbyRefreshIntervalId = setInterval(() => {
+    refreshLobbyScreen();
+    drawPlayerMarkers();
+  }, 2000);
+
+  startOnlinePlayerSync();
+  startOnlineSessionSync();
+
+  document.getElementById("btn-leoids-lobby-close")?.addEventListener("click", () => {
+    if (leoidsState.lobbyRefreshIntervalId) {
+      clearInterval(leoidsState.lobbyRefreshIntervalId);
+      leoidsState.lobbyRefreshIntervalId = null;
+    }
+    modal.remove();
+  });
+
+  document.getElementById("btn-leoids-lobby-map")?.addEventListener("click", () => {
+    if (leoidsState.lobbyRefreshIntervalId) {
+      clearInterval(leoidsState.lobbyRefreshIntervalId);
+      leoidsState.lobbyRefreshIntervalId = null;
+    }
+    modal.remove();
+    openSetupPanel();
+  });
+
+  document.getElementById("btn-leoids-lobby-gps")?.addEventListener("click", () => {
+    startGpsOnlineSync();
+    speakText?.("Location sharing started.");
+  });
+
+  document.getElementById("btn-leoids-lobby-help")?.addEventListener("click", () => {
+    alert("This will later become the Help, Rules, Shop, Items and Power-ups area.");
+  });
+
+  document.getElementById("btn-leoids-lobby-runner")?.addEventListener("click", async () => {
+    setRole("runner");
+    if (supabase.playerId) {
+      await supabase.joinSession({
+        sessionId,
+        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        role: "runner",
+      });
+    }
+    await refreshLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-lobby-hunter")?.addEventListener("click", async () => {
+    setRole("hunter");
+    if (supabase.playerId) {
+      await supabase.joinSession({
+        sessionId,
+        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        role: "hunter",
+      });
+    }
+    await refreshLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-vis-always")?.addEventListener("click", () => {
+    setRunnerVisibilityMode("always");
+  });
+
+  document.getElementById("btn-leoids-vis-pulse")?.addEventListener("click", () => {
+    leoidsState.runnerVisibleSeconds = 5;
+    leoidsState.runnerHiddenSeconds = 55;
+    setRunnerVisibilityMode("pulse");
+  });
+
+  document.getElementById("btn-leoids-vis-hidden")?.addEventListener("click", () => {
+    setRunnerVisibilityMode("hidden");
+  });
+
+  document.getElementById("btn-leoids-vis-hunters-only")?.addEventListener("click", () => {
+    setRunnerVisibilityMode("hunters_only");
+  });
+}
+
 
   async function refreshLobbyScreen() {
     const session = await supabase.getSession(sessionId);
@@ -3005,7 +3267,9 @@ return {
   endRound,
   updatePanel,
   wirePanelButtons,
-  
+
+  setRunnerVisibilityMode,
+
   openOnlineSessionBrowser,
   openOnlineLobbyScreen,
 };
