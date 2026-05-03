@@ -2609,7 +2609,7 @@ function startOnlineSessionSync() {
 }
 
   
-  async function openOnlineSessionBrowser() {
+ async function openOnlineSessionBrowser() {
   const supabase = window.LEOIDSSupabase;
 
   if (!supabase) {
@@ -2759,10 +2759,12 @@ function startOnlineSessionSync() {
 
   document.body.appendChild(modal);
 
+  // CLOSE
   document
     .getElementById("btn-leoids-close-session-browser")
     ?.addEventListener("click", () => modal.remove());
 
+  // REFRESH
   document
     .getElementById("btn-leoids-refresh-sessions")
     ?.addEventListener("click", () => {
@@ -2770,6 +2772,7 @@ function startOnlineSessionSync() {
       openOnlineSessionBrowser();
     });
 
+  // HOST
   document
     .getElementById("btn-leoids-host-public-session")
     ?.addEventListener("click", async () => {
@@ -2779,7 +2782,6 @@ function startOnlineSessionSync() {
       leoidsState.onlinePlayerName = hostName;
 
       const session = await createOnlineSession(name);
-
       if (!session) return;
 
       await joinOnlineSession({
@@ -2789,9 +2791,10 @@ function startOnlineSessionSync() {
       });
 
       modal.remove();
-      openSetupPanel();
+      openOnlineLobbyScreen(session.id);
     });
 
+  // JOIN
   modal.querySelectorAll(".leoids-session-join-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const sessionId = btn.dataset.sessionId;
@@ -2804,7 +2807,7 @@ function startOnlineSessionSync() {
       });
 
       modal.remove();
-      openSetupPanel();
+      openOnlineLobbyScreen(sessionId);
     });
   });
 }
