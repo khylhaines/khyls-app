@@ -1,6 +1,6 @@
 // leoids_supabase.js
 // Barrow Quest - LEOIDS Supabase Multiplayer Layer
-// Adds public session browser support + duplicate join protection
+// Public sessions + duplicate join protection + session config + countdown sync
 
 const LEOIDS_SUPABASE_CONFIG = {
   url: "https://tdrcnvtnqedzommfffmq.supabase.co",
@@ -16,6 +16,7 @@ const LEOIDSSupabase = {
   playerName: null,
   playerRole: "runner",
   playersChannel: null,
+  sessionChannel: null,
   remotePlayers: {},
 
   init() {
@@ -69,6 +70,8 @@ const LEOIDSSupabase = {
       return null;
     }
 
+    const now = new Date().toISOString();
+
     const { data, error } = await this.client
       .from("leoids_sessions")
       .insert({
@@ -77,7 +80,14 @@ const LEOIDSSupabase = {
         host_name: options.hostName || options.host_name || "Host",
         max_players: Number(options.maxPlayers || options.max_players || 12),
         is_public: options.isPublic ?? options.is_public ?? true,
-        last_seen: new Date().toISOString()
+        round_time: Number(options.roundTime || options.round_time || 1200),
+        hunter_delay: Number(options.hunterDelay || options.hunter_delay || 120),
+        base_radius: Number(options.baseRadius || options.base_radius || 15),
+        tag_radius: Number(options.tagRadius || options.tag_radius || 10),
+        countdown_seconds: Number(
+          options.countdownSeconds || options.countdown_seconds || 60
+        ),
+        last_seen: now
       })
       .select()
       .single();
@@ -92,6 +102,23 @@ const LEOIDSSupabase = {
     return data;
   },
 
+  async getSession(sessionId = this.sessionId) {
+    if (!this.client || !sessionId) return null;
+
+    const { data, error } = await this.client
+      .from("leoids_sessions")
+      .select("*")
+      .eq("id", sessionId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to get LEOIDS session:", error);
+      return null;
+    }
+
+    return data || null;
+  },
+
   async listPublicSessions() {
     if (!this.client) {
       console.warn("Supabase not initialised. Run LEOIDSSupabase.init() first.");
@@ -102,7 +129,7 @@ const LEOIDSSupabase = {
       .from("leoids_sessions")
       .select("*")
       .eq("is_public", true)
-      .in("status", ["lobby", "active"])
+      .in("status", ["lobby", "countdown", "active"])
       .order("last_seen", { ascending: false })
       .limit(20);
 
@@ -141,23 +168,6 @@ const LEOIDSSupabase = {
     }));
   },
 
-  async getPlayerById(playerId) {
-    if (!this.client || !playerId) return null;
-
-    const { data, error } = await this.client
-      .from("leoids_players")
-      .select("*")
-      .eq("id", playerId)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Failed to get saved LEOIDS player:", error);
-      return null;
-    }
-
-    return data || null;
-  },
-
   async updateSessionHeartbeat(sessionId = this.sessionId) {
     if (!this.client || !sessionId) return false;
 
@@ -193,6 +203,180 @@ const LEOIDSSupabase = {
     }
 
     return true;
+  },
+
+  async updateSessionConfig(sessionId = this.sessionId, config = {}) {
+    if (!this.client || !sessionId) {
+      console.warn("No Supabase client or session ID for session config update.");
+      return null;
+    }
+
+    const update = {
+      last_seen: new Date().toISOString()
+    };
+
+    if (config.boundary !== undefined) update.boundary = config.boundary;
+
+    if (config.basePoint) {
+      update.base_lat = Number(config.basePoint.lat);
+      update.base_lng = Number(config.basePoint.lng);
+    }
+
+    if (config.base_lat !== undefined) update.base_lat = Number(config.base_lat);
+    if (config.base_lng !== undefined) update.base_lng = Number(config.base_lng);
+
+    if (config.roundTime !== undefined) update.round_time = Number(config.roundTime);
+    if (config.round_time !== undefined) update.round_time = Number(config.round_time);
+
+    if (config.hunterDelay !== undefined) update.hunter_delay = Number(config.hunterDelay);
+    if (config.hunter_delay !== undefined) update.hunter_delay = Number(config.hunter_delay);
+
+    if (config.baseRadius !== undefined) update.base_radius = Number(config.baseRadius);
+    if (config.base_radius !== undefined) update.base_radius = Number(config.base_radius);
+
+    if (config.tagRadius !== undefined) update.tag_radius = Number(config.tagRadius);
+    if (config.tag_radius !== undefined) update.tag_radius = Number(config.tag_radius);
+
+    if (config.countdownSeconds !== undefined) {
+      update.countdown_seconds = Number(config.countdownSeconds);
+    }
+
+    if (config.countdown_seconds !== undefined) {
+      update.countdown_seconds = Number(config.countdown_seconds);
+    }
+
+    const { data, error } = await this.client
+      .from("leoids_sessions")
+      .update(update)
+      .eq("id", sessionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to update LEOIDS session config:", error);
+      return null;
+    }
+
+    console.log("LEOIDS session config updated:", data);
+    return data;
+  },
+
+  async startCountdown(sessionId = this.sessionId, seconds = 60) {
+    if (!this.client || !sessionId) {
+      console.warn("No Supabase client or session ID for countdown.");
+      return null;
+    }
+
+    const safeSeconds = Math.max(3, Number(seconds || 60));
+    const nowMs = Date.now();
+    const startsAt = new Date(nowMs + safeSeconds * 1000).toISOString();
+
+    const { data, error } = await this.client
+      .from("leoids_sessions")
+      .update({
+        status: "countdown",
+        countdown_seconds: safeSeconds,
+        countdown_started_at: new Date(nowMs).toISOString(),
+        game_starts_at: startsAt,
+        round_started_at: null,
+        round_ends_at: null,
+        hunter_release_at: null,
+        last_seen: new Date().toISOString()
+      })
+      .eq("id", sessionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to start LEOIDS countdown:", error);
+      return null;
+    }
+
+    console.log("LEOIDS countdown started:", data);
+    return data;
+  },
+
+  async markRoundStarted(sessionId = this.sessionId, config = {}) {
+    if (!this.client || !sessionId) return null;
+
+    const roundTime = Number(config.roundTime || config.round_time || 1200);
+    const hunterDelay = Number(config.hunterDelay || config.hunter_delay || 120);
+
+    const nowMs = Date.now();
+
+    const { data, error } = await this.client
+      .from("leoids_sessions")
+      .update({
+        status: "active",
+        round_started_at: new Date(nowMs).toISOString(),
+        round_ends_at: new Date(nowMs + roundTime * 1000).toISOString(),
+        hunter_release_at: new Date(nowMs + hunterDelay * 1000).toISOString(),
+        last_seen: new Date().toISOString()
+      })
+      .eq("id", sessionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to mark LEOIDS round started:", error);
+      return null;
+    }
+
+    return data;
+  },
+
+  subscribeToSession(onChange) {
+    if (!this.client || !this.sessionId) {
+      console.warn("Supabase not ready or no session joined.");
+      return null;
+    }
+
+    if (this.sessionChannel) {
+      this.client.removeChannel(this.sessionChannel);
+      this.sessionChannel = null;
+    }
+
+    this.sessionChannel = this.client
+      .channel(`leoids_session_${this.sessionId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "leoids_sessions",
+          filter: `id=eq.${this.sessionId}`
+        },
+        (payload) => {
+          console.log("Realtime session update:", payload);
+
+          if (typeof onChange === "function") {
+            onChange(payload);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log("LEOIDS session realtime status:", status);
+      });
+
+    console.log("Subscribed to session updates.");
+    return this.sessionChannel;
+  },
+
+  async getPlayerById(playerId) {
+    if (!this.client || !playerId) return null;
+
+    const { data, error } = await this.client
+      .from("leoids_players")
+      .select("*")
+      .eq("id", playerId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to get saved LEOIDS player:", error);
+      return null;
+    }
+
+    return data || null;
   },
 
   async joinSession({ sessionId, displayName = "Player", role = "runner" }) {
@@ -371,6 +555,11 @@ const LEOIDSSupabase = {
     if (this.playersChannel) {
       await this.client.removeChannel(this.playersChannel);
       this.playersChannel = null;
+    }
+
+    if (this.sessionChannel) {
+      await this.client.removeChannel(this.sessionChannel);
+      this.sessionChannel = null;
     }
 
     if (deletePlayer && oldPlayerId) {
