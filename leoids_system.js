@@ -57,6 +57,7 @@ export function createLeoidsSystem({
       {
         id: "p1",
         name: "You",
+        avatar: "🧍",
         role: "runner",
         status: "free",
         isAI: false,
@@ -256,11 +257,12 @@ export function createLeoidsSystem({
       leoidsState.players[0];
   }
 
-  function getPlayerIcon(player) {
-    if (player.status === "jailed") return "🔒";
-    if (player.role === "hunter") return player.isAI ? "🔴" : "🟥";
-    return player.isAI ? "🔵" : "🟦";
-  }
+ function getPlayerIcon(player) {
+  if (player?.avatar) return player.avatar;
+  if (player.status === "jailed") return "🔒";
+  if (player.role === "hunter") return player.isAI ? "🔴" : "🟥";
+  return player.isAI ? "🔵" : "🟦";
+}
 
   function getBoundaryCentreFallback() {
     const map = getMapSafe();
@@ -306,33 +308,34 @@ export function createLeoidsSystem({
     drawPlayerMarkers();
   }
 
-  function normaliseOnlinePlayer(row) {
-    if (!row) return null;
+ function normaliseOnlinePlayer(row) {
+  if (!row) return null;
 
-    return {
-      id: row.id,
-      name: row.display_name || row.name || "Online Player",
-      role: row.role || "runner",
-      status: row.status || "free",
-      isAI: false,
-      isOnline: true,
-      isLocal: row.id === leoidsState.onlinePlayerId,
-      score: Number(row.score || 0),
-      coins: Number(row.coins || 0),
-      position:
-        row.lat !== null &&
-        row.lat !== undefined &&
-        row.lng !== null &&
-        row.lng !== undefined
-          ? {
-              lat: Number(row.lat),
-              lng: Number(row.lng),
-            }
-          : null,
-      jailedAtBase: row.status === "jailed",
-      lastSeen: row.last_seen || null,
-    };
-  }
+  return {
+    id: row.id,
+    name: row.display_name || row.name || "Online Player",
+    avatar: row.avatar || "🧍",
+    role: row.role || "runner",
+    status: row.status || "free",
+    isAI: false,
+    isOnline: true,
+    isLocal: row.id === leoidsState.onlinePlayerId,
+    score: Number(row.score || 0),
+    coins: Number(row.coins || 0),
+    position:
+      row.lat !== null &&
+      row.lat !== undefined &&
+      row.lng !== null &&
+      row.lng !== undefined
+        ? {
+            lat: Number(row.lat),
+            lng: Number(row.lng),
+          }
+        : null,
+    jailedAtBase: row.status === "jailed",
+    lastSeen: row.last_seen || null,
+  };
+}
 
   function upsertOnlinePlayer(row) {
     const onlinePlayer = normaliseOnlinePlayer(row);
@@ -345,6 +348,7 @@ export function createLeoidsSystem({
       leoidsState.players.push(existing);
     } else {
       existing.name = onlinePlayer.name;
+      existing.avatar = onlinePlayer.avatar;
       existing.role = onlinePlayer.role;
       existing.status = onlinePlayer.status;
       existing.isAI = false;
@@ -1538,6 +1542,7 @@ function setRunnerVisibilityMode(mode = "always") {
       {
         id: "p1",
         name: "You",
+        avatar: "🧍",
         role: leoidsState.role,
         status: "free",
         isAI: false,
