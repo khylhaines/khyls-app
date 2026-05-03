@@ -450,62 +450,67 @@ export function createLeoidsSystem({
     return session;
   }
 
-  async function joinOnlineSession({
-    sessionId,
-    displayName = "Player",
-    role = leoidsState.role || "runner",
-  } = {}) {
-    const supabase = getSupabaseSafe();
+ async function joinOnlineSession({
+  sessionId,
+  displayName = "Player",
+  role = leoidsState.role || "runner",
+} = {}) {
+  const supabase = getSupabaseSafe();
 
-    if (!supabase) {
-      console.warn("LEOIDS Supabase module not loaded.");
-      speakText?.("Supabase is not loaded.");
-      return null;
-    }
-
-    if (!supabase.client && typeof supabase.init === "function") {
-      supabase.init();
-    }
-
-    const safeSessionId = sessionId || supabase.sessionId || leoidsState.onlineSessionId;
-
-    if (!safeSessionId) {
-      speakText?.("Create or enter an online session first.");
-      return null;
-    }
-
-    const player = await supabase.joinSession({
-      sessionId: safeSessionId,
-      displayName,
-      role,
-    });
-
-    if (!player) {
-      speakText?.("Could not join online session.");
-      return null;
-    }
-
-    leoidsState.onlineEnabled = true;
-    leoidsState.onlineSessionId = safeSessionId;
-    leoidsState.onlinePlayerId = player.id;
-    leoidsState.onlinePlayerName = displayName;
-    leoidsState.role = role;
-    leoidsState.status = player.status || "free";
-
-    leoidsState.players = leoidsState.players.filter((p) => p.id !== "p1");
-    upsertOnlinePlayer(player);
-
-    await loadOnlinePlayers();
-    startOnlinePlayerSync();
-
-    renderPlayers();
-    drawPlayerMarkers();
-    updatePanel();
-
-    speakText?.(`${displayName} joined online LEOIDS as ${role}.`);
-
-    return player;
+  if (!supabase) {
+    console.warn("LEOIDS Supabase module not loaded.");
+    speakText?.("Supabase is not loaded.");
+    return null;
   }
+
+  if (!supabase.client && typeof supabase.init === "function") {
+    supabase.init();
+  }
+
+  const safeSessionId = sessionId || supabase.sessionId || leoidsState.onlineSessionId;
+
+  if (!safeSessionId) {
+    speakText?.("Create or enter an online session first.");
+    return null;
+  }
+
+  const player = await supabase.joinSession({
+    sessionId: safeSessionId,
+    displayName,
+    role,
+  });
+
+  if (!player) {
+    speakText?.("Could not join online session.");
+    return null;
+  }
+
+  leoidsState.onlineEnabled = true;
+  leoidsState.onlineSessionId = safeSessionId;
+  leoidsState.onlinePlayerId = player.id;
+  leoidsState.onlinePlayerName = displayName;
+  leoidsState.role = role;
+  leoidsState.status = player.status || "free";
+
+  // Online mode = real players only.
+  // Remove the default local player and all AI players.
+  leoidsState.players = leoidsState.players.filter(
+    (p) => p.id !== "p1" && !p.isAI
+  );
+
+  upsertOnlinePlayer(player);
+
+  await loadOnlinePlayers();
+  startOnlinePlayerSync();
+
+  renderPlayers();
+  drawPlayerMarkers();
+  updatePanel();
+
+  speakText?.(`${displayName} joined online LEOIDS as ${role}.`);
+
+  return player;
+}
 
   function startOnlinePlayerSync() {
     const supabase = getSupabaseSafe();
