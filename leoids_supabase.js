@@ -1,10 +1,13 @@
 // leoids_supabase.js
 // Barrow Quest - LEOIDS Supabase Multiplayer Layer
+// Adds public session browser support + duplicate join protection
 
 const LEOIDS_SUPABASE_CONFIG = {
   url: "https://tdrcnvtnqedzommfffmq.supabase.co",
   key: "sb_publishable_YPSe_GdMCdfteff1-A-G4g_Y7cvA5Eb"
 };
+
+const LEOIDS_LOCAL_PLAYER_PREFIX = "barrow_quest_leoids_player_";
 
 const LEOIDSSupabase = {
   client: null,
@@ -28,6 +31,36 @@ const LEOIDSSupabase = {
 
     console.log("LEOIDS Supabase connected.");
     return true;
+  },
+
+  getLocalPlayerStorageKey(sessionId) {
+    return `${LEOIDS_LOCAL_PLAYER_PREFIX}${sessionId}`;
+  },
+
+  getSavedPlayerId(sessionId) {
+    if (!sessionId) return null;
+
+    try {
+      return localStorage.getItem(this.getLocalPlayerStorageKey(sessionId));
+    } catch {
+      return null;
+    }
+  },
+
+  savePlayerId(sessionId, playerId) {
+    if (!sessionId || !playerId) return;
+
+    try {
+      localStorage.setItem(this.getLocalPlayerStorageKey(sessionId), playerId);
+    } catch {}
+  },
+
+  clearSavedPlayerId(sessionId) {
+    if (!sessionId) return;
+
+    try {
+      localStorage.removeItem(this.getLocalPlayerStorageKey(sessionId));
+    } catch {}
   },
 
   async createSession(name = "Barrow LEOIDS Session", options = {}) {
@@ -80,9 +113,7 @@ const LEOIDSSupabase = {
 
     const sessionIds = (sessions || []).map((session) => session.id);
 
-    if (!sessionIds.length) {
-      return [];
-    }
+    if (!sessionIds.length) return [];
 
     const { data: players, error: playerError } = await this.client
       .from("leoids_players")
@@ -108,6 +139,23 @@ const LEOIDSSupabase = {
       ...session,
       player_count: counts[session.id] || 0
     }));
+  },
+
+  async getPlayerById(playerId) {
+    if (!this.client || !playerId) return null;
+
+    const { data, error } = await this.client
+      .from("leoids_players")
+      .select("*")
+      .eq("id", playerId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to get saved LEOIDS player:", error);
+      return null;
+    }
+
+    return data || null;
   },
 
   async updateSessionHeartbeat(sessionId = this.sessionId) {
@@ -153,9 +201,47 @@ const LEOIDSSupabase = {
       return null;
     }
 
+    if (!sessionId) {
+      console.warn("No sessionId provided.");
+      return null;
+    }
+
     this.sessionId = sessionId;
     this.playerName = displayName;
     this.playerRole = role;
+
+    const savedPlayerId = this.getSavedPlayerId(sessionId);
+
+    if (savedPlayerId) {
+      const existingPlayer = await this.getPlayerById(savedPlayerId);
+
+      if (existingPlayer && existingPlayer.session_id === sessionId) {
+        const { data, error } = await this.client
+          .from("leoids_players")
+          .update({
+            display_name: displayName || existingPlayer.display_name,
+            role: role || existingPlayer.role,
+            last_seen: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existingPlayer.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Failed to reuse existing LEOIDS player:", error);
+          return null;
+        }
+
+        this.playerId = data.id;
+        await this.updateSessionHeartbeat(sessionId);
+
+        console.log("Rejoined LEOIDS session as existing player:", data);
+        return data;
+      }
+
+      this.clearSavedPlayerId(sessionId);
+    }
 
     const { data, error } = await this.client
       .from("leoids_players")
@@ -176,10 +262,11 @@ const LEOIDSSupabase = {
     }
 
     this.playerId = data.id;
+    this.savePlayerId(sessionId, data.id);
 
     await this.updateSessionHeartbeat(sessionId);
 
-    console.log("Joined LEOIDS session as player:", data);
+    console.log("Joined LEOIDS session as new player:", data);
     return data;
   },
 
@@ -264,7 +351,8 @@ const LEOIDSSupabase = {
     const { data, error } = await this.client
       .from("leoids_players")
       .select("*")
-      .eq("session_id", this.sessionId);
+      .eq("session_id", this.sessionId)
+      .order("updated_at", { ascending: false });
 
     if (error) {
       console.error("Failed to load LEOIDS players:", error);
@@ -274,22 +362,35 @@ const LEOIDSSupabase = {
     return data || [];
   },
 
-  async leaveSession() {
+  async leaveSession({ deletePlayer = false } = {}) {
     if (!this.client) return;
+
+    const oldSessionId = this.sessionId;
+    const oldPlayerId = this.playerId;
 
     if (this.playersChannel) {
       await this.client.removeChannel(this.playersChannel);
       this.playersChannel = null;
     }
 
-    if (this.playerId) {
+    if (deletePlayer && oldPlayerId) {
       await this.client
         .from("leoids_players")
         .delete()
-        .eq("id", this.playerId);
+        .eq("id", oldPlayerId);
+
+      this.clearSavedPlayerId(oldSessionId);
+    } else if (oldPlayerId) {
+      await this.client
+        .from("leoids_players")
+        .update({
+          last_seen: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", oldPlayerId);
     }
 
-    await this.updateSessionHeartbeat(this.sessionId);
+    await this.updateSessionHeartbeat(oldSessionId);
 
     this.sessionId = null;
     this.playerId = null;
