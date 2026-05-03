@@ -2643,7 +2643,7 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
           font-weight:900;
           margin-top:12px;
         ">
-          HELP / RULES / ITEMS COMING SOON
+          HELP / RULES / ITEMS
         </button>
       </div>
 
@@ -3076,6 +3076,114 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
   });
 }
 
+function openLeoidsLeaderboard() {
+  const old = document.getElementById("leoids-leaderboard-screen");
+  if (old) old.remove();
+
+  const sorted = [...leoidsState.players].sort(
+    (a, b) => Number(b.score || 0) - Number(a.score || 0)
+  );
+
+  const rows = sorted.length
+    ? sorted
+        .map(
+          (player, index) => `
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:10px;
+              padding:12px;
+              border-radius:14px;
+              background:rgba(255,255,255,.07);
+              margin-top:8px;
+            ">
+              <div>
+                <strong>${index + 1}. ${getPlayerIcon(player)} ${player.name}</strong>
+                <div style="font-size:12px;opacity:.8;margin-top:3px;">
+                  ${player.role.toUpperCase()} • ${player.status.toUpperCase()}${player.isOnline ? " • ONLINE" : ""}
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <strong>${Number(player.score || 0)} pts</strong>
+                <div style="font-size:12px;opacity:.8;margin-top:3px;">
+                  ${Number(player.coins || 0)} coins
+                </div>
+              </div>
+            </div>
+          `
+        )
+        .join("")
+    : `<div style="opacity:.8;margin-top:12px;">No players yet.</div>`;
+
+  const modal = document.createElement("div");
+  modal.id = "leoids-leaderboard-screen";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.zIndex = "999999";
+  modal.style.background = "rgba(0,0,0,.88)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "18px";
+
+  modal.innerHTML = `
+    <div style="
+      width:min(94vw,560px);
+      max-height:86vh;
+      overflow:auto;
+      border:2px solid rgba(255,213,74,.85);
+      border-radius:28px;
+      background:linear-gradient(180deg,#171b2b,#05070b);
+      color:white;
+      padding:22px;
+      box-shadow:0 0 36px rgba(255,213,74,.25);
+    ">
+      <h2 style="margin:0;color:#ffd54a;text-align:center;">LEOIDS LEADERBOARD</h2>
+      <div style="margin-top:16px;">${rows}</div>
+
+      <button id="btn-leoids-leaderboard-close" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:14px;
+        background:#ffd54a;
+        color:#111;
+        font-weight:900;
+        margin-top:18px;
+      ">
+        BACK
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document
+    .getElementById("btn-leoids-leaderboard-close")
+    ?.addEventListener("click", () => modal.remove());
+}
+
+function tryReleaseJailedRunners() {
+  const local = getLocalPlayer();
+
+  if (!local) {
+    speakText?.("No local player found.");
+    return;
+  }
+
+  if (local.role !== "runner") {
+    showLeoidsEvent(
+      "RUNNERS ONLY",
+      "Only runners can release jailed players.",
+      "🟦"
+    );
+    speakText?.("Only runners can release jailed players.");
+    return;
+  }
+
+  rescueJailedRunners();
+}
+
   
   function wirePanelButtons() {
     const setClick = (id, fn) => {
@@ -3089,6 +3197,9 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
       };
     };
 
+    setClick("btn-leoids-release-jail", tryReleaseJailedRunners);
+    setClick("btn-leoids-leaderboard", openLeoidsLeaderboard);
+    
     setClick("btn-leoids-close", closeSetupPanel);
     setClick("btn-leoids-close-x", closeSetupPanel);
 
