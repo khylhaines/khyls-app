@@ -3,8 +3,8 @@
 // Phase 1: connect, create/join session, sync player position, listen to players
 
 const LEOIDS_SUPABASE_CONFIG = {
-  url: "PASTE_YOUR_PROJECT_URL_HERE",
-  key: "PASTE_YOUR_PUBLISHABLE_KEY_HERE"
+ url: "https://tdrcnvtnqedzommffmq.supabase.co",
+  key: "sb_publishable_YPSe_GdMCdfteff1-A-G4g_Y7cvA5Eb"
 };
 
 const LEOIDSSupabase = {
