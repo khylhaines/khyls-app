@@ -1109,13 +1109,14 @@ function openSetupPanel() {
   hideLeoidsBattleHud?.();
   hideLeoidsCommandHub?.();
 
-  enterBattleMap();
+  const previousMapMode = leoidsState.mapMode;
+  leoidsState.mapMode = "none";
 
-  hideLeoidsBattleHud?.();
   disableMapPointAdding?.();
   hideLeoidsMapControls?.();
 
-  leoidsState.mapMode = "none";
+  enterBattleMap?.();
+  hideLeoidsBattleHud?.();
 
   if ($("leoids-round-length")) {
     $("leoids-round-length").value = String(leoidsState.roundTime);
@@ -1140,19 +1141,16 @@ function openSetupPanel() {
   showModal?.("leoids-modal");
 
   wirePanelButtons?.();
-
-  if (typeof setRole === "function") {
-    setRole(leoidsState.role);
-  }
-
-  if (typeof setBoundaryMode === "function") {
-    setBoundaryMode(leoidsState.boundaryMode, false);
-  }
-
+  setRole?.(leoidsState.role);
   refreshBoundaryButtons?.();
   renderPlayers?.();
   updatePanel?.();
+
+  if (previousMapMode === "boundary" || previousMapMode === "base") {
+    speakText?.("Back to setup.");
+  }
 }
+
 
 function closeSetupPanel() {
   closeModal?.("leoids-modal");
@@ -1453,20 +1451,29 @@ async function confirmBaseFromMap() {
 
   
 function backToLeoidsPanelFromMap() {
-  disableMapPointAdding?.();
-  hideLeoidsMapControls?.();
-
   leoidsState.mapMode = "none";
   leoidsState.pendingBasePoint = null;
 
+  disableMapPointAdding?.();
+  hideLeoidsMapControls?.();
+  hideLeoidsBattleHud?.();
+  hideLeoidsCommandHub?.();
   showActionButton?.(false);
 
+  closeModal?.("leoids-modal");
+
   setTimeout(() => {
-    openSetupPanel?.();
-  }, 50);
+    showModal?.("leoids-modal");
+    wirePanelButtons?.();
+    setRole?.(leoidsState.role);
+    refreshBoundaryButtons?.();
+    renderPlayers?.();
+    updatePanel?.();
+  }, 80);
 
   speakText?.("Back to LEOIDS setup.");
 }
+
  
   
  function drawCircleBoundary(center, radius) {
