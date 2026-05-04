@@ -1445,17 +1445,18 @@ async function confirmBaseFromMap() {
 
  
   function backToLeoidsPanelFromMap() {
-    leoidsState.mapMode = "none";
-    leoidsState.pendingBasePoint = null;
+  disableMapPointAdding?.();
+  hideLeoidsMapControls?.();
 
-    disableMapPointAdding();
-    hideLeoidsMapControls();
-    showActionButton?.(false);
+  leoidsState.mapMode = "none";
+  leoidsState.pendingBasePoint = null;
 
-    openSetupPanel();
+  showActionButton?.(false);
 
-    speakText?.("Returned to LEOIDs setup.");
-  }
+  openSetupPanel?.();
+
+  speakText?.("Back to LEOIDS setup.");
+}
 
  function drawCircleBoundary(center, radius) {
   const map = getMapSafe();
