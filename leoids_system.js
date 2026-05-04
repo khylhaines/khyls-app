@@ -1677,28 +1677,37 @@ function setRunnerVisibilityMode(mode = "always") {
   }
 
   function sendRunnerToJail(runner, taggedBy = null) {
-    if (!runner || runner.role !== "runner") return false;
-    if (runner.status === "jailed") return false;
+  if (!runner || runner.role !== "runner") return false;
+  if (runner.status === "jailed") return false;
 
-    runner.status = "jailed";
-    runner.jailedAtBase = false;
+  runner.status = "jailed";
+  runner.jailedAtBase = false;
 
-    if (leoidsState.basePoint) {
-      runner.position = randomNearbyPoint(leoidsState.basePoint, 5);
-      runner.jailedAtBase = true;
-    }
-
-    drawPlayerMarkers();
-    renderPlayers();
-    updatePanel();
-
-    const byText = taggedBy?.name ? `Tagged by ${taggedBy.name}.` : "You have been tagged.";
-    showLeoidsEvent("RUNNER JAILED", `${runner.name} is in jail.\n${byText}`, "🔒");
-
-    speakText?.(`${runner.name} has been tagged and sent to jail.`);
-
-    return true;
+  if (leoidsState.basePoint) {
+    runner.position = randomNearbyPoint(leoidsState.basePoint, 5);
+    runner.jailedAtBase = true;
   }
+
+  drawPlayerMarkers();
+  renderPlayers();
+  updatePanel();
+
+  const byText = taggedBy?.name
+    ? `Tagged by ${taggedBy.name}.`
+    : "Tagged by a hunter.";
+
+  showLeoidsEvent(
+    "RUNNER JAILED",
+    `${runner.name} has been caught.\n${byText}`,
+    "🔒",
+    "hunter"
+  );
+
+  speakText?.(`${runner.name} has been tagged and sent to jail.`);
+
+  return true;
+}
+
 
   function tagSpecificRunner(runner) {
     const local = getLocalPlayer();
@@ -1802,76 +1811,79 @@ function setRunnerVisibilityMode(mode = "always") {
     tagSpecificRunner(closest);
   }
 
-  function rescueJailedRunners() {
-    const local = getLocalPlayer();
-    if (!local) return;
+ function rescueJailedRunners() {
+  const local = getLocalPlayer();
+  if (!local) return;
 
-    if (local.role !== "runner") {
-      speakText?.("Only runners can rescue.");
-      return;
-    }
+  if (local.role !== "runner") {
+    speakText?.("Only runners can rescue.");
+    return;
+  }
 
-    if (!leoidsState.basePoint && window.__leoidsBasePoint) {
-      leoidsState.basePoint = window.__leoidsBasePoint;
-    }
+  if (!leoidsState.basePoint && window.__leoidsBasePoint) {
+    leoidsState.basePoint = window.__leoidsBasePoint;
+  }
 
-    if (!leoidsState.basePoint) {
-      speakText?.("Set the jail base first.");
-      return;
-    }
+  if (!leoidsState.basePoint) {
+    speakText?.("Set the jail base first.");
+    return;
+  }
 
-    if (!local.position) {
-      local.position = leoidsState.basePoint;
-    }
+  if (!local.position) {
+    local.position = leoidsState.basePoint;
+  }
 
-    const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
+  const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
 
-    if (distanceToBase > leoidsState.baseRadius) {
-      speakText?.("You are not close enough to the jail base.");
-      showLeoidsEvent(
-        "TOO FAR FROM BASE",
-        `Get inside the ${leoidsState.baseRadius}m jail/base radius to rescue.`,
-        "📍"
-      );
-      return;
-    }
-
-    const jailed = leoidsState.players.filter(
-      (p) =>
-        p.role === "runner" &&
-        p.status === "jailed" &&
-        distanceMeters(p.position, leoidsState.basePoint) <= leoidsState.baseRadius
-    );
-
-    if (!jailed.length) {
-      speakText?.("No jailed runners are at the base to rescue.");
-      showLeoidsEvent("NO RESCUE", "No jailed runners are at the base.", "🔵");
-      return;
-    }
-
-    jailed.forEach((runner) => {
-      runner.status = "free";
-      runner.jailedAtBase = false;
-      runner.position = randomNearbyPoint(leoidsState.basePoint, 15);
-    });
-
-    local.score += 75;
-    local.coins += 15;
-    leoidsState.score += 75;
-    leoidsState.coins += 15;
-
-    drawPlayerMarkers();
-    renderPlayers();
-    updatePanel();
+  if (distanceToBase > leoidsState.baseRadius) {
+    speakText?.("You are not close enough to the jail base.");
 
     showLeoidsEvent(
-      "RESCUE COMPLETE",
-      `${jailed.length} runner${jailed.length === 1 ? "" : "s"} released from jail.`,
-      "🟦"
+      "TOO FAR FROM BASE",
+      `Get inside the ${leoidsState.baseRadius}m rescue zone.`,
+      "📍",
+      "base"
     );
 
-    speakText?.("Jailed runners rescued.");
+    return;
   }
+
+  const jailed = leoidsState.players.filter(
+    (p) =>
+      p.role === "runner" &&
+      p.status === "jailed" &&
+      distanceMeters(p.position, leoidsState.basePoint) <= leoidsState.baseRadius
+  );
+
+  if (!jailed.length) {
+    speakText?.("No jailed runners are at the base to rescue.");
+    return;
+  }
+
+  jailed.forEach((runner) => {
+    runner.status = "free";
+    runner.jailedAtBase = false;
+    runner.position = randomNearbyPoint(leoidsState.basePoint, 15);
+  });
+
+  local.score += 75;
+  local.coins += 15;
+  leoidsState.score += 75;
+  leoidsState.coins += 15;
+
+  drawPlayerMarkers();
+  renderPlayers();
+  updatePanel();
+
+  showLeoidsEvent(
+    "RESCUE COMPLETE",
+    `${jailed.length} runner${jailed.length === 1 ? "" : "s"} released.\n+75 points • +15 coins`,
+    "🛡️",
+    "base"
+  );
+
+  speakText?.("Jailed runners rescued.");
+}
 
   function runAITagChecks() {
     if (!leoidsState.active) return;
@@ -1929,49 +1941,113 @@ function setRunnerVisibilityMode(mode = "always") {
     return true;
   }
 
-  function showLeoidsEvent(title, message, emoji = "⚡") {
-    const old = document.getElementById("leoids-event-banner");
-    if (old) old.remove();
+  function showLeoidsEvent(title, message, emoji = "⚡", theme = "gold") {
+  const old = document.getElementById("leoids-event-banner");
+  if (old) old.remove();
 
-    const banner = document.createElement("div");
-    banner.id = "leoids-event-banner";
-    banner.style.position = "fixed";
-    banner.style.inset = "0";
-    banner.style.zIndex = "999999";
-    banner.style.background = "rgba(0,0,0,0.82)";
-    banner.style.display = "flex";
-    banner.style.alignItems = "center";
-    banner.style.justifyContent = "center";
-    banner.style.padding = "20px";
+  const colours = {
+    hunter: {
+      main: "#ff3b3b",
+      glow: "rgba(255,59,59,.45)",
+      bg: "linear-gradient(180deg,#2a1010,#070303)",
+    },
+    runner: {
+      main: "#22c55e",
+      glow: "rgba(34,197,94,.45)",
+      bg: "linear-gradient(180deg,#102a18,#030704)",
+    },
+    base: {
+      main: "#00d4ff",
+      glow: "rgba(0,212,255,.45)",
+      bg: "linear-gradient(180deg,#082232,#02070a)",
+    },
+    jail: {
+      main: "#9ca3af",
+      glow: "rgba(156,163,175,.35)",
+      bg: "linear-gradient(180deg,#1f2937,#05070b)",
+    },
+    gold: {
+      main: "#ffd54a",
+      glow: "rgba(255,213,74,.35)",
+      bg: "linear-gradient(180deg,#161b2a,#05070b)",
+    },
+  };
 
-    banner.innerHTML = `
+  const c = colours[theme] || colours.gold;
+
+  const banner = document.createElement("div");
+  banner.id = "leoids-event-banner";
+  banner.style.position = "fixed";
+  banner.style.inset = "0";
+  banner.style.zIndex = "999999";
+  banner.style.background = "rgba(0,0,0,0.72)";
+  banner.style.display = "flex";
+  banner.style.alignItems = "center";
+  banner.style.justifyContent = "center";
+  banner.style.padding = "20px";
+  banner.style.pointerEvents = "none";
+
+  banner.innerHTML = `
+    <div style="
+      width:min(90vw,460px);
+      border:2px solid ${c.main};
+      border-radius:26px;
+      background:${c.bg};
+      color:white;
+      text-align:center;
+      padding:24px;
+      box-shadow:0 0 38px ${c.glow};
+      animation:leoidsEventPop .22s ease-out;
+    ">
       <div style="
-        width:min(92vw,520px);
-        border:2px solid rgba(255,213,74,.85);
-        border-radius:26px;
-        background:linear-gradient(180deg,#161b2a,#05070b);
-        color:white;
-        text-align:center;
-        padding:26px;
-        box-shadow:0 0 35px rgba(255,213,74,.35);
+        font-size:56px;
+        margin-bottom:10px;
+        filter:drop-shadow(0 0 12px ${c.main});
       ">
-        <div style="font-size:58px;margin-bottom:12px;">${emoji}</div>
-        <div style="color:#ffd54a;font-weight:900;font-size:22px;letter-spacing:.06em;">
-          ${title}
-        </div>
-        <div style="margin-top:12px;font-size:15px;line-height:1.5;white-space:pre-wrap;">
-          ${message}
-        </div>
+        ${emoji}
       </div>
+
+      <div style="
+        color:${c.main};
+        font-weight:1000;
+        font-size:22px;
+        letter-spacing:.08em;
+      ">
+        ${title}
+      </div>
+
+      <div style="
+        margin-top:12px;
+        font-size:15px;
+        line-height:1.5;
+        white-space:pre-wrap;
+        opacity:.95;
+      ">
+        ${message}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(banner);
+
+  if (!document.getElementById("leoids-event-pop-style")) {
+    const style = document.createElement("style");
+    style.id = "leoids-event-pop-style";
+    style.innerHTML = `
+      @keyframes leoidsEventPop {
+        0% { transform:scale(.86); opacity:0; }
+        100% { transform:scale(1); opacity:1; }
+      }
     `;
-
-    document.body.appendChild(banner);
-
-    setTimeout(() => {
-      banner.remove();
-    }, 2600);
+    document.head.appendChild(style);
   }
 
+  setTimeout(() => {
+    banner.remove();
+  }, 2200);
+}
+
+  
   function showRoundEndScreen(reason = "manual") {
     const old = document.getElementById("leoids-round-end-screen");
     if (old) old.remove();
