@@ -2806,60 +2806,97 @@ function tickRound() {
   }
 
   function updatePanel() {
-    updateLeoidsBattleHud();
-    
-    if (!$("leoids-status")) return;
+  if (!$("leoids-status")) return;
 
-    const roleText = leoidsState.role === "hunter" ? "Hunter" : "Runner";
-    const statusText = leoidsState.active ? "ACTIVE" : "SETUP";
-    const onlineText = leoidsState.onlineEnabled
-      ? `ONLINE • ${leoidsState.onlineSessionId || "session ready"}`
-      : "LOCAL";
+  const local = getLocalPlayer();
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
-    const boundaryText =
-      leoidsState.boundaryMode === "circle"
-        ? leoidsState.boundaryCenter
-          ? `Circle ${leoidsState.boundaryRadius}m`
-          : "No circle boundary set"
-        : leoidsState.boundaryPoints.length >= 3
-        ? `Street boundary set with ${leoidsState.boundaryPoints.length} points`
-        : `Street boundary needs ${
-            3 - leoidsState.boundaryPoints.length
-          } more point(s)`;
+  const roleText = leoidsState.role === "hunter" ? "Hunter" : "Runner";
+  const statusText = leoidsState.active ? "ACTIVE" : "SETUP";
 
-    const baseText = leoidsState.basePoint
-      ? `Jail/Base set • ${leoidsState.baseRadius}m rescue radius`
-      : "No jail/base set";
+  const onlineText = leoidsState.onlineEnabled
+    ? `ONLINE • ${leoidsState.onlineSessionId || "session ready"}`
+    : "LOCAL";
 
-    const releaseText =
-      leoidsState.role === "hunter"
-        ? leoidsState.huntersReleased
-          ? "Hunters released"
-          : `Hunter release: ${formatTime(leoidsState.hunterDelayLeft)}`
-        : `Hunter delay: ${formatTime(leoidsState.hunterDelay)}`;
+  const boundaryText =
+    leoidsState.boundaryMode === "circle"
+      ? leoidsState.boundaryCenter
+        ? `Circle ${leoidsState.boundaryRadius}m`
+        : "No circle boundary set"
+      : leoidsState.boundaryPoints.length >= 3
+      ? `Street boundary set with ${leoidsState.boundaryPoints.length} points`
+      : `Street boundary needs ${
+          3 - leoidsState.boundaryPoints.length
+        } more point(s)`;
 
-    const freeRunners = leoidsState.players.filter(
-      (p) => p.role === "runner" && p.status === "free"
-    ).length;
+  const baseText = leoidsState.basePoint
+    ? `Jail/Base set • ${leoidsState.baseRadius}m rescue radius`
+    : "No jail/base set";
 
-    const jailedRunners = leoidsState.players.filter(
-      (p) => p.role === "runner" && p.status === "jailed"
-    ).length;
+  const releaseText =
+    leoidsState.role === "hunter"
+      ? leoidsState.huntersReleased
+        ? "Hunters released"
+        : `Hunter release: ${formatTime(leoidsState.hunterDelayLeft)}`
+      : `Hunter delay: ${formatTime(leoidsState.hunterDelay)}`;
 
-    $("leoids-status").innerText =
-      `Connection: ${onlineText}\n` +
-      `Mode: ${statusText}\n` +
-      `Boundary: ${boundaryText}\n` +
-      `Base: ${baseText}\n` +
-      `Your Role: ${roleText}\n` +
-      `Round Time: ${formatTime(leoidsState.timeLeft)}\n` +
-      `${releaseText}\n` +
-      `Auto Tag Radius: ${leoidsState.tagRadius}m\n` +
-      `Free Runners: ${freeRunners}\n` +
-      `Jailed Runners: ${jailedRunners}\n` +
-      `Score: ${leoidsState.score}\n` +
-      `Coins earned: ${leoidsState.coins}`;
+  const freeRunners = leoidsState.players.filter(
+    (p) => p.role === "runner" && p.status === "free"
+  ).length;
+
+  const jailedRunners = leoidsState.players.filter(
+    (p) => p.role === "runner" && p.status === "jailed"
+  ).length;
+
+  $("leoids-status").innerText =
+    `Connection: ${onlineText}\n` +
+    `Mode: ${statusText}\n` +
+    `Boundary: ${boundaryText}\n` +
+    `Base: ${baseText}\n` +
+    `Your Role: ${roleText}\n` +
+    `Round Time: ${formatTime(leoidsState.timeLeft)}\n` +
+    `${releaseText}\n` +
+    `Auto Tag Radius: ${leoidsState.tagRadius}m\n` +
+    `Free Runners: ${freeRunners}\n` +
+    `Jailed Runners: ${jailedRunners}\n` +
+    `Score: ${leoidsState.score}\n` +
+    `Coins earned: ${leoidsState.coins}`;
+
+  const startBtn = $("btn-leoids-start");
+  if (startBtn) {
+    startBtn.innerText = leoidsState.active ? "ROUND RUNNING" : "START LEOIDS ROUND";
+    startBtn.disabled = !isHost || leoidsState.active;
+
+    startBtn.style.display = isHost ? "block" : "none";
+    startBtn.style.minHeight = "54px";
+    startBtn.style.borderRadius = "18px";
+    startBtn.style.border = "none";
+    startBtn.style.fontWeight = "1000";
+    startBtn.style.fontSize = "15px";
+    startBtn.style.letterSpacing = ".05em";
+
+    if (leoidsState.active) {
+      startBtn.style.background = "#374151";
+      startBtn.style.color = "#cbd5e1";
+      startBtn.style.boxShadow = "none";
+    } else {
+      startBtn.style.background = "#22c55e";
+      startBtn.style.color = "#05070b";
+      startBtn.style.boxShadow = "0 0 22px rgba(34,197,94,.42)";
+    }
   }
+
+  const endBtn = $("btn-leoids-end");
+  if (endBtn) {
+    endBtn.style.display = isHost ? "block" : "none";
+    endBtn.disabled = !isHost || !leoidsState.active;
+    endBtn.style.opacity = leoidsState.active ? "1" : ".55";
+  }
+
+  updateLeoidsBattleHud?.();
+}
+
+  
 function isLocalLobbyHost(session = null) {
   if (leoidsState.isLobbyHost) return true;
 
