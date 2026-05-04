@@ -741,6 +741,7 @@ export function createLeoidsSystem({
     enterBattleMap();
     disableMapPointAdding();
     hideLeoidsMapControls();
+    enterBattleMaps();
     leoidsState.mapMode = "none";
 
     if ($("leoids-round-length")) {
@@ -773,7 +774,8 @@ export function createLeoidsSystem({
 
   function closeSetupPanel() {
     closeModal?.("leoids-modal");
-
+    showLeoidsBattleHud();
+    
     if (leoidsState.mapMode === "boundary" || leoidsState.mapMode === "base") {
       enableMapPointAdding();
     }
@@ -3217,17 +3219,24 @@ function getLeoidsHudStatusText() {
 }
 
 function showLeoidsBattleHud() {
+  const mapEl = $("map");
+
+  if (!mapEl || !mapEl.classList.contains("leoids-battle-map")) {
+    hideLeoidsBattleHud();
+    return;
+  }
+
   let hud = document.getElementById("leoids-battle-hud");
 
   if (!hud) {
     hud = document.createElement("div");
     hud.id = "leoids-battle-hud";
     hud.style.position = "fixed";
-    hud.style.top = "12px";
+    hud.style.top = "10px";
     hud.style.left = "50%";
     hud.style.transform = "translateX(-50%)";
-    hud.style.zIndex = "999998";
-    hud.style.width = "min(94vw, 420px)";
+    hud.style.zIndex = "999990";
+    hud.style.width = "min(88vw, 320px)";
     hud.style.pointerEvents = "none";
     document.body.appendChild(hud);
   }
@@ -3244,6 +3253,12 @@ function updateLeoidsBattleHud() {
   const hud = document.getElementById("leoids-battle-hud");
   if (!hud) return;
 
+  const mapEl = $("map");
+  if (!mapEl || !mapEl.classList.contains("leoids-battle-map")) {
+    hud.innerHTML = "";
+    return;
+  }
+
   const local = getLocalPlayer();
   const role = (local?.role || leoidsState.role || "runner").toUpperCase();
   const isHunter = role === "HUNTER";
@@ -3257,17 +3272,14 @@ function updateLeoidsBattleHud() {
   ).length;
 
   const roleColor = isHunter ? "#ff3b3b" : "#22c55e";
-  const roleGlow = isHunter
-    ? "0 0 22px rgba(255,59,59,.55)"
-    : "0 0 22px rgba(34,197,94,.55)";
 
   hud.innerHTML = `
     <div style="
       border:2px solid ${roleColor};
-      border-radius:22px;
-      background:linear-gradient(180deg,rgba(12,15,25,.96),rgba(3,5,10,.94));
+      border-radius:16px;
+      background:linear-gradient(180deg,rgba(12,15,25,.95),rgba(3,5,10,.92));
       color:white;
-      box-shadow:${roleGlow};
+      box-shadow:0 0 16px ${roleColor};
       overflow:hidden;
       font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     ">
@@ -3275,14 +3287,14 @@ function updateLeoidsBattleHud() {
         display:flex;
         justify-content:space-between;
         align-items:center;
-        padding:10px 14px 6px;
-        gap:10px;
+        padding:6px 10px 4px;
+        gap:8px;
       ">
         <div style="
           color:#ffd54a;
-          font-weight:1000;
-          letter-spacing:.12em;
-          font-size:13px;
+          font-weight:900;
+          letter-spacing:.1em;
+          font-size:11px;
         ">
           LEOIDS
         </div>
@@ -3291,10 +3303,10 @@ function updateLeoidsBattleHud() {
           background:${roleColor};
           color:#05070b;
           border-radius:999px;
-          padding:5px 12px;
-          font-size:12px;
-          font-weight:1000;
-          letter-spacing:.08em;
+          padding:3px 10px;
+          font-size:11px;
+          font-weight:900;
+          letter-spacing:.06em;
         ">
           ${role}
         </div>
@@ -3302,11 +3314,10 @@ function updateLeoidsBattleHud() {
 
       <div style="
         text-align:center;
-        font-size:42px;
+        font-size:30px;
         line-height:1;
         font-weight:1000;
-        padding:2px 12px 4px;
-        color:white;
+        padding:2px 8px 2px;
       ">
         ${formatTime(leoidsState.timeLeft)}
       </div>
@@ -3314,10 +3325,10 @@ function updateLeoidsBattleHud() {
       <div style="
         text-align:center;
         color:${roleColor};
-        font-weight:1000;
-        font-size:14px;
-        letter-spacing:.08em;
-        padding-bottom:8px;
+        font-weight:900;
+        font-size:12px;
+        letter-spacing:.06em;
+        padding-bottom:6px;
       ">
         ${getLeoidsHudStatusText()}
       </div>
@@ -3325,19 +3336,19 @@ function updateLeoidsBattleHud() {
       <div style="
         display:flex;
         justify-content:center;
-        gap:14px;
-        padding:8px 12px 10px;
-        background:rgba(255,255,255,.06);
-        font-size:13px;
+        gap:10px;
+        padding:6px 8px 8px;
+        background:rgba(255,255,255,.05);
+        font-size:11px;
         font-weight:800;
       ">
         <span style="color:#22c55e;">Free: ${freeRunners}</span>
         <span style="color:#9ca3af;">Jailed: ${jailedRunners}</span>
-        <span style="color:#ffd54a;">Tag: ${leoidsState.tagRadius}m</span>
       </div>
     </div>
   `;
 }
+
   
   
   function wirePanelButtons() {
