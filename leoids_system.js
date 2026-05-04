@@ -499,8 +499,6 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   return player;
   }
 
-
-
  async function joinOnlineSession({
   sessionId,
   displayName = "Player",
@@ -4036,8 +4034,46 @@ function wirePanelButtons() {
     };
   };
 
-  setClick("btn-leoids-release-jail", tryReleaseJailedRunners);
-  setClick("btn-leoids-leaderboard", openLeoidsLeaderboard);
+  const hideSetupButton = (id) => {
+    const el = $(id);
+    if (!el) return;
+    el.style.display = "none";
+  };
+
+  const showSetupButton = (id, display = "block") => {
+    const el = $(id);
+    if (!el) return;
+    el.style.display = display;
+  };
+
+  const local = getLocalPlayer();
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+  const isSoloLocal = !leoidsState.onlineEnabled;
+
+  // These now belong in the Command Hub, not the setup panel.
+  hideSetupButton("btn-leoids-release-jail");
+  hideSetupButton("btn-leoids-leaderboard");
+
+  // AI tools should only show for local / solo testing.
+  if (isSoloLocal) {
+    showSetupButton("btn-leoids-add-ai-runner");
+    showSetupButton("btn-leoids-add-ai-hunter");
+    showSetupButton("btn-leoids-reset-players");
+  } else {
+    hideSetupButton("btn-leoids-add-ai-runner");
+    hideSetupButton("btn-leoids-add-ai-hunter");
+    hideSetupButton("btn-leoids-reset-players");
+  }
+
+  // Host-only round controls.
+  if (isHost) {
+    showSetupButton("btn-leoids-start");
+    showSetupButton("btn-leoids-end");
+  } else {
+    hideSetupButton("btn-leoids-start");
+    hideSetupButton("btn-leoids-end");
+  }
+
   setClick("btn-leoids-quick-start", quickStartLeoidsGame);
   setClick("btn-leoids-instructions", openLeoidsInstructions);
 
@@ -4059,6 +4095,7 @@ function wirePanelButtons() {
 
   const roundLength = $("leoids-round-length");
   if (roundLength) {
+    roundLength.disabled = !isHost;
     roundLength.onchange = (e) => {
       setRoundLength(Number(e.target.value || DEFAULT_ROUND_SECONDS));
     };
@@ -4066,6 +4103,7 @@ function wirePanelButtons() {
 
   const hunterDelay = $("leoids-hunter-delay");
   if (hunterDelay) {
+    hunterDelay.disabled = !isHost;
     hunterDelay.onchange = (e) => {
       setHunterDelay(Number(e.target.value || DEFAULT_HUNTER_DELAY_SECONDS));
     };
@@ -4073,6 +4111,7 @@ function wirePanelButtons() {
 
   const boundarySize = $("leoids-boundary-size");
   if (boundarySize) {
+    boundarySize.disabled = !isHost;
     boundarySize.onchange = (e) => {
       setBoundaryRadius(Number(e.target.value || DEFAULT_BOUNDARY_RADIUS));
     };
@@ -4080,6 +4119,7 @@ function wirePanelButtons() {
 
   const baseRadius = $("leoids-base-radius");
   if (baseRadius) {
+    baseRadius.disabled = !isHost;
     baseRadius.onchange = (e) => {
       setBaseRadius(Number(e.target.value || DEFAULT_BASE_RADIUS));
     };
@@ -4087,36 +4127,66 @@ function wirePanelButtons() {
 
   const tagRadius = $("leoids-tag-radius");
   if (tagRadius) {
+    tagRadius.disabled = !isHost;
     tagRadius.onchange = (e) => {
       setTagRadius(Number(e.target.value || DEFAULT_TAG_RADIUS));
     };
   }
 
-  setClick("btn-leoids-set-boundary", setCircleBoundaryHere);
+  if (isHost) {
+    showSetupButton("btn-leoids-set-boundary");
+    showSetupButton("btn-leoids-clear-boundary");
+    showSetupButton("btn-leoids-set-base");
 
-  setClick("btn-leoids-add-point", () => {
-    leoidsState.mapMode = "boundary";
-    closeModal?.("leoids-modal");
-    showActionButton?.(false);
-    showLeoidsMapControls("boundary");
-    enableMapPointAdding();
-    speakText?.("Tap the map to add boundary points.");
-  });
+    setClick("btn-leoids-set-boundary", setCircleBoundaryHere);
 
-  setClick("btn-leoids-undo-point", undoStreetBoundaryPoint);
-  setClick("btn-leoids-confirm-boundary", confirmBoundaryFromMap);
-  setClick("btn-leoids-clear-boundary", clearBoundaryFull);
+    setClick("btn-leoids-add-point", () => {
+      leoidsState.mapMode = "boundary";
+      closeModal?.("leoids-modal");
+      showActionButton?.(false);
+      showLeoidsMapControls("boundary");
+      enableMapPointAdding();
+      speakText?.("Tap the map to add boundary points.");
+    });
 
-  setClick("btn-leoids-set-base", setBaseHere);
+    setClick("btn-leoids-undo-point", undoStreetBoundaryPoint);
+    setClick("btn-leoids-confirm-boundary", confirmBoundaryFromMap);
+    setClick("btn-leoids-clear-boundary", clearBoundaryFull);
+    setClick("btn-leoids-set-base", setBaseHere);
+  } else {
+    hideSetupButton("btn-leoids-set-boundary");
+    hideSetupButton("btn-leoids-add-point");
+    hideSetupButton("btn-leoids-undo-point");
+    hideSetupButton("btn-leoids-confirm-boundary");
+    hideSetupButton("btn-leoids-clear-boundary");
+    hideSetupButton("btn-leoids-set-base");
+  }
 
   setClick("btn-leoids-add-ai-runner", () => addAIPlayer("runner"));
   setClick("btn-leoids-add-ai-hunter", () => addAIPlayer("hunter"));
   setClick("btn-leoids-reset-players", resetLocalPlayers);
 
-  setClick("btn-leoids-start", startRound);
-  setClick("btn-leoids-end", () => endRound("manual"));
-}
+  setClick("btn-leoids-start", () => {
+    if (!isHost) {
+      alert("Only the host can start the round.");
+      return;
+    }
 
+    startRound();
+  });
+
+  setClick("btn-leoids-end", () => {
+    if (!isHost) {
+      alert("Only the host can end the round.");
+      return;
+    }
+
+    endRound("manual");
+  });
+
+  refreshBoundaryButtons();
+  updatePanel();
+}
 
 function showLeoidsCommandHub() {
   hideLeoidsCommandHub();
