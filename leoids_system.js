@@ -1038,7 +1038,33 @@ function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
     leoidsState.mapClickHandler = null;
   }
 
- 
+function enterBattleMap() {
+  showActionButton?.(false);
+
+  const mapEl = $("map");
+  if (mapEl) {
+    mapEl.classList.add("leoids-battle-map");
+  }
+
+  const menuBtn = $("leoids-menu-btn");
+  if (menuBtn) {
+    menuBtn.classList.remove("hidden");
+    menuBtn.innerText = "⚡";
+    menuBtn.title = "LEOIDS Command Hub";
+
+    menuBtn.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleLeoidsCommandHub?.();
+    };
+  }
+
+  refreshAllPinMarkers?.();
+  redrawAllMapObjects?.();
+  showLeoidsBattleHud?.();
+  updatePanel?.();
+}
+  
  function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
