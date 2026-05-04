@@ -1203,14 +1203,27 @@ function openSetupPanel() {
   }
 
   function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
-    leoidsState.boundaryRadius = Number(radius || DEFAULT_BOUNDARY_RADIUS);
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
-    if (leoidsState.boundaryCenter) {
-      drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
-    }
-
-    updatePanel();
+  if (!isHost) {
+    speakText?.("Only the host can change boundary size.");
+    return;
   }
+
+  const safeRadius = Math.max(25, Number(radius || DEFAULT_BOUNDARY_RADIUS));
+
+  leoidsState.boundaryRadius = safeRadius;
+
+  if (leoidsState.boundaryCenter) {
+    drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
+  }
+
+  saveOnlineSessionConfig?.();
+  updatePanel();
+
+  speakText?.(`Boundary radius set to ${leoidsState.boundaryRadius} metres.`);
+}
+
 
   function setBaseRadius(radius = DEFAULT_BASE_RADIUS) {
     leoidsState.baseRadius = Number(radius || DEFAULT_BASE_RADIUS);
@@ -1228,29 +1241,49 @@ function openSetupPanel() {
   }
 
   function setCircleBoundaryHere() {
-    const map = getMapSafe();
-    if (!map) return;
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
-    const center = map.getCenter();
-
-    leoidsState.boundaryMode = "circle";
-    leoidsState.boundaryCenter = {
-      lat: Number(center.lat),
-      lng: Number(center.lng),
-    };
-
-    leoidsState.boundaryPoints = [];
-    leoidsState.mapMode = "none";
-
-    clearPolygonBoundary();
-    drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
-    refreshBoundaryButtons();
-    seedPlayerPositions();
-    updatePanel();
-
-    speakText?.("Circle boundary set.");
+  if (!isHost) {
+    alert("Only the host can set the boundary.");
+    speakText?.("Only the host can set the boundary.");
+    return;
   }
 
+  const map = getMapSafe();
+  if (!map) {
+    alert("Map is not ready yet.");
+    speakText?.("Map is not ready yet.");
+    return;
+  }
+
+  const center = map.getCenter();
+
+  leoidsState.boundaryMode = "circle";
+  leoidsState.boundaryCenter = {
+    lat: Number(center.lat),
+    lng: Number(center.lng),
+  };
+
+  leoidsState.boundaryPoints = [];
+  leoidsState.mapMode = "none";
+
+  clearPolygonBoundary();
+  drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
+  refreshBoundaryButtons();
+  seedPlayerPositions();
+  updatePanel();
+
+  saveOnlineSessionConfig?.();
+
+  showLeoidsEvent(
+    "CIRCLE BOUNDARY SET",
+    `Play area set around the map centre.\nRadius: ${leoidsState.boundaryRadius}m`,
+    "⭕",
+    "base"
+  );
+
+  speakText?.("Circle boundary set.");
+}
   function addStreetBoundaryPointHere() {
     const map = getMapSafe();
     if (!map) return;
