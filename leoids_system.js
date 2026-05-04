@@ -789,34 +789,50 @@ function openSetupPanel() {
   }
 
   function refreshBoundaryButtons() {
-    $("btn-leoids-boundary-circle")?.classList.toggle(
-      "active",
-      leoidsState.boundaryMode === "circle"
-    );
+  const isCircle = leoidsState.boundaryMode === "circle";
+  const isPolygon = leoidsState.boundaryMode === "polygon";
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
-    $("btn-leoids-boundary-polygon")?.classList.toggle(
-      "active",
-      leoidsState.boundaryMode === "polygon"
-    );
+  $("btn-leoids-boundary-circle")?.classList.toggle("active", isCircle);
+  $("btn-leoids-boundary-polygon")?.classList.toggle("active", isPolygon);
 
-    if ($("btn-leoids-set-boundary")) {
-      $("btn-leoids-set-boundary").style.display =
-        leoidsState.boundaryMode === "circle" ? "block" : "none";
-    }
+  const show = (id, display = "block") => {
+    const el = $(id);
+    if (el) el.style.display = display;
+  };
 
-    if ($("btn-leoids-add-point")) {
-      $("btn-leoids-add-point").style.display = "none";
-    }
+  const hide = (id) => {
+    const el = $(id);
+    if (el) el.style.display = "none";
+  };
 
-    if ($("btn-leoids-undo-point")) {
-      $("btn-leoids-undo-point").style.display =
-        leoidsState.boundaryMode === "polygon" ? "block" : "none";
-    }
-
-    if ($("btn-leoids-confirm-boundary")) {
-      $("btn-leoids-confirm-boundary").style.display = "none";
-    }
+  if (!isHost) {
+    hide("btn-leoids-set-boundary");
+    hide("btn-leoids-add-point");
+    hide("btn-leoids-undo-point");
+    hide("btn-leoids-confirm-boundary");
+    hide("btn-leoids-clear-boundary");
+    hide("btn-leoids-set-base");
+    return;
   }
+
+  if (isCircle) {
+    show("btn-leoids-set-boundary");
+    hide("btn-leoids-add-point");
+    hide("btn-leoids-undo-point");
+    hide("btn-leoids-confirm-boundary");
+  }
+
+  if (isPolygon) {
+    hide("btn-leoids-set-boundary");
+    show("btn-leoids-add-point");
+    show("btn-leoids-undo-point");
+    show("btn-leoids-confirm-boundary");
+  }
+
+  show("btn-leoids-clear-boundary");
+  show("btn-leoids-set-base");
+}
 
   function setBoundaryMode(mode = "circle", announce = true) {
     leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
