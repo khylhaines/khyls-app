@@ -194,14 +194,13 @@ function checkBoundaryRules() {
 
     const inside = isPointInsideBoundary(player.position);
 
-    // 🚫 OUT OF BOUNDS
     if (!inside) {
       if (now - player.lastBoundaryPenaltyAt > 9000) {
         player.lastBoundaryPenaltyAt = now;
 
         player.score = Math.max(0, Number(player.score || 0) - 25);
 
-        if (!player.isOnline || player.isLocal) {
+        if (player.isLocal || !player.isOnline) {
           leoidsState.score = Math.max(0, Number(leoidsState.score || 0) - 25);
         }
 
@@ -209,16 +208,19 @@ function checkBoundaryRules() {
           "OUT OF BOUNDS",
           `${player.name} left the game area.\n-25 points`,
           "⚠️",
-          "gold"
+          "danger"
         );
 
-        speakText?.(`${player.name} is out of bounds.`);
+        if (navigator.vibrate && (player.isLocal || player.id === getLocalPlayer()?.id)) {
+          navigator.vibrate([120, 80, 120]);
+        }
+
+        speakText?.(`${player.name} is out of bounds. Twenty five points deducted.`);
       }
 
       return;
     }
 
-    // ⚠️ NEAR EDGE WARNING (circle only)
     if (leoidsState.boundaryMode === "circle") {
       const edgeDistance = getDistanceToCircleEdge(player.position);
 
@@ -227,19 +229,25 @@ function checkBoundaryRules() {
 
         showLeoidsEvent(
           "BOUNDARY WARNING",
-          "You are close to the edge.",
-          "⚠️",
-          "gold"
+          `${player.name} is close to the edge.\nMove back inside the play zone.`,
+          "🟡",
+          "base"
         );
 
-        speakText?.(`${player.name}, you are close to the boundary.`);
+        if (navigator.vibrate && (player.isLocal || player.id === getLocalPlayer()?.id)) {
+          navigator.vibrate(90);
+        }
+
+        speakText?.(`${player.name}, warning. You are close to the boundary.`);
       }
     }
   });
 
   renderPlayers();
   updatePanel();
+  updateLeoidsBattleHud?.();
 }
+
   function distanceMeters(a, b) {
     if (!a || !b) return Infinity;
 
