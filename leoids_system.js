@@ -692,7 +692,7 @@ async function joinOnlineSession({
 
         await syncLocalPlayerPosition(
          
-  function refreshBoundaryButtons() {
+ function refreshBoundaryButtons() {
   const isCircle = leoidsState.boundaryMode === "circle";
   const isPolygon = leoidsState.boundaryMode === "polygon";
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
@@ -737,7 +737,7 @@ async function joinOnlineSession({
   show("btn-leoids-clear-boundary");
   show("btn-leoids-set-base");
 }
-
+          
 function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
