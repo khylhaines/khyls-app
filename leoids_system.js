@@ -2048,81 +2048,218 @@ function setRunnerVisibilityMode(mode = "always") {
 }
 
   
-  function showRoundEndScreen(reason = "manual") {
-    const old = document.getElementById("leoids-round-end-screen");
-    if (old) old.remove();
+ function showRoundEndScreen(reason = "manual") {
+  const old = document.getElementById("leoids-round-end-screen");
+  if (old) old.remove();
 
-    const sorted = [...leoidsState.players].sort(
-      (a, b) => Number(b.score || 0) - Number(a.score || 0)
-    );
+  const sorted = [...leoidsState.players].sort(
+    (a, b) => Number(b.score || 0) - Number(a.score || 0)
+  );
 
-    const winner = sorted[0];
+  const winner = sorted[0];
 
-    const rows = sorted
-      .map(
-        (p, index) => `
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            gap:10px;
-            padding:10px;
-            border-radius:12px;
-            background:rgba(255,255,255,.06);
-            margin-top:8px;
-          ">
-            <span>${index + 1}. ${getPlayerIcon(p)} ${p.name}</span>
-            <strong>${p.score} pts</strong>
-          </div>
-        `
-      )
-      .join("");
+  const title =
+    reason === "timer"
+      ? "RUNNERS SURVIVED"
+      : reason === "hunters"
+      ? "HUNTERS WIN"
+      : "ROUND ENDED";
 
-    const title =
-      reason === "timer"
-        ? "RUNNERS SURVIVED"
-        : reason === "hunters"
-        ? "HUNTERS WIN"
-        : "ROUND ENDED";
+  const themeColor =
+    reason === "timer"
+      ? "#22c55e"
+      : reason === "hunters"
+      ? "#ff3b3b"
+      : "#ffd54a";
 
-    const modal = document.createElement("div");
-    modal.id = "leoids-round-end-screen";
-    modal.style.position = "fixed";
-    modal.style.inset = "0";
-    modal.style.zIndex = "999999";
-    modal.style.background = "rgba(0,0,0,.9)";
-    modal.style.display = "flex";
-    modal.style.alignItems = "center";
-    modal.style.justifyContent = "center";
-    modal.style.padding = "20px";
+  const titleEmoji =
+    reason === "timer"
+      ? "🏃"
+      : reason === "hunters"
+      ? "🔴"
+      : "⚡";
 
-    modal.innerHTML = `
+  const rows = sorted.length
+    ? sorted
+        .map(
+          (player, index) => `
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:10px;
+              padding:11px 12px;
+              border-radius:14px;
+              background:rgba(255,255,255,.07);
+              margin-top:8px;
+            ">
+              <div>
+                <strong>${index + 1}. ${getPlayerIcon(player)} ${player.name}</strong>
+                <div style="font-size:12px;opacity:.8;margin-top:3px;">
+                  ${player.role.toUpperCase()} • ${player.status.toUpperCase()}${player.isOnline ? " • ONLINE" : ""}
+                </div>
+              </div>
+
+              <div style="text-align:right;">
+                <strong>${Number(player.score || 0)} pts</strong>
+                <div style="font-size:12px;opacity:.8;margin-top:3px;">
+                  ${Number(player.coins || 0)} coins
+                </div>
+              </div>
+            </div>
+          `
+        )
+        .join("")
+    : `<div style="opacity:.8;margin-top:12px;">No players scored.</div>`;
+
+  const modal = document.createElement("div");
+  modal.id = "leoids-round-end-screen";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.zIndex = "999999";
+  modal.style.background = "rgba(0,0,0,.9)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "18px";
+
+  modal.innerHTML = `
+    <div style="
+      width:min(94vw,560px);
+      max-height:88vh;
+      overflow:auto;
+      border:2px solid ${themeColor};
+      border-radius:28px;
+      background:linear-gradient(180deg,#171b2b,#05070b);
+      color:white;
+      padding:22px;
+      box-shadow:0 0 42px ${themeColor};
+      animation:leoidsEndPop .24s ease-out;
+    ">
       <div style="
-        width:min(92vw,560px);
-        border:2px solid rgba(255,213,74,.85);
-        border-radius:28px;
-        background:linear-gradient(180deg,#171b2b,#06070b);
-        color:white;
-        padding:24px;
-        box-shadow:0 0 40px rgba(255,213,74,.32);
+        text-align:center;
+        font-size:54px;
+        filter:drop-shadow(0 0 12px ${themeColor});
       ">
-        <h1 style="margin:0;color:#ffd54a;text-align:center;">${title}</h1>
-        <div style="text-align:center;margin-top:10px;opacity:.9;">
-          Winner: <strong>${winner?.name || "No winner"}</strong>
-        </div>
-        <div style="margin-top:18px;">${rows}</div>
-        <button id="btn-leoids-round-end-close" class="win-btn" type="button" style="margin-top:18px;">
-          BACK TO LEOIDS
-        </button>
+        ${titleEmoji}
       </div>
+
+      <h1 style="
+        margin:8px 0 0;
+        color:${themeColor};
+        text-align:center;
+        font-size:28px;
+        letter-spacing:.08em;
+      ">
+        ${title}
+      </h1>
+
+      <div style="
+        text-align:center;
+        margin-top:10px;
+        opacity:.95;
+        font-size:15px;
+      ">
+        Winner: <strong>${getPlayerIcon(winner)} ${winner?.name || "No winner"}</strong>
+      </div>
+
+      <div style="margin-top:18px;">
+        ${rows}
+      </div>
+
+      <button id="btn-leoids-play-again" type="button" style="
+        width:100%;
+        min-height:48px;
+        border-radius:16px;
+        background:${themeColor};
+        color:#05070b;
+        font-weight:1000;
+        margin-top:18px;
+        border:none;
+        letter-spacing:.06em;
+      ">
+        PLAY AGAIN
+      </button>
+
+      <button id="btn-leoids-round-end-leaderboard" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:16px;
+        background:#202a3c;
+        color:white;
+        font-weight:900;
+        margin-top:10px;
+        border:none;
+      ">
+        VIEW LEADERBOARD
+      </button>
+
+      <button id="btn-leoids-round-end-close" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:16px;
+        background:#111827;
+        color:white;
+        font-weight:900;
+        margin-top:10px;
+        border:none;
+      ">
+        BACK TO LEOIDS
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  if (!document.getElementById("leoids-end-pop-style")) {
+    const style = document.createElement("style");
+    style.id = "leoids-end-pop-style";
+    style.innerHTML = `
+      @keyframes leoidsEndPop {
+        0% { transform:scale(.9); opacity:0; }
+        100% { transform:scale(1); opacity:1; }
+      }
     `;
-
-    document.body.appendChild(modal);
-
-    document.getElementById("btn-leoids-round-end-close")?.addEventListener("click", () => {
-      modal.remove();
-      openSetupPanel();
-    });
+    document.head.appendChild(style);
   }
+
+  document.getElementById("btn-leoids-play-again")?.addEventListener("click", () => {
+    modal.remove();
+
+    leoidsState.players.forEach((player) => {
+      player.status = "free";
+      player.jailedAtBase = false;
+      player.score = 0;
+      player.coins = 0;
+    });
+
+    leoidsState.score = 0;
+    leoidsState.coins = 0;
+    leoidsState.timeLeft = leoidsState.roundTime;
+    leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
+    leoidsState.huntersReleased = false;
+    leoidsState.active = false;
+
+    renderPlayers();
+    drawPlayerMarkers();
+    updatePanel();
+
+    openSetupPanel();
+    speakText?.("Ready for another LEOIDS round.");
+  });
+
+  document
+    .getElementById("btn-leoids-round-end-leaderboard")
+    ?.addEventListener("click", () => {
+      openLeoidsLeaderboard();
+    });
+
+  document.getElementById("btn-leoids-round-end-close")?.addEventListener("click", () => {
+    modal.remove();
+    openSetupPanel();
+  });
+}
+
 
 function buildOnlineSessionConfig() {
   return {
