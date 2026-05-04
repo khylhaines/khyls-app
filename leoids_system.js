@@ -1190,56 +1190,92 @@ function openSetupPanel() {
     leoidsState.mapClickHandler = null;
   }
 
-  function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
-    leoidsState.roundTime = Number(seconds || DEFAULT_ROUND_SECONDS);
-    leoidsState.timeLeft = leoidsState.roundTime;
-    updatePanel();
-  }
-
-  function setHunterDelay(seconds = DEFAULT_HUNTER_DELAY_SECONDS) {
-    leoidsState.hunterDelay = Number(seconds || DEFAULT_HUNTER_DELAY_SECONDS);
-    leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
-    updatePanel();
-  }
-
-  function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
+ function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
   if (!isHost) {
-    speakText?.("Only the host can change boundary size.");
+    speakText?.("Only the host can change the round time.");
     return;
   }
 
-  const safeRadius = Math.max(25, Number(radius || DEFAULT_BOUNDARY_RADIUS));
+  const safeSeconds = Math.max(60, Number(seconds || DEFAULT_ROUND_SECONDS));
 
-  leoidsState.boundaryRadius = safeRadius;
+  leoidsState.roundTime = safeSeconds;
 
-  if (leoidsState.boundaryCenter) {
-    drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
+  if (!leoidsState.active) {
+    leoidsState.timeLeft = safeSeconds;
+  }
+
+  saveOnlineSessionConfig?.();
+  updatePanel();
+  updateLeoidsBattleHud?.();
+
+  speakText?.(`Round time set to ${formatTime(safeSeconds)}.`);
+}
+
+
+  function setHunterDelay(seconds = DEFAULT_HUNTER_DELAY_SECONDS) {
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    speakText?.("Only the host can change the hunter delay.");
+    return;
+  }
+
+  const safeSeconds = Math.max(0, Number(seconds || DEFAULT_HUNTER_DELAY_SECONDS));
+
+  leoidsState.hunterDelay = safeSeconds;
+
+  if (!leoidsState.active) {
+    leoidsState.hunterDelayLeft = safeSeconds;
+  }
+
+  saveOnlineSessionConfig?.();
+  updatePanel();
+  updateLeoidsBattleHud?.();
+
+  speakText?.(`Hunter delay set to ${formatTime(safeSeconds)}.`);
+}
+
+ function setBaseRadius(radius = DEFAULT_BASE_RADIUS) {
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    speakText?.("Only the host can change the jail base radius.");
+    return;
+  }
+
+  const safeRadius = Math.max(5, Number(radius || DEFAULT_BASE_RADIUS));
+
+  leoidsState.baseRadius = safeRadius;
+
+  if (leoidsState.basePoint) {
+    drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
   }
 
   saveOnlineSessionConfig?.();
   updatePanel();
 
-  speakText?.(`Boundary radius set to ${leoidsState.boundaryRadius} metres.`);
+  speakText?.(`Jail base radius set to ${leoidsState.baseRadius} metres.`);
 }
 
-
-  function setBaseRadius(radius = DEFAULT_BASE_RADIUS) {
-    leoidsState.baseRadius = Number(radius || DEFAULT_BASE_RADIUS);
-
-    if (leoidsState.basePoint) {
-      drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
-    }
-
-    updatePanel();
-  }
-
   function setTagRadius(radius = DEFAULT_TAG_RADIUS) {
-    leoidsState.tagRadius = Number(radius || DEFAULT_TAG_RADIUS);
-    updatePanel();
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    speakText?.("Only the host can change the tag radius.");
+    return;
   }
 
+  const safeRadius = Math.max(2, Number(radius || DEFAULT_TAG_RADIUS));
+
+  leoidsState.tagRadius = safeRadius;
+
+  saveOnlineSessionConfig?.();
+  updatePanel();
+
+  speakText?.(`Tag radius set to ${leoidsState.tagRadius} metres.`);
+}
   function setCircleBoundaryHere() {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
