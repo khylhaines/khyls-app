@@ -996,63 +996,137 @@ function openSetupPanel() {
 }
 
   function showLeoidsMapControls(mode = "boundary") {
-    hideLeoidsMapControls();
+  hideLeoidsMapControls();
 
-    const controls = document.createElement("div");
-    controls.id = "leoids-map-controls";
+  const isBoundary = mode === "boundary";
 
-    controls.style.position = "fixed";
-    controls.style.left = "50%";
-    controls.style.bottom = "112px";
-    controls.style.transform = "translateX(-50%)";
-    controls.style.zIndex = "999999";
-    controls.style.width = "min(92vw, 420px)";
-    controls.style.display = "grid";
-    controls.style.gap = "8px";
-    controls.style.pointerEvents = "auto";
+  const controls = document.createElement("div");
+  controls.id = "leoids-map-controls";
 
-    if (mode === "boundary") {
-      controls.innerHTML = `
-        <button id="btn-leoids-map-confirm-boundary" type="button" style="min-height:48px;border-radius:16px;background:#ffd54a;color:#111;font-weight:900;">
+  controls.style.position = "fixed";
+  controls.style.left = "50%";
+  controls.style.bottom = "88px";
+  controls.style.transform = "translateX(-50%)";
+  controls.style.zIndex = "999999";
+  controls.style.width = "min(92vw, 430px)";
+  controls.style.display = "grid";
+  controls.style.gap = "9px";
+  controls.style.pointerEvents = "auto";
+
+  controls.innerHTML = isBoundary
+    ? `
+      <div style="
+        border:2px solid rgba(255,176,0,.85);
+        border-radius:24px;
+        background:linear-gradient(180deg,#261b08,#05070b);
+        color:white;
+        padding:14px;
+        box-shadow:0 0 28px rgba(255,176,0,.28);
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      ">
+        <div style="color:#ffb000;font-weight:1000;text-align:center;margin-bottom:10px;">
+          STREET BOUNDARY SETUP
+        </div>
+
+        <button id="btn-leoids-map-confirm-boundary" type="button" style="
+          width:100%;
+          min-height:48px;
+          border-radius:16px;
+          background:#ffb000;
+          color:#05070b;
+          font-weight:1000;
+          border:none;
+        ">
           CONFIRM BOUNDARY
         </button>
-        <button id="btn-leoids-map-undo" type="button" style="min-height:44px;border-radius:16px;background:#111827;color:#fff;font-weight:900;">
-          UNDO POINT
+
+        <button id="btn-leoids-map-undo" type="button" style="
+          width:100%;
+          min-height:44px;
+          border-radius:16px;
+          background:#202a3c;
+          color:white;
+          font-weight:900;
+          border:none;
+          margin-top:8px;
+        ">
+          UNDO LAST POINT
         </button>
-        <button id="btn-leoids-map-back" type="button" style="min-height:44px;border-radius:16px;background:#202a3c;color:#fff;font-weight:900;">
+
+        <button id="btn-leoids-map-back" type="button" style="
+          width:100%;
+          min-height:44px;
+          border-radius:16px;
+          background:#111827;
+          color:white;
+          font-weight:900;
+          border:none;
+          margin-top:8px;
+        ">
           BACK TO SETUP
         </button>
-      `;
-    } else {
-      controls.innerHTML = `
-        <button id="btn-leoids-map-confirm-base" type="button" style="min-height:48px;border-radius:16px;background:#ffd54a;color:#111;font-weight:900;">
+      </div>
+    `
+    : `
+      <div style="
+        border:2px solid rgba(0,212,255,.85);
+        border-radius:24px;
+        background:linear-gradient(180deg,#101827,#05070b);
+        color:white;
+        padding:14px;
+        box-shadow:0 0 28px rgba(0,212,255,.28);
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      ">
+        <div style="color:#00d4ff;font-weight:1000;text-align:center;margin-bottom:10px;">
+          JAIL / BASE SETUP
+        </div>
+
+        <button id="btn-leoids-map-confirm-base" type="button" style="
+          width:100%;
+          min-height:48px;
+          border-radius:16px;
+          background:#00d4ff;
+          color:#05070b;
+          font-weight:1000;
+          border:none;
+        ">
           CONFIRM JAIL / BASE
         </button>
-        <button id="btn-leoids-map-back" type="button" style="min-height:44px;border-radius:16px;background:#202a3c;color:#fff;font-weight:900;">
+
+        <button id="btn-leoids-map-back" type="button" style="
+          width:100%;
+          min-height:44px;
+          border-radius:16px;
+          background:#111827;
+          color:white;
+          font-weight:900;
+          border:none;
+          margin-top:8px;
+        ">
           BACK TO SETUP
         </button>
-      `;
-    }
+      </div>
+    `;
 
-    document.body.appendChild(controls);
+  document.body.appendChild(controls);
 
-    document
-      .getElementById("btn-leoids-map-confirm-boundary")
-      ?.addEventListener("click", confirmBoundaryFromMap);
+  document
+    .getElementById("btn-leoids-map-confirm-boundary")
+    ?.addEventListener("click", confirmBoundaryFromMap);
 
-    document
-      .getElementById("btn-leoids-map-confirm-base")
-      ?.addEventListener("click", confirmBaseFromMap);
+  document
+    .getElementById("btn-leoids-map-confirm-base")
+    ?.addEventListener("click", confirmBaseFromMap);
 
-    document.getElementById("btn-leoids-map-undo")?.addEventListener("click", () => {
-      undoStreetBoundaryPoint();
-      showLeoidsMapControls("boundary");
-    });
+  document.getElementById("btn-leoids-map-undo")?.addEventListener("click", () => {
+    undoStreetBoundaryPoint();
+    showLeoidsMapControls("boundary");
+  });
 
-    document
-      .getElementById("btn-leoids-map-back")
-      ?.addEventListener("click", backToLeoidsPanelFromMap);
-  }
+  document
+    .getElementById("btn-leoids-map-back")
+    ?.addEventListener("click", backToLeoidsPanelFromMap);
+}
 
   function hideLeoidsMapControls() {
     const controls = $("leoids-map-controls");
@@ -1230,7 +1304,15 @@ function openSetupPanel() {
   speakText?.("Boundary confirmed.");
 }
 
- async function confirmBaseFromMap() {
+async function confirmBaseFromMap() {
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    alert("Only the host can confirm the jail base.");
+    speakText?.("Only the host can confirm the jail base.");
+    return;
+  }
+
   const map = getMapSafe();
 
   let point =
@@ -1275,22 +1357,50 @@ function openSetupPanel() {
   renderPlayers();
   drawPlayerMarkers();
 
-  showModal?.("leoids-modal");
+  showLeoidsEvent(
+    "JAIL BASE READY",
+    `Rescue zone set.\nRadius: ${leoidsState.baseRadius}m`,
+    "🛡️",
+    "base"
+  );
+
+  openSetupPanel();
 
   speakText?.("Jail base confirmed.");
 }
 
+
   function setBaseHere() {
-    leoidsState.mapMode = "base";
-    leoidsState.pendingBasePoint = null;
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
-    closeModal?.("leoids-modal");
-    showActionButton?.(false);
-    showLeoidsMapControls("base");
-    enableMapPointAdding();
-
-    speakText?.("Tap the map where you want the jail base, then press confirm.");
+  if (!isHost) {
+    alert("Only the host can set the jail base.");
+    speakText?.("Only the host can set the jail base.");
+    return;
   }
+
+  leoidsState.mapMode = "base";
+  leoidsState.pendingBasePoint = null;
+
+  closeModal?.("leoids-modal");
+  showActionButton?.(false);
+  hideLeoidsBattleHud?.();
+  hideLeoidsCommandHub?.();
+
+  showLeoidsMapControls("base");
+  enableMapPointAdding();
+
+  showLeoidsEvent(
+    "SET JAIL BASE",
+    "Tap the map where jailed runners should go.\nThen press CONFIRM JAIL / BASE.",
+    "🛡️",
+    "base"
+  );
+
+  speakText?.("Tap the map where you want the jail base, then press confirm.");
+}
+
+  
 
  
   function backToLeoidsPanelFromMap() {
