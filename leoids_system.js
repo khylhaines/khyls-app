@@ -737,49 +737,56 @@ export function createLeoidsSystem({
     refreshAllPinMarkers?.();
   }
 
-  function openSetupPanel() {
-    enterBattleMap();
-    disableMapPointAdding();
-    hideLeoidsMapControls();
-    enterBattleMap();
-    leoidsState.mapMode = "none";
+ function openSetupPanel() {
+  enterBattleMap();
+  hideLeoidsBattleHud();
 
-    if ($("leoids-round-length")) {
-      $("leoids-round-length").value = String(leoidsState.roundTime);
-    }
+  disableMapPointAdding();
+  hideLeoidsMapControls();
+  leoidsState.mapMode = "none";
 
-    if ($("leoids-hunter-delay")) {
-      $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
-    }
-
-    if ($("leoids-boundary-size")) {
-      $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
-    }
-
-    if ($("leoids-base-radius")) {
-      $("leoids-base-radius").value = String(leoidsState.baseRadius);
-    }
-
-    if ($("leoids-tag-radius")) {
-      $("leoids-tag-radius").value = String(leoidsState.tagRadius);
-    }
-
-    refreshBoundaryButtons();
-    renderPlayers();
-    updatePanel();
-
-    showModal?.("leoids-modal");
-    wirePanelButtons();
+  if ($("leoids-round-length")) {
+    $("leoids-round-length").value = String(leoidsState.roundTime);
   }
 
-  function closeSetupPanel() {
-    closeModal?.("leoids-modal");
-    showLeoidsBattleHud();
-    
-    if (leoidsState.mapMode === "boundary" || leoidsState.mapMode === "base") {
-      enableMapPointAdding();
-    }
+  if ($("leoids-hunter-delay")) {
+    $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
   }
+
+  if ($("leoids-boundary-size")) {
+    $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
+  }
+
+  if ($("leoids-base-radius")) {
+    $("leoids-base-radius").value = String(leoidsState.baseRadius);
+  }
+
+  if ($("leoids-tag-radius")) {
+    $("leoids-tag-radius").value = String(leoidsState.tagRadius);
+  }
+
+  refreshBoundaryButtons();
+  renderPlayers();
+  updatePanel();
+
+  showModal?.("leoids-modal");
+  hideLeoidsBattleHud();
+
+  wirePanelButtons();
+}
+
+
+ function closeSetupPanel() {
+  closeModal?.("leoids-modal");
+
+  if (leoidsState.mapMode === "boundary" || leoidsState.mapMode === "base") {
+    enableMapPointAdding();
+    hideLeoidsBattleHud();
+    return;
+  }
+
+  showLeoidsBattleHud();
+}
 
   function setRole(role = "runner") {
     leoidsState.role = role === "hunter" ? "hunter" : "runner";
@@ -1181,104 +1188,139 @@ export function createLeoidsSystem({
     speakText?.("Returned to LEOIDs setup.");
   }
 
-  function drawCircleBoundary(center, radius) {
-    const map = getMapSafe();
-    if (!map || !center) return;
+ function drawCircleBoundary(center, radius) {
+  const map = getMapSafe();
+  if (!map || !center) return;
 
-    clearCircleBoundary();
+  clearCircleBoundary();
 
-    leoidsState.boundaryLayer = L.circle([center.lat, center.lng], {
-      radius: Number(radius || DEFAULT_BOUNDARY_RADIUS),
-      color: "#ff3b3b",
-      weight: 4,
-      opacity: 0.95,
-      fillColor: "#ff3b3b",
-      fillOpacity: 0.12,
-      dashArray: "10, 8",
-    }).addTo(map);
+  leoidsState.boundaryLayer = L.circle([center.lat, center.lng], {
+    radius: Number(radius || DEFAULT_BOUNDARY_RADIUS),
+    color: "#ffb000",
+    weight: 5,
+    opacity: 0.95,
+    fillColor: "#ffb000",
+    fillOpacity: 0.08,
+    dashArray: "12, 8",
+  }).addTo(map);
 
-    leoidsState.boundaryMarker = L.circleMarker([center.lat, center.lng], {
-      radius: 8,
-      color: "#ffd54a",
-      weight: 3,
-      fillColor: "#ffd54a",
-      fillOpacity: 1,
-    }).addTo(map);
-  }
+  leoidsState.boundaryMarker = L.circleMarker([center.lat, center.lng], {
+    radius: 7,
+    color: "#ffffff",
+    weight: 3,
+    fillColor: "#ffb000",
+    fillOpacity: 1,
+  })
+    .bindTooltip("LEOIDS Boundary Centre", {
+      permanent: false,
+      direction: "top",
+    })
+    .addTo(map);
+}
 
-  function drawPolygonBoundary() {
-    const map = getMapSafe();
-    if (!map) return;
+function drawPolygonBoundary() {
+  const map = getMapSafe();
+  if (!map) return;
 
-    clearPolygonBoundary();
+  clearPolygonBoundary();
 
-    leoidsState.polygonPointMarkers = leoidsState.boundaryPoints.map(
-      (point, index) =>
-        L.circleMarker([point.lat, point.lng], {
-          radius: 7,
-          color: "#ffd54a",
-          weight: 3,
-          fillColor: "#ffd54a",
-          fillOpacity: 1,
+  leoidsState.polygonPointMarkers = leoidsState.boundaryPoints.map(
+    (point, index) =>
+      L.circleMarker([point.lat, point.lng], {
+        radius: 7,
+        color: "#ffffff",
+        weight: 3,
+        fillColor: "#ffb000",
+        fillOpacity: 1,
+      })
+        .bindTooltip(`Boundary Point ${index + 1}`, {
+          permanent: false,
+          direction: "top",
         })
-          .bindTooltip(`Point ${index + 1}`, {
-            permanent: false,
-            direction: "top",
-          })
-          .addTo(map)
-    );
+        .addTo(map)
+  );
 
-    if (leoidsState.boundaryPoints.length >= 2) {
-      const coords = leoidsState.boundaryPoints.map((p) => [p.lat, p.lng]);
+  if (leoidsState.boundaryPoints.length >= 2) {
+    const coords = leoidsState.boundaryPoints.map((p) => [p.lat, p.lng]);
 
-      if (leoidsState.boundaryPoints.length >= 3) {
-        leoidsState.polygonLayer = L.polygon(coords, {
-          color: "#ff3b3b",
-          weight: 4,
-          opacity: 0.95,
-          fillColor: "#ff3b3b",
-          fillOpacity: 0.12,
-          dashArray: "10, 8",
-        }).addTo(map);
-      } else {
-        leoidsState.polygonLayer = L.polyline(coords, {
-          color: "#ff3b3b",
-          weight: 4,
-          opacity: 0.95,
-          dashArray: "10, 8",
-        }).addTo(map);
-      }
+    if (leoidsState.boundaryPoints.length >= 3) {
+      leoidsState.polygonLayer = L.polygon(coords, {
+        color: "#ffb000",
+        weight: 5,
+        opacity: 0.95,
+        fillColor: "#ffb000",
+        fillOpacity: 0.08,
+        dashArray: "12, 8",
+      }).addTo(map);
+    } else {
+      leoidsState.polygonLayer = L.polyline(coords, {
+        color: "#ffb000",
+        weight: 5,
+        opacity: 0.95,
+        dashArray: "12, 8",
+      }).addTo(map);
     }
   }
+}
 
-  function drawBasePoint(point, radius) {
-    const map = getMapSafe();
-    if (!map || !point) return;
+ function drawBasePoint(point, radius) {
+  const map = getMapSafe();
+  if (!map || !point) return;
 
-    clearBasePoint();
+  clearBasePoint();
 
-    leoidsState.baseLayer = L.circle([point.lat, point.lng], {
-      radius: Number(radius || DEFAULT_BASE_RADIUS),
-      color: "#4da3ff",
-      weight: 4,
-      opacity: 0.95,
-      fillColor: "#4da3ff",
-      fillOpacity: 0.18,
-    }).addTo(map);
+  leoidsState.baseLayer = L.circle([point.lat, point.lng], {
+    radius: Number(radius || DEFAULT_BASE_RADIUS),
+    color: "#00d4ff",
+    weight: 5,
+    opacity: 0.95,
+    fillColor: "#00d4ff",
+    fillOpacity: 0.18,
+  }).addTo(map);
 
-    leoidsState.baseMarker = L.circleMarker([point.lat, point.lng], {
-      radius: 9,
-      color: "#ffffff",
-      weight: 3,
-      fillColor: "#4da3ff",
-      fillOpacity: 1,
+  leoidsState.baseMarker = L.marker([point.lat, point.lng], {
+    icon: L.divIcon({
+      className: "leoids-base-icon",
+      html: `
+        <div style="
+          width:38px;
+          height:38px;
+          border-radius:50%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:rgba(0,212,255,.95);
+          border:3px solid white;
+          box-shadow:0 0 20px rgba(0,212,255,.95);
+          font-size:20px;
+          animation:leoidsBasePulse 1.4s infinite ease-in-out;
+        ">
+          🛡️
+        </div>
+      `,
+      iconSize: [38, 38],
+      iconAnchor: [19, 19],
+    }),
+  })
+    .bindTooltip("Jail / Rescue Base", {
+      permanent: false,
+      direction: "top",
     })
-      .bindTooltip("Jail / Base", {
-        permanent: false,
-        direction: "top",
-      })
-      .addTo(map);
+    .addTo(map);
+
+  if (!document.getElementById("leoids-base-pulse-style")) {
+    const style = document.createElement("style");
+    style.id = "leoids-base-pulse-style";
+    style.innerHTML = `
+      @keyframes leoidsBasePulse {
+        0% { transform:scale(1); box-shadow:0 0 12px rgba(0,212,255,.75); }
+        50% { transform:scale(1.16); box-shadow:0 0 28px rgba(0,212,255,1); }
+        100% { transform:scale(1); box-shadow:0 0 12px rgba(0,212,255,.75); }
+      }
+    `;
+    document.head.appendChild(style);
   }
+}
 
 function shouldShowPlayerOnMap(player) {
   if (!player) return false;
@@ -1331,7 +1373,7 @@ function setRunnerVisibilityMode(mode = "always") {
 }
 
   
-  function drawPlayerMarkers() {
+ function drawPlayerMarkers() {
   const map = getMapSafe();
   if (!map) return;
 
@@ -1347,20 +1389,39 @@ function setRunnerVisibilityMode(mode = "always") {
     if (!player.position) return;
     if (!shouldShowPlayerOnMap(player)) return;
 
-    const marker = L.circleMarker([player.position.lat, player.position.lng], {
-      radius: player.isAI ? 8 : player.isLocal ? 11 : 10,
-      color: player.role === "hunter" ? "#ff4d4d" : "#4da3ff",
-      weight: player.isLocal ? 5 : 4,
-      fillColor:
-        player.status === "jailed"
-          ? "#777"
-          : player.role === "hunter"
-          ? "#ff4d4d"
-          : "#4da3ff",
-      fillOpacity: 0.9,
+    const isHunter = player.role === "hunter";
+    const isJailed = player.status === "jailed";
+    const isLocal = player.isLocal || player.id === leoidsState.onlinePlayerId;
+
+    const color = isJailed ? "#8b8b8b" : isHunter ? "#ff3b3b" : "#22c55e";
+    const emoji = getPlayerIcon(player);
+
+    const marker = L.marker([player.position.lat, player.position.lng], {
+      icon: L.divIcon({
+        className: "leoids-player-icon",
+        html: `
+          <div style="
+            width:${isLocal ? 40 : 34}px;
+            height:${isLocal ? 40 : 34}px;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:${color};
+            border:${isLocal ? 4 : 3}px solid white;
+            box-shadow:0 0 ${isLocal ? 22 : 14}px ${color};
+            font-size:${isLocal ? 21 : 18}px;
+            font-weight:900;
+          ">
+            ${emoji}
+          </div>
+        `,
+        iconSize: [isLocal ? 40 : 34, isLocal ? 40 : 34],
+        iconAnchor: [isLocal ? 20 : 17, isLocal ? 20 : 17],
+      }),
     })
       .bindTooltip(
-        `${getPlayerIcon(player)} ${player.name} • ${player.role} • ${player.status}`,
+        `${emoji} ${player.name} • ${player.role} • ${player.status}`,
         {
           permanent: false,
           direction: "top",
@@ -1375,6 +1436,7 @@ function setRunnerVisibilityMode(mode = "always") {
     leoidsState.playerMarkers.push(marker);
   });
 }
+
 
   function handlePlayerMarkerTap(player) {
     const local = getLocalPlayer();
@@ -3220,8 +3282,14 @@ function getLeoidsHudStatusText() {
 
 function showLeoidsBattleHud() {
   const mapEl = $("map");
+  const setupModal = $("leoids-modal");
 
-  if (!mapEl || !mapEl.classList.contains("leoids-battle-map")) {
+  const setupIsOpen =
+    setupModal &&
+    !setupModal.classList.contains("hidden") &&
+    setupModal.style.display !== "none";
+
+  if (!mapEl || !mapEl.classList.contains("leoids-battle-map") || setupIsOpen) {
     hideLeoidsBattleHud();
     return;
   }
@@ -3236,13 +3304,14 @@ function showLeoidsBattleHud() {
     hud.style.left = "50%";
     hud.style.transform = "translateX(-50%)";
     hud.style.zIndex = "999990";
-    hud.style.width = "min(88vw, 320px)";
+    hud.style.width = "min(94vw, 520px)";
     hud.style.pointerEvents = "none";
     document.body.appendChild(hud);
   }
 
   updateLeoidsBattleHud();
 }
+
 
 function hideLeoidsBattleHud() {
   const hud = document.getElementById("leoids-battle-hud");
@@ -3254,8 +3323,15 @@ function updateLeoidsBattleHud() {
   if (!hud) return;
 
   const mapEl = $("map");
-  if (!mapEl || !mapEl.classList.contains("leoids-battle-map")) {
-    hud.innerHTML = "";
+  const setupModal = $("leoids-modal");
+
+  const setupIsOpen =
+    setupModal &&
+    !setupModal.classList.contains("hidden") &&
+    setupModal.style.display !== "none";
+
+  if (!mapEl || !mapEl.classList.contains("leoids-battle-map") || setupIsOpen) {
+    hideLeoidsBattleHud();
     return;
   }
 
@@ -3272,79 +3348,80 @@ function updateLeoidsBattleHud() {
   ).length;
 
   const roleColor = isHunter ? "#ff3b3b" : "#22c55e";
+  const statusText = getLeoidsHudStatusText();
 
   hud.innerHTML = `
     <div style="
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-height:42px;
+      padding:6px 10px;
       border:2px solid ${roleColor};
-      border-radius:16px;
-      background:linear-gradient(180deg,rgba(12,15,25,.95),rgba(3,5,10,.92));
+      border-radius:999px;
+      background:rgba(8,12,20,.92);
       color:white;
-      box-shadow:0 0 16px ${roleColor};
-      overflow:hidden;
+      box-shadow:0 0 14px ${roleColor};
       font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      backdrop-filter:blur(6px);
+      white-space:nowrap;
+      overflow:hidden;
     ">
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        padding:6px 10px 4px;
-        gap:8px;
+      <span style="
+        color:#ffd54a;
+        font-weight:1000;
+        font-size:12px;
+        letter-spacing:.08em;
       ">
-        <div style="
-          color:#ffd54a;
-          font-weight:900;
-          letter-spacing:.1em;
-          font-size:11px;
-        ">
-          LEOIDS
-        </div>
+        LEOIDS
+      </span>
 
-        <div style="
-          background:${roleColor};
-          color:#05070b;
-          border-radius:999px;
-          padding:3px 10px;
-          font-size:11px;
-          font-weight:900;
-          letter-spacing:.06em;
-        ">
-          ${role}
-        </div>
-      </div>
+      <span style="
+        background:${roleColor};
+        color:#05070b;
+        border-radius:999px;
+        padding:4px 9px;
+        font-size:11px;
+        font-weight:1000;
+        letter-spacing:.05em;
+      ">
+        ${role}
+      </span>
 
-      <div style="
-        text-align:center;
-        font-size:30px;
+      <span style="
+        font-size:22px;
         line-height:1;
         font-weight:1000;
-        padding:2px 8px 2px;
+        color:white;
       ">
         ${formatTime(leoidsState.timeLeft)}
-      </div>
+      </span>
 
-      <div style="
-        text-align:center;
+      <span style="
         color:${roleColor};
-        font-weight:900;
-        font-size:12px;
-        letter-spacing:.06em;
-        padding-bottom:6px;
-      ">
-        ${getLeoidsHudStatusText()}
-      </div>
-
-      <div style="
-        display:flex;
-        justify-content:center;
-        gap:10px;
-        padding:6px 8px 8px;
-        background:rgba(255,255,255,.05);
         font-size:11px;
-        font-weight:800;
+        font-weight:1000;
+        letter-spacing:.04em;
       ">
-        <span style="color:#22c55e;">Free: ${freeRunners}</span>
-        <span style="color:#9ca3af;">Jailed: ${jailedRunners}</span>
-      </div>
+        ${statusText}
+      </span>
+
+      <span style="
+        color:#22c55e;
+        font-size:11px;
+        font-weight:900;
+      ">
+        Free ${freeRunners}
+      </span>
+
+      <span style="
+        color:#9ca3af;
+        font-size:11px;
+        font-weight:900;
+      ">
+        Jail ${jailedRunners}
+      </span>
     </div>
   `;
 }
