@@ -4711,6 +4711,60 @@ function showLeoidsCommandHub() {
 
   showLeoidsCommandHub();
 }
+
+function setRole(role = "runner") {
+  leoidsState.role = role === "hunter" ? "hunter" : "runner";
+
+  const local = getLocalPlayer?.();
+  if (local) {
+    local.role = leoidsState.role;
+    local.status = "free";
+    local.jailedAtBase = false;
+  }
+
+  const runnerBtn = $("btn-leoids-runner");
+  const hunterBtn = $("btn-leoids-hunter");
+
+  if (runnerBtn) {
+    const active = leoidsState.role === "runner";
+    runnerBtn.classList.toggle("active", active);
+    runnerBtn.innerText = active ? "🟢 RUNNER SELECTED" : "🟢 PLAY AS RUNNER";
+    runnerBtn.style.background = active ? "#22c55e" : "#10251a";
+    runnerBtn.style.color = active ? "#05070b" : "#d1fae5";
+    runnerBtn.style.border = active
+      ? "2px solid #22c55e"
+      : "1px solid rgba(34,197,94,.45)";
+    runnerBtn.style.boxShadow = active
+      ? "0 0 18px rgba(34,197,94,.38)"
+      : "none";
+    runnerBtn.style.fontWeight = "1000";
+  }
+
+  if (hunterBtn) {
+    const active = leoidsState.role === "hunter";
+    hunterBtn.classList.toggle("active", active);
+    hunterBtn.innerText = active ? "🔴 HUNTER SELECTED" : "🔴 PLAY AS HUNTER";
+    hunterBtn.style.background = active ? "#ff3b3b" : "#2a1116";
+    hunterBtn.style.color = active ? "white" : "#fecaca";
+    hunterBtn.style.border = active
+      ? "2px solid #ff3b3b"
+      : "1px solid rgba(255,59,59,.45)";
+    hunterBtn.style.boxShadow = active
+      ? "0 0 18px rgba(255,59,59,.38)"
+      : "none";
+    hunterBtn.style.fontWeight = "1000";
+  }
+
+  renderPlayers?.();
+  drawPlayerMarkers?.();
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
+
+  speakText?.(
+    leoidsState.role === "hunter" ? "Hunter selected." : "Runner selected."
+  );
+}
+
   
   
 return {
@@ -4733,7 +4787,7 @@ return {
   setBaseRadius,
   setTagRadius,
   setRunnerVisibilityMode,
-
+  setRole,
   setCircleBoundaryHere,
   addStreetBoundaryPointHere,
   undoStreetBoundaryPoint,
