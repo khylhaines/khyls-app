@@ -829,33 +829,59 @@ function openSetupPanel() {
 }
 
   function setRole(role = "runner") {
-    leoidsState.role = role === "hunter" ? "hunter" : "runner";
+  leoidsState.role = role === "hunter" ? "hunter" : "runner";
 
-    const local = getLocalPlayer();
-    if (local) {
-      local.role = leoidsState.role;
-      local.status = "free";
-      local.jailedAtBase = false;
-    }
-
-    $("btn-leoids-runner")?.classList.toggle(
-      "active",
-      leoidsState.role === "runner"
-    );
-
-    $("btn-leoids-hunter")?.classList.toggle(
-      "active",
-      leoidsState.role === "hunter"
-    );
-
-    renderPlayers();
-    drawPlayerMarkers();
-    updatePanel();
-
-    speakText?.(
-      leoidsState.role === "hunter" ? "Hunter selected." : "Runner selected."
-    );
+  const local = getLocalPlayer();
+  if (local) {
+    local.role = leoidsState.role;
+    local.status = "free";
+    local.jailedAtBase = false;
   }
+
+  const runnerBtn = $("btn-leoids-runner");
+  const hunterBtn = $("btn-leoids-hunter");
+
+  if (runnerBtn) {
+    const active = leoidsState.role === "runner";
+
+    runnerBtn.classList.toggle("active", active);
+    runnerBtn.innerText = active ? "🟢 RUNNER SELECTED" : "🟢 PLAY AS RUNNER";
+    runnerBtn.style.background = active ? "#22c55e" : "#10251a";
+    runnerBtn.style.color = active ? "#05070b" : "#d1fae5";
+    runnerBtn.style.border = active
+      ? "2px solid #22c55e"
+      : "1px solid rgba(34,197,94,.45)";
+    runnerBtn.style.boxShadow = active
+      ? "0 0 18px rgba(34,197,94,.38)"
+      : "none";
+    runnerBtn.style.fontWeight = "1000";
+  }
+
+  if (hunterBtn) {
+    const active = leoidsState.role === "hunter";
+
+    hunterBtn.classList.toggle("active", active);
+    hunterBtn.innerText = active ? "🔴 HUNTER SELECTED" : "🔴 PLAY AS HUNTER";
+    hunterBtn.style.background = active ? "#ff3b3b" : "#2a1116";
+    hunterBtn.style.color = active ? "white" : "#fecaca";
+    hunterBtn.style.border = active
+      ? "2px solid #ff3b3b"
+      : "1px solid rgba(255,59,59,.45)";
+    hunterBtn.style.boxShadow = active
+      ? "0 0 18px rgba(255,59,59,.38)"
+      : "none";
+    hunterBtn.style.fontWeight = "1000";
+  }
+
+  renderPlayers();
+  drawPlayerMarkers();
+  updatePanel();
+  updateLeoidsBattleHud?.();
+
+  speakText?.(
+    leoidsState.role === "hunter" ? "Hunter selected." : "Runner selected."
+  );
+}
 
   function refreshBoundaryButtons() {
   const isCircle = leoidsState.boundaryMode === "circle";
@@ -904,34 +930,70 @@ function openSetupPanel() {
 }
 
   function setBoundaryMode(mode = "circle", announce = true) {
-    leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
-    refreshBoundaryButtons();
-    updatePanel();
+  leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
 
-    if (leoidsState.boundaryMode === "polygon") {
-      leoidsState.mapMode = "boundary";
-      leoidsState.pendingBasePoint = null;
+  const circleBtn = $("btn-leoids-boundary-circle");
+  const polygonBtn = $("btn-leoids-boundary-polygon");
 
-      closeModal?.("leoids-modal");
-      showActionButton?.(false);
-      showLeoidsMapControls("boundary");
-      enableMapPointAdding();
+  if (circleBtn) {
+    const active = leoidsState.boundaryMode === "circle";
 
-      speakText?.("Street boundary mode. Tap the map to add boundary points.");
-      return;
-    }
+    circleBtn.classList.toggle("active", active);
+    circleBtn.innerText = active ? "⭕ CIRCLE SELECTED" : "⭕ CIRCLE BOUNDARY";
+    circleBtn.style.background = active ? "#00d4ff" : "#102033";
+    circleBtn.style.color = active ? "#05070b" : "#dbeafe";
+    circleBtn.style.border = active
+      ? "2px solid #00d4ff"
+      : "1px solid rgba(0,212,255,.45)";
+    circleBtn.style.boxShadow = active
+      ? "0 0 18px rgba(0,212,255,.38)"
+      : "none";
+    circleBtn.style.fontWeight = "1000";
+  }
 
-    leoidsState.mapMode = "none";
+  if (polygonBtn) {
+    const active = leoidsState.boundaryMode === "polygon";
+
+    polygonBtn.classList.toggle("active", active);
+    polygonBtn.innerText = active ? "🟡 STREET SELECTED" : "🟡 STREET BOUNDARY";
+    polygonBtn.style.background = active ? "#ffb000" : "#261b08";
+    polygonBtn.style.color = active ? "#05070b" : "#fde68a";
+    polygonBtn.style.border = active
+      ? "2px solid #ffb000"
+      : "1px solid rgba(255,176,0,.45)";
+    polygonBtn.style.boxShadow = active
+      ? "0 0 18px rgba(255,176,0,.38)"
+      : "none";
+    polygonBtn.style.fontWeight = "1000";
+  }
+
+  refreshBoundaryButtons();
+  updatePanel();
+
+  if (leoidsState.boundaryMode === "polygon") {
+    leoidsState.mapMode = "boundary";
     leoidsState.pendingBasePoint = null;
 
-    disableMapPointAdding();
-    hideLeoidsMapControls();
+    closeModal?.("leoids-modal");
     showActionButton?.(false);
+    showLeoidsMapControls("boundary");
+    enableMapPointAdding();
 
-    if (announce) {
-      speakText?.("Circle boundary mode.");
-    }
+    speakText?.("Street boundary mode. Tap the map to add boundary points.");
+    return;
   }
+
+  leoidsState.mapMode = "none";
+  leoidsState.pendingBasePoint = null;
+
+  disableMapPointAdding();
+  hideLeoidsMapControls();
+  showActionButton?.(false);
+
+  if (announce) {
+    speakText?.("Circle boundary mode.");
+  }
+}
 
   function showLeoidsMapControls(mode = "boundary") {
     hideLeoidsMapControls();
