@@ -3643,12 +3643,11 @@ function getLeoidsHudStatusText() {
   if (local?.status === "jailed") return "JAILED";
 
   if (!leoidsState.huntersReleased) {
-    return local?.role === "hunter" ? "HUNTERS LOCKED" : "HIDE NOW";
+    return local?.role === "hunter" ? "LOCKED" : "HIDE";
   }
 
-  return local?.role === "hunter" ? "CHASE" : "SURVIVE / RESCUE";
+  return local?.role === "hunter" ? "CHASE" : "SURVIVE";
 }
-
 
 function showLeoidsBattleHud() {
   const mapEl = $("map");
@@ -3670,18 +3669,17 @@ function showLeoidsBattleHud() {
     hud = document.createElement("div");
     hud.id = "leoids-battle-hud";
     hud.style.position = "fixed";
-    hud.style.top = "10px";
+    hud.style.top = "8px";
     hud.style.left = "50%";
     hud.style.transform = "translateX(-50%)";
     hud.style.zIndex = "999990";
-    hud.style.width = "min(94vw, 520px)";
+    hud.style.width = "min(96vw, 430px)";
     hud.style.pointerEvents = "none";
     document.body.appendChild(hud);
   }
 
   updateLeoidsBattleHud();
 }
-
 
 function hideLeoidsBattleHud() {
   const hud = document.getElementById("leoids-battle-hud");
@@ -3709,6 +3707,7 @@ function updateLeoidsBattleHud() {
   const local = getLocalPlayer();
   const role = (local?.role || leoidsState.role || "runner").toUpperCase();
   const isHunter = role === "HUNTER";
+  const isJailed = local?.status === "jailed";
 
   const freeRunners = leoidsState.players.filter(
     (p) => p.role === "runner" && p.status === "free"
@@ -3718,28 +3717,49 @@ function updateLeoidsBattleHud() {
     (p) => p.role === "runner" && p.status === "jailed"
   ).length;
 
-  const roleColor = isHunter ? "#ff3b3b" : "#22c55e";
+  const roleColor = isJailed ? "#9ca3af" : isHunter ? "#ff3b3b" : "#22c55e";
+  const glowColor = isHunter
+    ? "rgba(255,59,59,.55)"
+    : isJailed
+    ? "rgba(156,163,175,.45)"
+    : "rgba(34,197,94,.55)";
+
   const statusText = getLeoidsHudStatusText();
+
+  const statusBg =
+    !leoidsState.active
+      ? "#202a3c"
+      : isJailed
+      ? "#6b7280"
+      : isHunter
+      ? "#ff3b3b"
+      : "#22c55e";
 
   hud.innerHTML = `
     <div style="
       display:flex;
       align-items:center;
-      justify-content:center;
-      gap:8px;
-      min-height:42px;
-      padding:6px 10px;
+      justify-content:space-between;
+      gap:6px;
+      min-height:36px;
+      padding:5px 8px;
       border:2px solid ${roleColor};
       border-radius:999px;
-      background:rgba(8,12,20,.92);
+      background:linear-gradient(90deg,rgba(5,7,11,.94),rgba(12,18,30,.94));
       color:white;
-      box-shadow:0 0 14px ${roleColor};
+      box-shadow:0 0 14px ${glowColor};
       font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-      backdrop-filter:blur(6px);
+      backdrop-filter:blur(8px);
       white-space:nowrap;
       overflow:hidden;
     ">
-      <span style="color:#ffd54a;font-weight:1000;font-size:12px;letter-spacing:.08em;">
+      <span style="
+        color:#00d4ff;
+        font-weight:1000;
+        font-size:11px;
+        letter-spacing:.08em;
+        padding-left:2px;
+      ">
         LEOIDS
       </span>
 
@@ -3747,32 +3767,56 @@ function updateLeoidsBattleHud() {
         background:${roleColor};
         color:#05070b;
         border-radius:999px;
-        padding:4px 9px;
-        font-size:11px;
+        padding:3px 8px;
+        font-size:10px;
         font-weight:1000;
         letter-spacing:.05em;
       ">
         ${role}
       </span>
 
-      <span style="font-size:22px;line-height:1;font-weight:1000;color:white;">
+      <span style="
+        font-size:19px;
+        line-height:1;
+        font-weight:1000;
+        color:white;
+        text-shadow:0 0 8px ${glowColor};
+      ">
         ${formatTime(leoidsState.timeLeft)}
       </span>
 
-      <span style="color:${roleColor};font-size:11px;font-weight:1000;letter-spacing:.04em;">
+      <span style="
+        background:${statusBg};
+        color:${isHunter || isJailed ? "white" : "#05070b"};
+        border-radius:999px;
+        padding:3px 7px;
+        font-size:10px;
+        font-weight:1000;
+        letter-spacing:.04em;
+      ">
         ${statusText}
       </span>
 
-      <span style="color:#22c55e;font-size:11px;font-weight:900;">
-        Free ${freeRunners}
+      <span style="
+        color:#22c55e;
+        font-size:10px;
+        font-weight:1000;
+      ">
+        F:${freeRunners}
       </span>
 
-      <span style="color:#9ca3af;font-size:11px;font-weight:900;">
-        Jail ${jailedRunners}
+      <span style="
+        color:#9ca3af;
+        font-size:10px;
+        font-weight:1000;
+        padding-right:2px;
+      ">
+        J:${jailedRunners}
       </span>
     </div>
   `;
 }
+
 
 
 async function quickStartLeoidsGame() {
