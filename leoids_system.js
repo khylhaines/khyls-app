@@ -2016,39 +2016,42 @@ function setRunnerVisibilityMode(mode = "always") {
     return true;
   }
 
-  function showLeoidsEvent(title, message, emoji = "⚡", theme = "gold") {
+  function showLeoidsEvent(title, message, emoji = "⚡", theme = "base") {
   const old = document.getElementById("leoids-event-banner");
   if (old) old.remove();
 
-  const colours = {
+  const themes = {
     hunter: {
-      main: "#ff3b3b",
+      border: "#ff3b3b",
       glow: "rgba(255,59,59,.45)",
-      bg: "linear-gradient(180deg,#2a1010,#070303)",
+      title: "#ff3b3b",
+      bg1: "#2a1116",
+      bg2: "#05070b",
     },
     runner: {
-      main: "#22c55e",
+      border: "#22c55e",
       glow: "rgba(34,197,94,.45)",
-      bg: "linear-gradient(180deg,#102a18,#030704)",
+      title: "#22c55e",
+      bg1: "#10251a",
+      bg2: "#05070b",
     },
     base: {
-      main: "#00d4ff",
+      border: "#00d4ff",
       glow: "rgba(0,212,255,.45)",
-      bg: "linear-gradient(180deg,#082232,#02070a)",
+      title: "#00d4ff",
+      bg1: "#101827",
+      bg2: "#05070b",
     },
-    jail: {
-      main: "#9ca3af",
-      glow: "rgba(156,163,175,.35)",
-      bg: "linear-gradient(180deg,#1f2937,#05070b)",
-    },
-    gold: {
-      main: "#ffd54a",
-      glow: "rgba(255,213,74,.35)",
-      bg: "linear-gradient(180deg,#161b2a,#05070b)",
+    danger: {
+      border: "#ffb000",
+      glow: "rgba(255,176,0,.45)",
+      title: "#ffb000",
+      bg1: "#261b08",
+      bg2: "#05070b",
     },
   };
 
-  const c = colours[theme] || colours.gold;
+  const style = themes[theme] || themes.base;
 
   const banner = document.createElement("div");
   banner.id = "leoids-event-banner";
@@ -2064,29 +2067,30 @@ function setRunnerVisibilityMode(mode = "always") {
 
   banner.innerHTML = `
     <div style="
-      width:min(90vw,460px);
-      border:2px solid ${c.main};
+      width:min(88vw,480px);
+      border:2px solid ${style.border};
       border-radius:26px;
-      background:${c.bg};
+      background:linear-gradient(180deg,${style.bg1},${style.bg2});
       color:white;
       text-align:center;
-      padding:24px;
-      box-shadow:0 0 38px ${c.glow};
-      animation:leoidsEventPop .22s ease-out;
+      padding:22px;
+      box-shadow:0 0 38px ${style.glow};
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      animation:leoidsEventPop .18s ease-out;
     ">
       <div style="
-        font-size:56px;
+        font-size:54px;
         margin-bottom:10px;
-        filter:drop-shadow(0 0 12px ${c.main});
+        filter:drop-shadow(0 0 10px ${style.glow});
       ">
         ${emoji}
       </div>
 
       <div style="
-        color:${c.main};
+        color:${style.title};
         font-weight:1000;
         font-size:22px;
-        letter-spacing:.08em;
+        letter-spacing:.07em;
       ">
         ${title}
       </div>
@@ -2094,36 +2098,42 @@ function setRunnerVisibilityMode(mode = "always") {
       <div style="
         margin-top:12px;
         font-size:15px;
-        line-height:1.5;
+        line-height:1.45;
         white-space:pre-wrap;
-        opacity:.95;
+        opacity:.94;
       ">
         ${message}
       </div>
     </div>
   `;
 
-  document.body.appendChild(banner);
-
-  if (!document.getElementById("leoids-event-pop-style")) {
-    const style = document.createElement("style");
-    style.id = "leoids-event-pop-style";
-    style.innerHTML = `
+  if (!document.getElementById("leoids-event-animation-style")) {
+    const styleEl = document.createElement("style");
+    styleEl.id = "leoids-event-animation-style";
+    styleEl.textContent = `
       @keyframes leoidsEventPop {
-        0% { transform:scale(.86); opacity:0; }
-        100% { transform:scale(1); opacity:1; }
+        from {
+          transform:scale(.88);
+          opacity:0;
+        }
+        to {
+          transform:scale(1);
+          opacity:1;
+        }
       }
     `;
-    document.head.appendChild(style);
+    document.head.appendChild(styleEl);
   }
+
+  document.body.appendChild(banner);
 
   setTimeout(() => {
     banner.remove();
-  }, 2200);
+  }, 2300);
 }
 
   
- function showRoundEndScreen(reason = "manual") {
+function showRoundEndScreen(reason = "manual") {
   const old = document.getElementById("leoids-round-end-screen");
   if (old) old.remove();
 
@@ -2140,16 +2150,9 @@ function setRunnerVisibilityMode(mode = "always") {
       ? "HUNTERS WIN"
       : "ROUND ENDED";
 
-  const themeColor =
+  const emoji =
     reason === "timer"
-      ? "#22c55e"
-      : reason === "hunters"
-      ? "#ff3b3b"
-      : "#ffd54a";
-
-  const titleEmoji =
-    reason === "timer"
-      ? "🏃"
+      ? "🟢"
       : reason === "hunters"
       ? "🔴"
       : "⚡";
@@ -2157,42 +2160,51 @@ function setRunnerVisibilityMode(mode = "always") {
   const rows = sorted.length
     ? sorted
         .map(
-          (player, index) => `
+          (p, index) => `
             <div style="
               display:flex;
               justify-content:space-between;
               align-items:center;
               gap:10px;
-              padding:11px 12px;
+              padding:12px;
               border-radius:14px;
-              background:rgba(255,255,255,.07);
+              background:${
+                index === 0
+                  ? "rgba(255,213,74,.16)"
+                  : "rgba(255,255,255,.07)"
+              };
+              border:${
+                index === 0
+                  ? "1px solid rgba(255,213,74,.55)"
+                  : "1px solid rgba(255,255,255,.08)"
+              };
               margin-top:8px;
             ">
               <div>
-                <strong>${index + 1}. ${getPlayerIcon(player)} ${player.name}</strong>
+                <strong>${index + 1}. ${getPlayerIcon(p)} ${p.name}</strong>
                 <div style="font-size:12px;opacity:.8;margin-top:3px;">
-                  ${player.role.toUpperCase()} • ${player.status.toUpperCase()}${player.isOnline ? " • ONLINE" : ""}
+                  ${p.role.toUpperCase()} • ${p.status.toUpperCase()}
                 </div>
               </div>
 
               <div style="text-align:right;">
-                <strong>${Number(player.score || 0)} pts</strong>
+                <strong>${Number(p.score || 0)} pts</strong>
                 <div style="font-size:12px;opacity:.8;margin-top:3px;">
-                  ${Number(player.coins || 0)} coins
+                  ${Number(p.coins || 0)} coins
                 </div>
               </div>
             </div>
           `
         )
         .join("")
-    : `<div style="opacity:.8;margin-top:12px;">No players scored.</div>`;
+    : `<div style="opacity:.8;margin-top:12px;">No players found.</div>`;
 
   const modal = document.createElement("div");
   modal.id = "leoids-round-end-screen";
   modal.style.position = "fixed";
   modal.style.inset = "0";
   modal.style.zIndex = "999999";
-  modal.style.background = "rgba(0,0,0,.9)";
+  modal.style.background = "rgba(0,0,0,.92)";
   modal.style.display = "flex";
   modal.style.alignItems = "center";
   modal.style.justifyContent = "center";
@@ -2200,31 +2212,31 @@ function setRunnerVisibilityMode(mode = "always") {
 
   modal.innerHTML = `
     <div style="
-      width:min(94vw,560px);
+      width:min(94vw,580px);
       max-height:88vh;
       overflow:auto;
-      border:2px solid ${themeColor};
-      border-radius:28px;
-      background:linear-gradient(180deg,#171b2b,#05070b);
+      border:2px solid rgba(0,212,255,.85);
+      border-radius:30px;
+      background:linear-gradient(180deg,#101827,#05070b);
       color:white;
-      padding:22px;
-      box-shadow:0 0 42px ${themeColor};
-      animation:leoidsEndPop .24s ease-out;
+      padding:24px;
+      box-shadow:0 0 42px rgba(0,212,255,.28);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     ">
       <div style="
         text-align:center;
         font-size:54px;
-        filter:drop-shadow(0 0 12px ${themeColor});
+        margin-bottom:8px;
       ">
-        ${titleEmoji}
+        ${emoji}
       </div>
 
       <h1 style="
-        margin:8px 0 0;
-        color:${themeColor};
+        margin:0;
+        color:#00d4ff;
         text-align:center;
-        font-size:28px;
         letter-spacing:.08em;
+        font-size:26px;
       ">
         ${title}
       </h1>
@@ -2232,10 +2244,11 @@ function setRunnerVisibilityMode(mode = "always") {
       <div style="
         text-align:center;
         margin-top:10px;
-        opacity:.95;
-        font-size:15px;
+        color:#ffd54a;
+        font-weight:1000;
+        font-size:16px;
       ">
-        Winner: <strong>${getPlayerIcon(winner)} ${winner?.name || "No winner"}</strong>
+        Winner: ${winner ? `${getPlayerIcon(winner)} ${winner.name}` : "No winner"}
       </div>
 
       <div style="margin-top:18px;">
@@ -2246,17 +2259,30 @@ function setRunnerVisibilityMode(mode = "always") {
         width:100%;
         min-height:48px;
         border-radius:16px;
-        background:${themeColor};
+        background:#22c55e;
         color:#05070b;
         font-weight:1000;
         margin-top:18px;
         border:none;
-        letter-spacing:.06em;
+        font-size:15px;
       ">
         PLAY AGAIN
       </button>
 
-      <button id="btn-leoids-round-end-leaderboard" type="button" style="
+      <button id="btn-leoids-round-end-map" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:16px;
+        background:#00d4ff;
+        color:#05070b;
+        font-weight:1000;
+        margin-top:10px;
+        border:none;
+      ">
+        BACK TO MAP
+      </button>
+
+      <button id="btn-leoids-round-end-setup" type="button" style="
         width:100%;
         min-height:44px;
         border-radius:16px;
@@ -2266,37 +2292,12 @@ function setRunnerVisibilityMode(mode = "always") {
         margin-top:10px;
         border:none;
       ">
-        VIEW LEADERBOARD
-      </button>
-
-      <button id="btn-leoids-round-end-close" type="button" style="
-        width:100%;
-        min-height:44px;
-        border-radius:16px;
-        background:#111827;
-        color:white;
-        font-weight:900;
-        margin-top:10px;
-        border:none;
-      ">
-        BACK TO LEOIDS
+        GAME SETUP
       </button>
     </div>
   `;
 
   document.body.appendChild(modal);
-
-  if (!document.getElementById("leoids-end-pop-style")) {
-    const style = document.createElement("style");
-    style.id = "leoids-end-pop-style";
-    style.innerHTML = `
-      @keyframes leoidsEndPop {
-        0% { transform:scale(.9); opacity:0; }
-        100% { transform:scale(1); opacity:1; }
-      }
-    `;
-    document.head.appendChild(style);
-  }
 
   document.getElementById("btn-leoids-play-again")?.addEventListener("click", () => {
     modal.remove();
@@ -2310,26 +2311,25 @@ function setRunnerVisibilityMode(mode = "always") {
 
     leoidsState.score = 0;
     leoidsState.coins = 0;
-    leoidsState.timeLeft = leoidsState.roundTime;
-    leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
+    leoidsState.timeLeft = Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
+    leoidsState.hunterDelayLeft = Number(
+      leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
+    );
     leoidsState.huntersReleased = false;
-    leoidsState.active = false;
 
-    renderPlayers();
-    drawPlayerMarkers();
-    updatePanel();
-
-    openSetupPanel();
-    speakText?.("Ready for another LEOIDS round.");
+    seedPlayerPositions();
+    startRound();
   });
 
-  document
-    .getElementById("btn-leoids-round-end-leaderboard")
-    ?.addEventListener("click", () => {
-      openLeoidsLeaderboard();
-    });
+  document.getElementById("btn-leoids-round-end-map")?.addEventListener("click", () => {
+    modal.remove();
+    enterBattleMap();
+    redrawAllMapObjects();
+    drawPlayerMarkers();
+    showLeoidsBattleHud?.();
+  });
 
-  document.getElementById("btn-leoids-round-end-close")?.addEventListener("click", () => {
+  document.getElementById("btn-leoids-round-end-setup")?.addEventListener("click", () => {
     modal.remove();
     openSetupPanel();
   });
