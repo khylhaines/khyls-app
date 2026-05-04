@@ -691,202 +691,7 @@ async function joinOnlineSession({
         };
 
         await syncLocalPlayerPosition(
-          point,
-          Number(position.coords.accuracy || 0),
-          position.coords.heading
-        );
-      },
-      (error) => {
-        console.warn("LEOIDS GPS sync error:", error);
-        speakText?.("GPS sync error.");
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 1000,
-        timeout: 12000,
-      }
-    );
-
-    speakText?.("Online GPS sync started.");
-    return true;
-  }
-
-  function stopGpsOnlineSync() {
-    if (leoidsState.gpsWatchId !== null && navigator.geolocation) {
-      try {
-        navigator.geolocation.clearWatch(leoidsState.gpsWatchId);
-      } catch {}
-    }
-
-    leoidsState.gpsWatchId = null;
-  }
-
-  function enterBattleMap() {
-  showActionButton?.(false);
-
-  const mapEl = $("map");
-  if (mapEl) {
-    mapEl.classList.add("leoids-battle-map");
-  }
-
-  const menuBtn = $("leoids-menu-btn");
-  if (menuBtn) {
-    menuBtn.classList.remove("hidden");
-    menuBtn.innerText = "⚡";
-    menuBtn.title = "LEOIDS Command Hub";
-
-    menuBtn.onclick = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      toggleLeoidsCommandHub();
-    };
-  }
-
-  refreshAllPinMarkers?.();
-  redrawAllMapObjects();
-  showLeoidsBattleHud?.();
-  updatePanel();
-}
-
-
-  function exitBattleMap() {
-  stopTimer();
-  stopAI();
-  stopGpsOnlineSync();
-  disableMapPointAdding();
-  hideLeoidsMapControls();
-  hideLeoidsBattleHud?.();
-  hideLeoidsCommandHub?.();
-  clearAllMapObjects();
-
-  leoidsState.mapMode = "none";
-  leoidsState.pendingBasePoint = null;
-
-  const mapEl = $("map");
-  if (mapEl) {
-    mapEl.classList.remove("leoids-battle-map");
-  }
-
-  const menuBtn = $("leoids-menu-btn");
-  if (menuBtn) {
-    menuBtn.classList.add("hidden");
-    menuBtn.onclick = null;
-  }
-
-  refreshAllPinMarkers?.();
-}
-
-
-function openSetupPanel() {
-  hideLeoidsBattleHud?.();
-  hideLeoidsCommandHub?.();
-
-  enterBattleMap();
-  hideLeoidsBattleHud?.();
-
-  disableMapPointAdding();
-  hideLeoidsMapControls();
-  leoidsState.mapMode = "none";
-
-  if ($("leoids-round-length")) {
-    $("leoids-round-length").value = String(leoidsState.roundTime);
-  }
-
-  if ($("leoids-hunter-delay")) {
-    $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
-  }
-
-  if ($("leoids-boundary-size")) {
-    $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
-  }
-
-  if ($("leoids-base-radius")) {
-    $("leoids-base-radius").value = String(leoidsState.baseRadius);
-  }
-
-  if ($("leoids-tag-radius")) {
-    $("leoids-tag-radius").value = String(leoidsState.tagRadius);
-  }
-
-  showModal?.("leoids-modal");
-
-  wirePanelButtons();
-  setRole(leoidsState.role);
-  setBoundaryMode(leoidsState.boundaryMode, false);
-  refreshBoundaryButtons();
-
-  renderPlayers();
-  updatePanel();
-}
-
-
- function closeSetupPanel() {
-  closeModal?.("leoids-modal");
-
-  if (leoidsState.mapMode === "boundary" || leoidsState.mapMode === "base") {
-    enableMapPointAdding();
-    return;
-  }
-
-  if ($("map")?.classList.contains("leoids-battle-map")) {
-    showLeoidsBattleHud?.();
-  }
-}
-  function setRole(role = "runner") {
-  leoidsState.role = role === "hunter" ? "hunter" : "runner";
-
-  const local = getLocalPlayer();
-  if (local) {
-    local.role = leoidsState.role;
-    local.status = "free";
-    local.jailedAtBase = false;
-  }
-
-  const runnerBtn = $("btn-leoids-runner");
-  const hunterBtn = $("btn-leoids-hunter");
-
-  if (runnerBtn) {
-    const active = leoidsState.role === "runner";
-
-    runnerBtn.classList.toggle("active", active);
-    runnerBtn.innerText = active ? "🟢 RUNNER SELECTED" : "🟢 PLAY AS RUNNER";
-    runnerBtn.style.background = active ? "#22c55e" : "#10251a";
-    runnerBtn.style.color = active ? "#05070b" : "#d1fae5";
-    runnerBtn.style.border = active
-      ? "2px solid #22c55e"
-      : "1px solid rgba(34,197,94,.45)";
-    runnerBtn.style.boxShadow = active
-      ? "0 0 18px rgba(34,197,94,.38)"
-      : "none";
-    runnerBtn.style.fontWeight = "1000";
-  }
-
-  if (hunterBtn) {
-    const active = leoidsState.role === "hunter";
-
-    hunterBtn.classList.toggle("active", active);
-    hunterBtn.innerText = active ? "🔴 HUNTER SELECTED" : "🔴 PLAY AS HUNTER";
-    hunterBtn.style.background = active ? "#ff3b3b" : "#2a1116";
-    hunterBtn.style.color = active ? "white" : "#fecaca";
-    hunterBtn.style.border = active
-      ? "2px solid #ff3b3b"
-      : "1px solid rgba(255,59,59,.45)";
-    hunterBtn.style.boxShadow = active
-      ? "0 0 18px rgba(255,59,59,.38)"
-      : "none";
-    hunterBtn.style.fontWeight = "1000";
-  }
-
-  renderPlayers();
-  drawPlayerMarkers();
-  updatePanel();
-  updateLeoidsBattleHud?.();
-
-  speakText?.(
-    leoidsState.role === "hunter" ? "Hunter selected." : "Runner selected."
-  );
-}
-
+         
   function refreshBoundaryButtons() {
   const isCircle = leoidsState.boundaryMode === "circle";
   const isPolygon = leoidsState.boundaryMode === "polygon";
@@ -933,7 +738,30 @@ function openSetupPanel() {
   show("btn-leoids-set-base");
 }
 
-  function setBoundaryMode(mode = "circle", announce = true) {
+function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    speakText?.("Only the host can change boundary size.");
+    return;
+  }
+
+  const safeRadius = Math.max(25, Number(radius || DEFAULT_BOUNDARY_RADIUS));
+
+  leoidsState.boundaryRadius = safeRadius;
+
+  if (leoidsState.boundaryCenter) {
+    drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
+  }
+
+  saveOnlineSessionConfig?.();
+  updatePanel();
+
+  speakText?.(`Boundary radius set to ${leoidsState.boundaryRadius} metres.`);
+}
+
+          
+ function setBoundaryMode(mode = "circle", announce = true) {
   leoidsState.boundaryMode = mode === "polygon" ? "polygon" : "circle";
 
   const circleBtn = $("btn-leoids-boundary-circle");
@@ -1190,69 +1018,7 @@ function openSetupPanel() {
     leoidsState.mapClickHandler = null;
   }
 
-  function startRound() {
-  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
-
-  if (!isHost) {
-    alert("Only the host can start the round.");
-    speakText?.("Only the host can start the round.");
-    return;
-  }
-
-  if (leoidsState.active) {
-    console.warn("Round already active — blocking restart loop");
-    return;
-  }
-
-  if (!leoidsState.basePoint) {
-    alert("Set the jail/base first.");
-    speakText?.("Set the jail base first.");
-    return;
-  }
-
-  if (
-    leoidsState.boundaryMode === "polygon" &&
-    leoidsState.boundaryPoints.length < 3
-  ) {
-    alert("Finish the boundary first.");
-    speakText?.("Finish the boundary first.");
-    return;
-  }
-
-  if (
-    leoidsState.boundaryMode === "circle" &&
-    !leoidsState.boundaryCenter
-  ) {
-    alert("Set the boundary first.");
-    speakText?.("Set the boundary first.");
-    return;
-  }
-
-  leoidsState.active = true;
-  leoidsState.roundStartedAt = Date.now();
-
-  leoidsState.timeLeft = leoidsState.roundTime;
-
-  leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
-  leoidsState.huntersReleased = false;
-
-  seedPlayerPositions();
-
-  closeSetupPanel();
-
-  showLeoidsEvent(
-    "ROUND STARTED",
-    "Runners hide.\nHunters wait for release.",
-    "⚡",
-    "base"
-  );
-
-  speakText?.("Round started. Runners hide. Hunters wait.");
-
-  runLeoidsGameLoop();
-}
-
-
+ 
  function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
@@ -2934,32 +2700,67 @@ function startOnlineSessionSync() {
 
 
   function startRound() {
-  // 🛑 PREVENT LOOP
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    alert("Only the host can start the round.");
+    speakText?.("Only the host can start the round.");
+    return;
+  }
+
   if (leoidsState.active) {
-    console.log("Round already active — ignoring duplicate start.");
+    console.warn("Round already active — blocking restart loop");
+    return;
+  }
+
+  if (!leoidsState.basePoint) {
+    alert("Set the jail/base first.");
+    speakText?.("Set the jail base first.");
+    return;
+  }
+
+  if (
+    leoidsState.boundaryMode === "polygon" &&
+    leoidsState.boundaryPoints.length < 3
+  ) {
+    alert("Finish the boundary first.");
+    speakText?.("Finish the boundary first.");
+    return;
+  }
+
+  if (
+    leoidsState.boundaryMode === "circle" &&
+    !leoidsState.boundaryCenter
+  ) {
+    alert("Set the boundary first.");
+    speakText?.("Set the boundary first.");
     return;
   }
 
   leoidsState.active = true;
+  leoidsState.roundStartedAt = Date.now();
 
-  leoidsState.timeLeft = Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
-  leoidsState.hunterDelayLeft = Number(
-    leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
-  );
+  leoidsState.timeLeft = leoidsState.roundTime;
 
+  leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
   leoidsState.huntersReleased = false;
+
+  seedPlayerPositions();
+
+  closeSetupPanel();
 
   showLeoidsEvent(
     "ROUND STARTED",
-    "Hunters are locked. Runners hide now.",
+    "Runners hide.\nHunters wait for release.",
     "⚡",
     "base"
   );
 
-  speakText?.("Round started. Hunters are locked.");
+  speakText?.("Round started. Runners hide. Hunters wait.");
 
-  startLeoidsGameLoop?.();
+  runLeoidsGameLoop();
 }
+
 
 
 function tickRound() {
