@@ -1714,19 +1714,24 @@ function setRunnerVisibilityMode(mode = "always") {
   drawPlayerMarkers();
   renderPlayers();
   updatePanel();
+  updateLeoidsBattleHud?.();
 
   const byText = taggedBy?.name
     ? `Tagged by ${taggedBy.name}.`
-    : "Tagged by a hunter.";
+    : "Tagged by hunter.";
 
   showLeoidsEvent(
     "RUNNER JAILED",
-    `${runner.name} has been caught.\n${byText}`,
+    `${runner.name} has been caught.\n${byText}\nGo to base jail.`,
     "🔒",
     "hunter"
   );
 
-  speakText?.(`${runner.name} has been tagged and sent to jail.`);
+  if (navigator.vibrate) {
+    navigator.vibrate([180, 90, 180]);
+  }
+
+  speakText?.(`${runner.name} caught. Runner sent to jail.`);
 
   return true;
 }
@@ -1865,7 +1870,7 @@ function setRunnerVisibilityMode(mode = "always") {
       "TOO FAR FROM BASE",
       `Get inside the ${leoidsState.baseRadius}m rescue zone.`,
       "📍",
-      "base"
+      "runner"
     );
 
     return;
@@ -1879,7 +1884,14 @@ function setRunnerVisibilityMode(mode = "always") {
   );
 
   if (!jailed.length) {
-    speakText?.("No jailed runners are at the base to rescue.");
+    showLeoidsEvent(
+      "NO ONE TO RESCUE",
+      "No jailed runners are inside the base zone.",
+      "🛡️",
+      "base"
+    );
+
+    speakText?.("No jailed runners are at the base.");
     return;
   }
 
@@ -1891,23 +1903,29 @@ function setRunnerVisibilityMode(mode = "always") {
 
   local.score += 75;
   local.coins += 15;
+
   leoidsState.score += 75;
   leoidsState.coins += 15;
+  leoidsState.lastRescueAt = Date.now();
 
   drawPlayerMarkers();
   renderPlayers();
   updatePanel();
+  updateLeoidsBattleHud?.();
 
   showLeoidsEvent(
     "RESCUE COMPLETE",
-    `${jailed.length} runner${jailed.length === 1 ? "" : "s"} released.\n+75 points • +15 coins`,
-    "🛡️",
-    "base"
+    `${jailed.length} runner${jailed.length === 1 ? "" : "s"} released.\n+75 points`,
+    "🟢",
+    "runner"
   );
 
-  speakText?.("Jailed runners rescued.");
-}
+  if (navigator.vibrate) {
+    navigator.vibrate([80, 60, 80, 60, 220]);
+  }
 
+  speakText?.("Rescue complete. Jailed runners released.");
+}
   function runAITagChecks() {
     if (!leoidsState.active) return;
     if (!leoidsState.huntersReleased) return;
