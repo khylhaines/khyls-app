@@ -498,7 +498,6 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   return session;
 }
 
-
   function startOnlinePlayerSync() {
     const supabase = getSupabaseSafe();
 
@@ -537,6 +536,76 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
     return true;
   }
 
+async function joinOnlineSession({
+  sessionId,
+  displayName = "Player",
+  role = leoidsState.role || "runner",
+} = {}) {
+  const supabase = getSupabaseSafe();
+
+  if (!supabase) {
+    console.warn("LEOIDS Supabase module not loaded.");
+    speakText?.("Supabase is not loaded.");
+    return null;
+  }
+
+  if (!supabase.client && typeof supabase.init === "function") {
+    supabase.init();
+  }
+
+  const safeSessionId = sessionId || supabase.sessionId || leoidsState.onlineSessionId;
+
+  if (!safeSessionId) {
+    speakText?.("Create or enter an online session first.");
+    return null;
+  }
+
+  supabase.sessionId = safeSessionId;
+  supabase.playerName = displayName;
+
+  const player = await supabase.joinSession({
+    sessionId: safeSessionId,
+    displayName,
+    role,
+  });
+
+  if (!player) {
+    speakText?.("Could not join online session.");
+    return null;
+  }
+
+  leoidsState.onlineEnabled = true;
+  leoidsState.onlineSessionId = safeSessionId;
+  leoidsState.onlinePlayerId = player.id;
+  leoidsState.onlinePlayerName = displayName;
+  leoidsState.role = role;
+  leoidsState.status = player.status || "free";
+
+  supabase.playerId = player.id;
+
+  leoidsState.players = leoidsState.players.filter(
+    (p) => p.id !== "p1" && !p.isAI
+  );
+
+  upsertOnlinePlayer(player);
+
+  await loadAndApplyOnlineSession();
+  await loadOnlinePlayers();
+
+  startOnlinePlayerSync();
+  startOnlineSessionSync();
+
+  renderPlayers();
+  drawPlayerMarkers();
+  updatePanel();
+  updateLeoidsBattleHud?.();
+
+  speakText?.(`${displayName} joined online LEOIDS as ${role}.`);
+
+  return player;
+}
+
+  
   async function stopOnlinePlayerSync() {
     const supabase = getSupabaseSafe();
 
