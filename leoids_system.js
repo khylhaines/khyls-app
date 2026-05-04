@@ -859,14 +859,13 @@ function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
   }
 }
 
-  function showLeoidsMapControls(mode = "boundary") {
+ function showLeoidsMapControls(mode = "boundary") {
   hideLeoidsMapControls();
 
   const isBoundary = mode === "boundary";
 
   const controls = document.createElement("div");
   controls.id = "leoids-map-controls";
-
   controls.style.position = "fixed";
   controls.style.left = "50%";
   controls.style.bottom = "88px";
@@ -974,22 +973,33 @@ function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
 
   document.body.appendChild(controls);
 
-  document
-    .getElementById("btn-leoids-map-confirm-boundary")
-    ?.addEventListener("click", confirmBoundaryFromMap);
+  document.getElementById("btn-leoids-map-confirm-boundary")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    confirmBoundaryFromMap();
+  });
 
-  document
-    .getElementById("btn-leoids-map-confirm-base")
-    ?.addEventListener("click", confirmBaseFromMap);
+  document.getElementById("btn-leoids-map-confirm-base")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    confirmBaseFromMap();
+  });
 
-  document.getElementById("btn-leoids-map-undo")?.addEventListener("click", () => {
+  document.getElementById("btn-leoids-map-undo")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     undoStreetBoundaryPoint();
     showLeoidsMapControls("boundary");
   });
 
-  document
-    .getElementById("btn-leoids-map-back")
-    ?.addEventListener("click", backToLeoidsPanelFromMap);
+  const backBtn = document.getElementById("btn-leoids-map-back");
+  if (backBtn) {
+    backBtn.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      backToLeoidsPanelFromMap();
+    };
+  }
 }
 
   function hideLeoidsMapControls() {
@@ -1442,9 +1452,7 @@ async function confirmBaseFromMap() {
 }
 
   
-
- 
-  function backToLeoidsPanelFromMap() {
+function backToLeoidsPanelFromMap() {
   disableMapPointAdding?.();
   hideLeoidsMapControls?.();
 
@@ -1453,11 +1461,14 @@ async function confirmBaseFromMap() {
 
   showActionButton?.(false);
 
-  openSetupPanel?.();
+  setTimeout(() => {
+    openSetupPanel?.();
+  }, 50);
 
   speakText?.("Back to LEOIDS setup.");
 }
-
+ 
+  
  function drawCircleBoundary(center, radius) {
   const map = getMapSafe();
   if (!map || !center) return;
