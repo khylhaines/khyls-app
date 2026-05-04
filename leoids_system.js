@@ -664,6 +664,18 @@ async function joinOnlineSession({
     return true;
   }
 
+function stopGpsOnlineSync() {
+  if (leoidsState.gpsWatchId !== null && leoidsState.gpsWatchId !== undefined) {
+    try {
+      navigator.geolocation.clearWatch(leoidsState.gpsWatchId);
+    } catch (error) {
+      console.warn("Could not stop LEOIDS GPS watch:", error);
+    }
+  }
+
+  leoidsState.gpsWatchId = null;
+}
+  
   function startGpsOnlineSync() {
   if (!navigator.geolocation) {
     speakText?.("GPS is not available on this device.");
@@ -4825,7 +4837,7 @@ return {
   showLeoidsBattleHud,
   hideLeoidsBattleHud,
   updateLeoidsBattleHud,
-
+  stopGpsOnlineSync,
   openOnlineSessionBrowser,
   openOnlineLobbyScreen,
   openLeoidsLeaderboard,
