@@ -466,10 +466,8 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
     supabase.init();
   }
 
-  const hostName = leoidsState.onlinePlayerName || "Host";
-
   const session = await supabase.createSession(name, {
-    hostName,
+    hostName: leoidsState.onlinePlayerName || supabase.playerName || "Host",
     maxPlayers: 12,
     isPublic: true,
     roundTime: leoidsState.roundTime,
@@ -477,7 +475,6 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
     baseRadius: leoidsState.baseRadius,
     tagRadius: leoidsState.tagRadius,
     countdownSeconds: leoidsState.countdownSeconds || 60,
-    expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
   });
 
   if (!session) {
@@ -487,79 +484,19 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
 
   leoidsState.onlineEnabled = true;
   leoidsState.onlineSessionId = session.id;
-  leoidsState.onlinePlayerName = hostName;
   leoidsState.isLobbyHost = true;
 
+  supabase.sessionId = session.id;
+
   await saveOnlineSessionConfig();
+
   startOnlineSessionSync();
 
   updatePanel();
+
   speakText?.("Online LEOIDS session created. You are the host.");
 
   return session;
-  }
-
- async function joinOnlineSession({
-  sessionId,
-  displayName = "Player",
-  role = leoidsState.role || "runner",
-} = {}) {
-  const supabase = getSupabaseSafe();
-
-  if (!supabase) {
-    console.warn("LEOIDS Supabase module not loaded.");
-    speakText?.("Supabase is not loaded.");
-    return null;
-  }
-
-  if (!supabase.client && typeof supabase.init === "function") {
-    supabase.init();
-  }
-
-  const safeSessionId = sessionId || supabase.sessionId || leoidsState.onlineSessionId;
-
-  if (!safeSessionId) {
-    speakText?.("Create or enter an online session first.");
-    return null;
-  }
-
-  const player = await supabase.joinSession({
-    sessionId: safeSessionId,
-    displayName,
-    role,
-  });
-
-  if (!player) {
-    speakText?.("Could not join online session.");
-    return null;
-  }
-
-  leoidsState.onlineEnabled = true;
-  leoidsState.onlineSessionId = safeSessionId;
-  leoidsState.onlinePlayerId = player.id;
-  leoidsState.onlinePlayerName = displayName;
-  leoidsState.role = role;
-  leoidsState.status = player.status || "free";
-
-  leoidsState.players = leoidsState.players.filter(
-    (p) => p.id !== "p1" && !p.isAI
-  );
-
-  upsertOnlinePlayer(player);
-
-  await loadAndApplyOnlineSession();
-  await loadOnlinePlayers();
-
-  startOnlinePlayerSync();
-  startOnlineSessionSync();
-
-  renderPlayers();
-  drawPlayerMarkers();
-  updatePanel();
-
-  speakText?.(`${displayName} joined online LEOIDS as ${role}.`);
-
-  return player;
 }
 
 
