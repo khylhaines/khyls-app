@@ -445,7 +445,7 @@ function checkBoundaryRules() {
     return rows;
   }
 
- async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
+async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   const supabase = getSupabaseSafe();
 
   if (!supabase) {
@@ -467,6 +467,7 @@ function checkBoundaryRules() {
     baseRadius: leoidsState.baseRadius,
     tagRadius: leoidsState.tagRadius,
     countdownSeconds: leoidsState.countdownSeconds || 60,
+    expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
   });
 
   if (!session) {
@@ -485,6 +486,7 @@ function checkBoundaryRules() {
 
   return session;
 }
+
 
  async function joinOnlineSession({
   sessionId,
@@ -3216,8 +3218,7 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
 }
 
 
-   
- async function openOnlineSessionBrowser() {
+async function openOnlineSessionBrowser() {
   const supabase = window.LEOIDSSupabase;
 
   if (!supabase) {
@@ -3229,7 +3230,18 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
     supabase.init();
   }
 
-  const sessions = await supabase.listPublicSessions();
+  let sessions = await supabase.listPublicSessions();
+
+  sessions = (sessions || []).filter((session) => {
+    if (session.ended_at) return false;
+
+    if (session.expires_at) {
+      const expiry = new Date(session.expires_at).getTime();
+      if (Number.isFinite(expiry) && expiry <= Date.now()) return false;
+    }
+
+    return true;
+  });
 
   const old = document.getElementById("leoids-session-browser");
   if (old) old.remove();
@@ -3247,17 +3259,6 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
     return `Starts in ${secondsLeft}s`;
   };
 
-  const modal = document.createElement("div");
-  modal.id = "leoids-session-browser";
-  modal.style.position = "fixed";
-  modal.style.inset = "0";
-  modal.style.zIndex = "999999";
-  modal.style.background = "rgba(0,0,0,.88)";
-  modal.style.display = "flex";
-  modal.style.alignItems = "center";
-  modal.style.justifyContent = "center";
-  modal.style.padding = "18px";
-
   const rows = sessions.length
     ? sessions
         .map(
@@ -3266,11 +3267,12 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
               margin-top:10px;
               padding:14px;
               border-radius:16px;
-              border:1px solid rgba(255,213,74,.55);
-              background:rgba(255,255,255,.08);
+              border:1px solid rgba(0,212,255,.55);
+              background:linear-gradient(180deg,rgba(15,23,42,.92),rgba(3,7,18,.92));
               color:white;
+              box-shadow:0 0 18px rgba(0,212,255,.14);
             ">
-              <div style="font-size:16px;color:#ffd54a;font-weight:900;">
+              <div style="font-size:16px;color:#00d4ff;font-weight:1000;">
                 ${session.name || "LEOIDS Game"}
               </div>
 
@@ -3295,12 +3297,31 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
                   min-height:44px;
                   margin-top:12px;
                   border-radius:14px;
-                  background:#ffd54a;
-                  color:#111;
-                  font-weight:900;
+                  background:#00d4ff;
+                  color:#05070b;
+                  font-weight:1000;
+                  border:none;
                 "
               >
                 JOIN LOBBY
+              </button>
+
+              <button
+                class="leoids-session-end-btn"
+                data-session-id="${session.id}"
+                type="button"
+                style="
+                  width:100%;
+                  min-height:38px;
+                  margin-top:8px;
+                  border-radius:14px;
+                  background:#202a3c;
+                  color:white;
+                  font-weight:900;
+                  border:none;
+                "
+              >
+                HIDE / END LOBBY
               </button>
             </div>
           `
@@ -3308,21 +3329,32 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
         .join("")
     : `<div style="opacity:.8;margin-top:12px;">No public games found.</div>`;
 
+  const modal = document.createElement("div");
+  modal.id = "leoids-session-browser";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.zIndex = "999999";
+  modal.style.background = "rgba(0,0,0,.88)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "18px";
+
   modal.innerHTML = `
     <div style="
       width:min(94vw,560px);
       max-height:86vh;
       overflow:auto;
-      border:2px solid rgba(255,213,74,.85);
+      border:2px solid rgba(0,212,255,.85);
       border-radius:26px;
-      background:linear-gradient(180deg,#171b2b,#06070b);
+      background:linear-gradient(180deg,#101827,#05070b);
       color:white;
       padding:22px;
-      box-shadow:0 0 35px rgba(255,213,74,.25);
+      box-shadow:0 0 35px rgba(0,212,255,.25);
     ">
-      <h2 style="margin:0;color:#ffd54a;">Online LEOIDS Lobbies</h2>
+      <h2 style="margin:0;color:#00d4ff;">Online LEOIDS Lobbies</h2>
       <p style="opacity:.8;margin:8px 0 14px;">
-        Join a public lobby or host a new one.
+        Join a live lobby or host a new test game.
       </p>
 
       <button id="btn-leoids-refresh-sessions" type="button" style="
@@ -3333,6 +3365,7 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
         color:white;
         font-weight:900;
         margin-bottom:8px;
+        border:none;
       ">
         REFRESH LOBBIES
       </button>
@@ -3341,10 +3374,11 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
         width:100%;
         min-height:44px;
         border-radius:14px;
-        background:#ffd54a;
-        color:#111;
-        font-weight:900;
+        background:#00d4ff;
+        color:#05070b;
+        font-weight:1000;
         margin-bottom:10px;
+        border:none;
       ">
         HOST NEW PUBLIC LOBBY
       </button>
@@ -3359,6 +3393,7 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
         color:white;
         font-weight:900;
         margin-top:16px;
+        border:none;
       ">
         CLOSE
       </button>
@@ -3367,12 +3402,10 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
 
   document.body.appendChild(modal);
 
-  // CLOSE
   document
     .getElementById("btn-leoids-close-session-browser")
     ?.addEventListener("click", () => modal.remove());
 
-  // REFRESH
   document
     .getElementById("btn-leoids-refresh-sessions")
     ?.addEventListener("click", () => {
@@ -3380,7 +3413,6 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
       openOnlineSessionBrowser();
     });
 
-  // HOST
   document
     .getElementById("btn-leoids-host-public-session")
     ?.addEventListener("click", async () => {
@@ -3402,7 +3434,6 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
       openOnlineLobbyScreen(session.id);
     });
 
-  // JOIN
   modal.querySelectorAll(".leoids-session-join-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const sessionId = btn.dataset.sessionId;
@@ -3418,7 +3449,28 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
       openOnlineLobbyScreen(sessionId);
     });
   });
+
+  modal.querySelectorAll(".leoids-session-end-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const sessionId = btn.dataset.sessionId;
+
+      if (!confirm("Hide/end this lobby?")) return;
+
+      if (typeof supabase.endSession === "function") {
+        await supabase.endSession(sessionId);
+      } else if (supabase.client) {
+        await supabase.client
+          .from("leoids_sessions")
+          .update({ ended_at: new Date().toISOString() })
+          .eq("id", sessionId);
+      }
+
+      modal.remove();
+      openOnlineSessionBrowser();
+    });
+  });
 }
+
 
 function openLeoidsLeaderboard() {
   const old = document.getElementById("leoids-leaderboard-screen");
