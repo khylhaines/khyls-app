@@ -719,54 +719,60 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   }
 
   function enterBattleMap() {
-    showActionButton?.(false);
+  showActionButton?.(false);
 
-    const mapEl = $("map");
-    if (mapEl) {
-      mapEl.classList.add("leoids-battle-map");
-    }
-
-    const menuBtn = $("leoids-menu-btn");
-    if (menuBtn) {
-      menuBtn.classList.remove("hidden");
-      menuBtn.onclick = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        openSetupPanel();
-      };
-    }
-
-    refreshAllPinMarkers?.();
-    redrawAllMapObjects();
-    showLeoidsBattleHud();
-    updatePanel();
+  const mapEl = $("map");
+  if (mapEl) {
+    mapEl.classList.add("leoids-battle-map");
   }
+
+  const menuBtn = $("leoids-menu-btn");
+  if (menuBtn) {
+    menuBtn.classList.remove("hidden");
+    menuBtn.innerText = "⚡";
+    menuBtn.title = "LEOIDS Command Hub";
+
+    menuBtn.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleLeoidsCommandHub();
+    };
+  }
+
+  refreshAllPinMarkers?.();
+  redrawAllMapObjects();
+  showLeoidsBattleHud?.();
+  updatePanel();
+}
+
 
   function exitBattleMap() {
-    stopTimer();
-    stopAI();
-    hideLeoidsBattleHud();
-    stopGpsOnlineSync();
-    disableMapPointAdding();
-    hideLeoidsMapControls();
-    clearAllMapObjects();
+  stopTimer();
+  stopAI();
+  stopGpsOnlineSync();
+  disableMapPointAdding();
+  hideLeoidsMapControls();
+  hideLeoidsBattleHud?.();
+  hideLeoidsCommandHub?.();
+  clearAllMapObjects();
 
-    leoidsState.mapMode = "none";
-    leoidsState.pendingBasePoint = null;
+  leoidsState.mapMode = "none";
+  leoidsState.pendingBasePoint = null;
 
-    const mapEl = $("map");
-    if (mapEl) {
-      mapEl.classList.remove("leoids-battle-map");
-    }
-
-    const menuBtn = $("leoids-menu-btn");
-    if (menuBtn) {
-      menuBtn.classList.add("hidden");
-      menuBtn.onclick = null;
-    }
-
-    refreshAllPinMarkers?.();
+  const mapEl = $("map");
+  if (mapEl) {
+    mapEl.classList.remove("leoids-battle-map");
   }
+
+  const menuBtn = $("leoids-menu-btn");
+  if (menuBtn) {
+    menuBtn.classList.add("hidden");
+    menuBtn.onclick = null;
+  }
+
+  refreshAllPinMarkers?.();
+}
+
 
 function openSetupPanel() {
   enterBattleMap();
@@ -4112,6 +4118,199 @@ function wirePanelButtons() {
 }
 
 
+function showLeoidsCommandHub() {
+  hideLeoidsCommandHub();
+
+  const local = getLocalPlayer();
+  const isHost = !!leoidsState.isLobbyHost;
+  const isRunner = local?.role === "runner";
+
+  const hub = document.createElement("div");
+  hub.id = "leoids-command-hub";
+  hub.style.position = "fixed";
+  hub.style.left = "50%";
+  hub.style.bottom = "82px";
+  hub.style.transform = "translateX(-50%)";
+  hub.style.zIndex = "999998";
+  hub.style.width = "min(94vw,420px)";
+  hub.style.pointerEvents = "auto";
+
+  hub.innerHTML = `
+    <div style="
+      border:2px solid rgba(0,212,255,.85);
+      border-radius:26px;
+      background:linear-gradient(180deg,#101827,#05070b);
+      color:white;
+      padding:16px;
+      box-shadow:0 0 34px rgba(0,212,255,.3);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    ">
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:10px;
+      ">
+        <div>
+          <div style="color:#00d4ff;font-weight:1000;font-size:18px;">
+            LEOIDS COMMAND
+          </div>
+          <div style="opacity:.75;font-size:12px;margin-top:2px;">
+            ${local ? `${getPlayerIcon(local)} ${local.name} • ${local.role}` : "Game controls"}
+          </div>
+        </div>
+
+        <button id="btn-leoids-command-close" type="button" style="
+          width:38px;
+          height:38px;
+          border-radius:50%;
+          border:none;
+          background:#202a3c;
+          color:white;
+          font-weight:1000;
+          font-size:18px;
+        ">
+          ×
+        </button>
+      </div>
+
+      <div style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-top:16px;
+      ">
+        <button id="btn-command-leaderboard" type="button" style="
+          min-height:48px;
+          border-radius:16px;
+          border:none;
+          background:#ffd54a;
+          color:#05070b;
+          font-weight:1000;
+        ">
+          📊 Leaderboard
+        </button>
+
+        <button id="btn-command-help" type="button" style="
+          min-height:48px;
+          border-radius:16px;
+          border:none;
+          background:#00d4ff;
+          color:#05070b;
+          font-weight:1000;
+        ">
+          ❓ Help
+        </button>
+
+        <button id="btn-command-release" type="button" style="
+          min-height:48px;
+          border-radius:16px;
+          border:none;
+          background:${isRunner ? "#22c55e" : "#374151"};
+          color:${isRunner ? "#05070b" : "#cbd5e1"};
+          font-weight:1000;
+        ">
+          🛡️ Release
+        </button>
+
+        <button id="btn-command-map-refresh" type="button" style="
+          min-height:48px;
+          border-radius:16px;
+          border:none;
+          background:#202a3c;
+          color:white;
+          font-weight:1000;
+        ">
+          🗺️ Refresh Map
+        </button>
+      </div>
+
+      <div style="
+        display:${isHost ? "grid" : "none"};
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-top:10px;
+      ">
+        <button id="btn-command-host-setup" type="button" style="
+          min-height:46px;
+          border-radius:16px;
+          border:1px solid rgba(0,212,255,.45);
+          background:#111827;
+          color:#00d4ff;
+          font-weight:1000;
+        ">
+          ⚙️ Host Setup
+        </button>
+
+        <button id="btn-command-end-round" type="button" style="
+          min-height:46px;
+          border-radius:16px;
+          border:1px solid rgba(255,59,59,.55);
+          background:#3a1111;
+          color:white;
+          font-weight:1000;
+        ">
+          ⛔ End Round
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(hub);
+
+  document.getElementById("btn-leoids-command-close")?.addEventListener("click", hideLeoidsCommandHub);
+
+  document.getElementById("btn-command-leaderboard")?.addEventListener("click", () => {
+    hideLeoidsCommandHub();
+    openLeoidsLeaderboard();
+  });
+
+  document.getElementById("btn-command-help")?.addEventListener("click", () => {
+    hideLeoidsCommandHub();
+    openLeoidsInstructions();
+  });
+
+  document.getElementById("btn-command-release")?.addEventListener("click", () => {
+    hideLeoidsCommandHub();
+    tryReleaseJailedRunners();
+  });
+
+  document.getElementById("btn-command-map-refresh")?.addEventListener("click", () => {
+    redrawAllMapObjects();
+    drawPlayerMarkers();
+    updateLeoidsBattleHud?.();
+    speakText?.("Map refreshed.");
+  });
+
+  document.getElementById("btn-command-host-setup")?.addEventListener("click", () => {
+    hideLeoidsCommandHub();
+    openSetupPanel();
+  });
+
+  document.getElementById("btn-command-end-round")?.addEventListener("click", () => {
+    hideLeoidsCommandHub();
+    endRound("manual");
+  });
+}
+
+  function hideLeoidsCommandHub() {
+  const hub = document.getElementById("leoids-command-hub");
+  if (hub) hub.remove();
+}
+
+
+  function toggleLeoidsCommandHub() {
+  const existing = document.getElementById("leoids-command-hub");
+
+  if (existing) {
+    hideLeoidsCommandHub();
+    return;
+  }
+
+  showLeoidsCommandHub();
+}
+  
+  
 return {
   state: leoidsState,
 
@@ -4176,7 +4375,9 @@ return {
   openLeoidsLeaderboard,
   tryReleaseJailedRunners,
   isLocalLobbyHost,
-
+  showLeoidsCommandHub,
+  hideLeoidsCommandHub,  
+  toggleLeoidsCommandHub,
   startRound,
   endRound,
   updatePanel,
