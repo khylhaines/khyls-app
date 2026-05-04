@@ -707,12 +707,14 @@ export function createLeoidsSystem({
 
     refreshAllPinMarkers?.();
     redrawAllMapObjects();
+    showLeoidsBattleHud();
     updatePanel();
   }
 
   function exitBattleMap() {
     stopTimer();
     stopAI();
+    hideLeoidsBattleHud();
     stopGpsOnlineSync();
     disableMapPointAdding();
     hideLeoidsMapControls();
@@ -2432,6 +2434,8 @@ function startOnlineSessionSync() {
   }
 
   function updatePanel() {
+    updateLeoidsBattleHud();
+    
     if (!$("leoids-status")) return;
 
     const roleText = leoidsState.role === "hunter" ? "Hunter" : "Runner";
@@ -3198,6 +3202,143 @@ function tryReleaseJailedRunners() {
   rescueJailedRunners();
 }
 
+function getLeoidsHudStatusText() {
+  const local = getLocalPlayer();
+
+  if (!leoidsState.active) return "WAITING";
+
+  if (local?.status === "jailed") return "JAILED";
+
+  if (!leoidsState.huntersReleased) {
+    return local?.role === "hunter" ? "HUNTERS LOCKED" : "HIDE NOW";
+  }
+
+  return local?.role === "hunter" ? "CHASE" : "SURVIVE / RESCUE";
+}
+
+function showLeoidsBattleHud() {
+  let hud = document.getElementById("leoids-battle-hud");
+
+  if (!hud) {
+    hud = document.createElement("div");
+    hud.id = "leoids-battle-hud";
+    hud.style.position = "fixed";
+    hud.style.top = "12px";
+    hud.style.left = "50%";
+    hud.style.transform = "translateX(-50%)";
+    hud.style.zIndex = "999998";
+    hud.style.width = "min(94vw, 420px)";
+    hud.style.pointerEvents = "none";
+    document.body.appendChild(hud);
+  }
+
+  updateLeoidsBattleHud();
+}
+
+function hideLeoidsBattleHud() {
+  const hud = document.getElementById("leoids-battle-hud");
+  if (hud) hud.remove();
+}
+
+function updateLeoidsBattleHud() {
+  const hud = document.getElementById("leoids-battle-hud");
+  if (!hud) return;
+
+  const local = getLocalPlayer();
+  const role = (local?.role || leoidsState.role || "runner").toUpperCase();
+  const isHunter = role === "HUNTER";
+
+  const freeRunners = leoidsState.players.filter(
+    (p) => p.role === "runner" && p.status === "free"
+  ).length;
+
+  const jailedRunners = leoidsState.players.filter(
+    (p) => p.role === "runner" && p.status === "jailed"
+  ).length;
+
+  const roleColor = isHunter ? "#ff3b3b" : "#22c55e";
+  const roleGlow = isHunter
+    ? "0 0 22px rgba(255,59,59,.55)"
+    : "0 0 22px rgba(34,197,94,.55)";
+
+  hud.innerHTML = `
+    <div style="
+      border:2px solid ${roleColor};
+      border-radius:22px;
+      background:linear-gradient(180deg,rgba(12,15,25,.96),rgba(3,5,10,.94));
+      color:white;
+      box-shadow:${roleGlow};
+      overflow:hidden;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    ">
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        padding:10px 14px 6px;
+        gap:10px;
+      ">
+        <div style="
+          color:#ffd54a;
+          font-weight:1000;
+          letter-spacing:.12em;
+          font-size:13px;
+        ">
+          LEOIDS
+        </div>
+
+        <div style="
+          background:${roleColor};
+          color:#05070b;
+          border-radius:999px;
+          padding:5px 12px;
+          font-size:12px;
+          font-weight:1000;
+          letter-spacing:.08em;
+        ">
+          ${role}
+        </div>
+      </div>
+
+      <div style="
+        text-align:center;
+        font-size:42px;
+        line-height:1;
+        font-weight:1000;
+        padding:2px 12px 4px;
+        color:white;
+      ">
+        ${formatTime(leoidsState.timeLeft)}
+      </div>
+
+      <div style="
+        text-align:center;
+        color:${roleColor};
+        font-weight:1000;
+        font-size:14px;
+        letter-spacing:.08em;
+        padding-bottom:8px;
+      ">
+        ${getLeoidsHudStatusText()}
+      </div>
+
+      <div style="
+        display:flex;
+        justify-content:center;
+        gap:14px;
+        padding:8px 12px 10px;
+        background:rgba(255,255,255,.06);
+        font-size:13px;
+        font-weight:800;
+      ">
+        <span style="color:#22c55e;">Free: ${freeRunners}</span>
+        <span style="color:#9ca3af;">Jailed: ${jailedRunners}</span>
+        <span style="color:#ffd54a;">Tag: ${leoidsState.tagRadius}m</span>
+      </div>
+    </div>
+  `;
+}
+  
   
   function wirePanelButtons() {
     const setClick = (id, fn) => {
@@ -3339,7 +3480,9 @@ return {
     loadAndApplyOnlineSession,
     startOnlineSessionSync,
     startOnlineCountdown,
-
+    showLeoidsBattleHud,
+    hideLeoidsBattleHud,
+    updateLeoidsBattleHud,
     openOnlineSessionBrowser,
     openOnlineLobbyScreen,
     openLeoidsLeaderboard,
