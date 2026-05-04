@@ -753,7 +753,7 @@ function checkBoundaryRules() {
     refreshAllPinMarkers?.();
   }
 
- function openSetupPanel() {
+function openSetupPanel() {
   enterBattleMap();
   hideLeoidsBattleHud();
 
@@ -789,8 +789,8 @@ function checkBoundaryRules() {
   hideLeoidsBattleHud();
 
   wirePanelButtons();
+  maybeShowFirstTimeLeoidsInstructions();
 }
-
 
  function closeSetupPanel() {
   closeModal?.("leoids-modal");
@@ -3746,7 +3746,7 @@ function updateLeoidsBattleHud() {
   speakText?.("Quick start ready. Boundary and base have been set.");
 }
 
-function openLeoidsInstructions() {
+function openLeoidsInstructions({ firstTime = false } = {}) {
   const old = document.getElementById("leoids-instructions-screen");
   if (old) old.remove();
 
@@ -3784,14 +3784,25 @@ function openLeoidsInstructions() {
       </h2>
 
       <div style="
+        margin-top:12px;
+        text-align:center;
+        color:#ffd54a;
+        font-weight:900;
+        line-height:1.4;
+      ">
+        Hunters chase. Runners survive and rescue. Stay inside the boundary.
+      </div>
+
+      <div style="
         margin-top:16px;
         padding:14px;
         border-radius:16px;
-        background:rgba(255,255,255,.06);
+        background:rgba(255,59,59,.13);
+        border:1px solid rgba(255,59,59,.35);
       ">
-        <strong style="color:#ff3b3b;">🔴 Hunters</strong>
+        <strong style="color:#ff3b3b;">🔴 HUNTERS</strong>
         <p style="margin:8px 0 0;line-height:1.45;">
-          Wait for the hunter release timer, then chase runners. Tap a runner on the map when they are inside tag range.
+          Wait for the release timer. When released, chase runners and tap them on the map when they are inside tag range.
         </p>
       </div>
 
@@ -3799,11 +3810,12 @@ function openLeoidsInstructions() {
         margin-top:12px;
         padding:14px;
         border-radius:16px;
-        background:rgba(255,255,255,.06);
+        background:rgba(34,197,94,.13);
+        border:1px solid rgba(34,197,94,.35);
       ">
-        <strong style="color:#22c55e;">🟢 Runners</strong>
+        <strong style="color:#22c55e;">🟢 RUNNERS</strong>
         <p style="margin:8px 0 0;line-height:1.45;">
-          Stay inside the boundary, avoid hunters, and rescue jailed runners by reaching the base.
+          Stay inside the boundary, avoid hunters, and rescue jailed runners by reaching the glowing base.
         </p>
       </div>
 
@@ -3811,11 +3823,12 @@ function openLeoidsInstructions() {
         margin-top:12px;
         padding:14px;
         border-radius:16px;
-        background:rgba(255,255,255,.06);
+        background:rgba(0,212,255,.13);
+        border:1px solid rgba(0,212,255,.35);
       ">
-        <strong style="color:#00d4ff;">🛡️ Base / Jail</strong>
+        <strong style="color:#00d4ff;">🛡️ BASE / JAIL</strong>
         <p style="margin:8px 0 0;line-height:1.45;">
-          Tagged runners are sent to base. Free runners can release them by entering the rescue zone.
+          Tagged runners are sent to base. Free runners release them automatically by entering the rescue zone.
         </p>
       </div>
 
@@ -3823,9 +3836,10 @@ function openLeoidsInstructions() {
         margin-top:12px;
         padding:14px;
         border-radius:16px;
-        background:rgba(255,255,255,.06);
+        background:rgba(255,176,0,.13);
+        border:1px solid rgba(255,176,0,.35);
       ">
-        <strong style="color:#ffb000;">🟡 Boundary</strong>
+        <strong style="color:#ffb000;">🟡 BOUNDARY</strong>
         <p style="margin:8px 0 0;line-height:1.45;">
           Stay inside the boundary. Leaving the game area can cost points.
         </p>
@@ -3833,11 +3847,14 @@ function openLeoidsInstructions() {
 
       <div style="
         margin-top:16px;
-        text-align:center;
-        font-weight:900;
-        color:#ffd54a;
+        padding:12px;
+        border-radius:16px;
+        background:rgba(255,255,255,.06);
+        font-size:13px;
+        line-height:1.45;
+        opacity:.9;
       ">
-        First test rule: Hunters chase. Runners survive and rescue. Stay inside the boundary.
+        Play safely. Use open spaces, watch roads and obstacles, and do not stare at the phone while running.
       </div>
 
       <button id="btn-leoids-instructions-close" type="button" style="
@@ -3852,6 +3869,25 @@ function openLeoidsInstructions() {
       ">
         GOT IT
       </button>
+
+      ${
+        firstTime
+          ? `
+            <button id="btn-leoids-instructions-never-again" type="button" style="
+              width:100%;
+              min-height:42px;
+              border-radius:16px;
+              background:#202a3c;
+              color:white;
+              font-weight:900;
+              margin-top:10px;
+              border:none;
+            ">
+              DO NOT SHOW AGAIN
+            </button>
+          `
+          : ""
+      }
     </div>
   `;
 
@@ -3862,8 +3898,24 @@ function openLeoidsInstructions() {
     ?.addEventListener("click", () => {
       modal.remove();
     });
+
+  document
+    .getElementById("btn-leoids-instructions-never-again")
+    ?.addEventListener("click", () => {
+      localStorage.setItem("leoidsInstructionsSeen", "yes");
+      modal.remove();
+    });
 }
 
+function maybeShowFirstTimeLeoidsInstructions() {
+  const seen = localStorage.getItem("leoidsInstructionsSeen");
+
+  if (seen === "yes") return;
+
+  setTimeout(() => {
+    openLeoidsInstructions({ firstTime: true });
+  }, 350);
+}
   
  function wirePanelButtons() {
   const setClick = (id, fn) => {
@@ -4004,7 +4056,7 @@ return {
     syncLocalPlayerPosition,
     startGpsOnlineSync,
     stopGpsOnlineSync,
-
+    maybeShowFirstTimeLeoidsInstructions,
     saveOnlineSessionConfig,
     loadAndApplyOnlineSession,
     startOnlineSessionSync,
