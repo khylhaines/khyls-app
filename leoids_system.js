@@ -1083,6 +1083,68 @@ function exitBattleMap() {
   updatePanel?.();
 }
 
+function openSetupPanel() {
+  hideLeoidsBattleHud?.();
+  hideLeoidsCommandHub?.();
+
+  enterBattleMap();
+
+  hideLeoidsBattleHud?.();
+  disableMapPointAdding?.();
+  hideLeoidsMapControls?.();
+
+  leoidsState.mapMode = "none";
+
+  if ($("leoids-round-length")) {
+    $("leoids-round-length").value = String(leoidsState.roundTime);
+  }
+
+  if ($("leoids-hunter-delay")) {
+    $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
+  }
+
+  if ($("leoids-boundary-size")) {
+    $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
+  }
+
+  if ($("leoids-base-radius")) {
+    $("leoids-base-radius").value = String(leoidsState.baseRadius);
+  }
+
+  if ($("leoids-tag-radius")) {
+    $("leoids-tag-radius").value = String(leoidsState.tagRadius);
+  }
+
+  showModal?.("leoids-modal");
+
+  wirePanelButtons?.();
+
+  if (typeof setRole === "function") {
+    setRole(leoidsState.role);
+  }
+
+  if (typeof setBoundaryMode === "function") {
+    setBoundaryMode(leoidsState.boundaryMode, false);
+  }
+
+  refreshBoundaryButtons?.();
+  renderPlayers?.();
+  updatePanel?.();
+}
+
+function closeSetupPanel() {
+  closeModal?.("leoids-modal");
+
+  if (leoidsState.mapMode === "boundary" || leoidsState.mapMode === "base") {
+    enableMapPointAdding?.();
+    return;
+  }
+
+  if ($("map")?.classList.contains("leoids-battle-map")) {
+    showLeoidsBattleHud?.();
+  }
+}
+  
   
  function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
