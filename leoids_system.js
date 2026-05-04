@@ -3383,13 +3383,14 @@ async function openOnlineSessionBrowser() {
 
       <button id="btn-leoids-host-public-session" type="button" style="
         width:100%;
-        min-height:44px;
-        border-radius:14px;
-        background:#00d4ff;
+        min-height:48px;
+        border-radius:16px;
+        background:#22c55e;
         color:#05070b;
         font-weight:1000;
         margin-bottom:10px;
         border:none;
+        box-shadow:0 0 18px rgba(34,197,94,.35);
       ">
         HOST NEW PUBLIC LOBBY
       </button>
@@ -3413,38 +3414,56 @@ async function openOnlineSessionBrowser() {
 
   document.body.appendChild(modal);
 
-  document.getElementById("btn-leoids-close-session-browser")?.addEventListener("click", () => {
-    modal.remove();
-  });
+  document
+    .getElementById("btn-leoids-close-session-browser")
+    ?.addEventListener("click", () => modal.remove());
 
-  document.getElementById("btn-leoids-refresh-sessions")?.addEventListener("click", () => {
-    modal.remove();
-    openOnlineSessionBrowser();
-  });
-
-  document.getElementById("btn-leoids-host-public-session")?.addEventListener("click", async () => {
-    const name = prompt("Lobby name?", "Barrow LEOIDS Game") || "Barrow LEOIDS Game";
-    const hostName = prompt("Your name?", "Kyle") || "Host";
-
-    leoidsState.onlinePlayerName = hostName;
-
-    const session = await createOnlineSession(name);
-    if (!session) return;
-
-    await joinOnlineSession({
-      sessionId: session.id,
-      displayName: hostName,
-      role: leoidsState.role || "runner",
+  document
+    .getElementById("btn-leoids-refresh-sessions")
+    ?.addEventListener("click", () => {
+      modal.remove();
+      openOnlineSessionBrowser();
     });
 
-    modal.remove();
-    openOnlineLobbyScreen(session.id);
-  });
+  document
+    .getElementById("btn-leoids-host-public-session")
+    ?.addEventListener("click", async () => {
+      const name = prompt("Lobby name?", "Barrow LEOIDS Game") || "Barrow LEOIDS Game";
+      const hostName = prompt("Your name?", "Kyle") || "Host";
+
+      leoidsState.onlinePlayerName = hostName;
+      leoidsState.isLobbyHost = true;
+
+      if (supabase) {
+        supabase.playerName = hostName;
+      }
+
+      const session = await createOnlineSession(name);
+      if (!session) return;
+
+      await joinOnlineSession({
+        sessionId: session.id,
+        displayName: hostName,
+        role: leoidsState.role || "runner",
+      });
+
+      leoidsState.isLobbyHost = true;
+      leoidsState.onlineSessionId = session.id;
+      supabase.sessionId = session.id;
+
+      modal.remove();
+
+      setTimeout(() => {
+        openOnlineLobbyScreen(session.id);
+      }, 150);
+    });
 
   modal.querySelectorAll(".leoids-session-join-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const sessionId = btn.dataset.sessionId;
       const displayName = prompt("Your name?", "Kyle") || "Player";
+
+      leoidsState.isLobbyHost = false;
 
       await joinOnlineSession({
         sessionId,
@@ -3468,7 +3487,10 @@ async function openOnlineSessionBrowser() {
       } else if (supabase.client) {
         await supabase.client
           .from("leoids_sessions")
-          .update({ ended_at: new Date().toISOString() })
+          .update({
+            ended_at: new Date().toISOString(),
+            status: "ended",
+          })
           .eq("id", sessionId);
       }
 
@@ -3477,7 +3499,6 @@ async function openOnlineSessionBrowser() {
     });
   });
 }
-
 
 function openLeoidsLeaderboard() {
   const old = document.getElementById("leoids-leaderboard-screen");
