@@ -1064,6 +1064,25 @@ function enterBattleMap() {
   showLeoidsBattleHud?.();
   updatePanel?.();
 }
+
+function exitBattleMap() {
+  const mapEl = $("map");
+  if (mapEl) {
+    mapEl.classList.remove("leoids-battle-map");
+  }
+
+  const menuBtn = $("leoids-menu-btn");
+  if (menuBtn) {
+    menuBtn.classList.add("hidden");
+    menuBtn.onclick = null;
+  }
+
+  hideLeoidsMapControls?.();
+  showActionButton?.(true);
+
+  updatePanel?.();
+}
+
   
  function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
