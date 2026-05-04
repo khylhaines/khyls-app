@@ -665,32 +665,51 @@ async function joinOnlineSession({
   }
 
   function startGpsOnlineSync() {
-    if (!navigator.geolocation) {
-      speakText?.("GPS is not available on this device.");
-      return false;
+  if (!navigator.geolocation) {
+    speakText?.("GPS is not available on this device.");
+    return false;
+  }
+
+  if (!leoidsState.onlineEnabled) {
+    speakText?.("Join an online LEOIDS session first.");
+    return false;
+  }
+
+  stopGpsOnlineSync();
+
+  leoidsState.gpsWatchId = navigator.geolocation.watchPosition(
+    async (position) => {
+      const now = Date.now();
+
+      if (now - leoidsState.lastOnlinePositionSyncAt < 2000) {
+        return;
+      }
+
+      const point = {
+        lat: Number(position.coords.latitude),
+        lng: Number(position.coords.longitude),
+      };
+
+      await syncLocalPlayerPosition(
+        point,
+        Number(position.coords.accuracy || 0),
+        position.coords.heading
+      );
+    },
+    (error) => {
+      console.warn("LEOIDS GPS sync error:", error);
+      speakText?.("GPS sync error.");
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 1000,
+      timeout: 12000,
     }
+  );
 
-    if (!leoidsState.onlineEnabled) {
-      speakText?.("Join an online LEOIDS session first.");
-      return false;
-    }
-
-    stopGpsOnlineSync();
-
-    leoidsState.gpsWatchId = navigator.geolocation.watchPosition(
-      async (position) => {
-        const now = Date.now();
-
-        if (now - leoidsState.lastOnlinePositionSyncAt < 2000) {
-          return;
-        }
-
-        const point = {
-          lat: Number(position.coords.latitude),
-          lng: Number(position.coords.longitude),
-        };
-
-        await syncLocalPlayerPosition(
+  speakText?.("Online GPS sync started.");
+  return true;
+}
          
  function refreshBoundaryButtons() {
   const isCircle = leoidsState.boundaryMode === "circle";
