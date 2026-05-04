@@ -1190,6 +1190,69 @@ function openSetupPanel() {
     leoidsState.mapClickHandler = null;
   }
 
+  function startRound() {
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    alert("Only the host can start the round.");
+    speakText?.("Only the host can start the round.");
+    return;
+  }
+
+  if (leoidsState.active) {
+    console.warn("Round already active — blocking restart loop");
+    return;
+  }
+
+  if (!leoidsState.basePoint) {
+    alert("Set the jail/base first.");
+    speakText?.("Set the jail base first.");
+    return;
+  }
+
+  if (
+    leoidsState.boundaryMode === "polygon" &&
+    leoidsState.boundaryPoints.length < 3
+  ) {
+    alert("Finish the boundary first.");
+    speakText?.("Finish the boundary first.");
+    return;
+  }
+
+  if (
+    leoidsState.boundaryMode === "circle" &&
+    !leoidsState.boundaryCenter
+  ) {
+    alert("Set the boundary first.");
+    speakText?.("Set the boundary first.");
+    return;
+  }
+
+  leoidsState.active = true;
+  leoidsState.roundStartedAt = Date.now();
+
+  leoidsState.timeLeft = leoidsState.roundTime;
+
+  leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
+  leoidsState.huntersReleased = false;
+
+  seedPlayerPositions();
+
+  closeSetupPanel();
+
+  showLeoidsEvent(
+    "ROUND STARTED",
+    "Runners hide.\nHunters wait for release.",
+    "⚡",
+    "base"
+  );
+
+  speakText?.("Round started. Runners hide. Hunters wait.");
+
+  runLeoidsGameLoop();
+}
+
+
  function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
