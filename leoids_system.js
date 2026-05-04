@@ -496,7 +496,7 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   updatePanel();
   speakText?.("Online LEOIDS session created. You are the host.");
 
-  return player;
+  return session;
   }
 
  async function joinOnlineSession({
