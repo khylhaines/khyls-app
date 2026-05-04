@@ -491,7 +491,6 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   await saveOnlineSessionConfig();
 
   startOnlineSessionSync();
-
   updatePanel();
 
   speakText?.("Online LEOIDS session created. You are the host.");
