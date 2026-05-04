@@ -4368,7 +4368,7 @@ return {
     openOnlineLobbyScreen,
     openLeoidsLeaderboard,
     tryReleaseJailedRunners,
-    
+    isLocalLobbyHost,
     startRound,
     endRound,
     updatePanel,
