@@ -778,8 +778,11 @@ async function joinOnlineSession({
 
 
 function openSetupPanel() {
+  hideLeoidsBattleHud?.();
+  hideLeoidsCommandHub?.();
+
   enterBattleMap();
-  hideLeoidsBattleHud();
+  hideLeoidsBattleHud?.();
 
   disableMapPointAdding();
   hideLeoidsMapControls();
@@ -805,29 +808,30 @@ function openSetupPanel() {
     $("leoids-tag-radius").value = String(leoidsState.tagRadius);
   }
 
-  refreshBoundaryButtons();
-  renderPlayers();
-  updatePanel();
-
   showModal?.("leoids-modal");
-  hideLeoidsBattleHud();
 
   wirePanelButtons();
-  maybeShowFirstTimeLeoidsInstructions();
+  setRole(leoidsState.role);
+  setBoundaryMode(leoidsState.boundaryMode, false);
+  refreshBoundaryButtons();
+
+  renderPlayers();
+  updatePanel();
 }
+
 
  function closeSetupPanel() {
   closeModal?.("leoids-modal");
 
   if (leoidsState.mapMode === "boundary" || leoidsState.mapMode === "base") {
     enableMapPointAdding();
-    hideLeoidsBattleHud();
     return;
   }
 
-  showLeoidsBattleHud();
+  if ($("map")?.classList.contains("leoids-battle-map")) {
+    showLeoidsBattleHud?.();
+  }
 }
-
   function setRole(role = "runner") {
   leoidsState.role = role === "hunter" ? "hunter" : "runner";
 
