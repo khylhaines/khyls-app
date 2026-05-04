@@ -4095,6 +4095,14 @@ function updateLeoidsBattleHud() {
 
 
 async function quickStartLeoidsGame() {
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    alert("Only the host can use Quick Start.");
+    speakText?.("Only the host can use quick start.");
+    return;
+  }
+
   const map = getMapSafe();
 
   if (!map) {
@@ -4143,14 +4151,15 @@ async function quickStartLeoidsGame() {
   updatePanel();
 
   showLeoidsEvent(
-    "QUICK START READY",
-    "5 minute test round.\n1 minute hunter lock.\nBoundary and base set.",
+    "QUICK GAME READY",
+    "5 minute round.\n1 minute hunter lock.\nBoundary and jail base are set.",
     "⚡",
     "base"
   );
 
-  speakText?.("Quick start ready. Boundary and base have been set.");
+  speakText?.("Quick game ready. Boundary and jail base have been set.");
 }
+
 
 
 function openLeoidsInstructions({ firstTime = false } = {}) {
@@ -4303,15 +4312,18 @@ function wirePanelButtons() {
     el.style.display = display;
   };
 
-  const local = getLocalPlayer();
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
   const isSoloLocal = !leoidsState.onlineEnabled;
 
-  // These now belong in the Command Hub, not the setup panel.
   hideSetupButton("btn-leoids-release-jail");
   hideSetupButton("btn-leoids-leaderboard");
 
-  // AI tools should only show for local / solo testing.
+  if (isHost) {
+    showSetupButton("btn-leoids-quick-start");
+  } else {
+    hideSetupButton("btn-leoids-quick-start");
+  }
+
   if (isSoloLocal) {
     showSetupButton("btn-leoids-add-ai-runner");
     showSetupButton("btn-leoids-add-ai-hunter");
@@ -4322,7 +4334,6 @@ function wirePanelButtons() {
     hideSetupButton("btn-leoids-reset-players");
   }
 
-  // Host-only round controls.
   if (isHost) {
     showSetupButton("btn-leoids-start");
     showSetupButton("btn-leoids-end");
