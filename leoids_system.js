@@ -2572,9 +2572,9 @@ function handleOnlineSessionUpdate(payload) {
     handleOnlineCountdown(session);
   }
 
-  if (session.status === "active") {
-    startRoundFromOnlineSession(session);
-  }
+if (session.status === "active" && !leoidsState.active) {
+  startRoundFromOnlineSession(session);
+}
 }
 
 function startOnlineSessionSync() {
@@ -2600,70 +2600,32 @@ function startOnlineSessionSync() {
 }
 
 
-  async function startRound() {
-  if (!hasValidBoundary()) {
-    alert("Set a LEOIDs boundary first. Street boundary needs at least 3 points.");
-    speakText?.("Set a valid boundary first.");
+  function startRound() {
+  // 🛑 PREVENT LOOP
+  if (leoidsState.active) {
+    console.log("Round already active — ignoring duplicate start.");
     return;
   }
-
-  if (!leoidsState.basePoint && window.__leoidsBasePoint) {
-    leoidsState.basePoint = window.__leoidsBasePoint;
-  }
-
-  if (!leoidsState.basePoint) {
-    alert("Set the Jail / Base point first.");
-    speakText?.("Set the jail base first.");
-    return;
-  }
-
-  if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
-    await startOnlineCountdown(leoidsState.countdownSeconds || 60);
-    return;
-  }
-
-  stopTimer();
-  stopAI();
-  seedPlayerPositions();
 
   leoidsState.active = true;
-  leoidsState.status = "free";
-  leoidsState.score = 0;
-  leoidsState.coins = 0;
-  leoidsState.timeLeft = leoidsState.roundTime;
-  leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
-  leoidsState.huntersReleased = false;
-  leoidsState.startedAt = new Date().toISOString();
-  leoidsState.endedAt = null;
 
-  leoidsState.players.forEach((player) => {
-    player.status = "free";
-    player.score = 0;
-    player.coins = 0;
-    player.jailedAtBase = false;
-  });
-
-  updatePanel();
-  renderPlayers();
-  drawPlayerMarkers();
-
-  const delayMins = Math.max(1, Math.round(leoidsState.hunterDelay / 60));
-
-  speakText?.(
-    `LEOIDS round started. Runners, hide now. Hunters are locked for ${delayMins} minute${delayMins === 1 ? "" : "s"}.`
+  leoidsState.timeLeft = Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
+  leoidsState.hunterDelayLeft = Number(
+    leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
   );
 
-  leoidsState.intervalId = setInterval(tickRound, 1000);
+  leoidsState.huntersReleased = false;
 
-  leoidsState.aiIntervalId = setInterval(() => {
-    moveAIPlayers();
-    checkBoundaryRules();
-    runAITagChecks();
-    renderPlayers();
-    updatePanel();
-  }, 2500);
+  showLeoidsEvent(
+    "ROUND STARTED",
+    "Hunters are locked. Runners hide now.",
+    "⚡",
+    "base"
+  );
 
-  saveState?.();
+  speakText?.("Round started. Hunters are locked.");
+
+  startLeoidsGameLoop?.();
 }
 
 
