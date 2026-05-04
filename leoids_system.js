@@ -1286,64 +1286,90 @@ function drawPolygonBoundary() {
   }
 }
 
- function drawBasePoint(point, radius) {
+function drawBasePoint(point, radius = leoidsState.baseRadius) {
+  if (!point) return;
+
   const map = getMapSafe();
-  if (!map || !point) return;
+  if (!map) return;
 
-  clearBasePoint();
+  if (leoidsState.baseMarker) {
+    map.removeLayer(leoidsState.baseMarker);
+  }
 
-  leoidsState.baseLayer = L.circle([point.lat, point.lng], {
-    radius: Number(radius || DEFAULT_BASE_RADIUS),
+  if (leoidsState.baseCircle) {
+    map.removeLayer(leoidsState.baseCircle);
+  }
+
+  if (leoidsState.basePulseCircle) {
+    map.removeLayer(leoidsState.basePulseCircle);
+  }
+
+  // MAIN BASE (JAIL)
+  leoidsState.baseCircle = L.circle([point.lat, point.lng], {
+    radius: radius,
     color: "#00d4ff",
-    weight: 5,
-    opacity: 0.95,
+    weight: 2,
     fillColor: "#00d4ff",
     fillOpacity: 0.18,
   }).addTo(map);
 
+  // PULSE EFFECT (visual clarity)
+  leoidsState.basePulseCircle = L.circle([point.lat, point.lng], {
+    radius: radius,
+    color: "#00d4ff",
+    weight: 1,
+    fillColor: "#00d4ff",
+    fillOpacity: 0.08,
+  }).addTo(map);
+
+  let pulseSize = radius;
+
+  if (leoidsState.basePulseInterval) {
+    clearInterval(leoidsState.basePulseInterval);
+  }
+
+  leoidsState.basePulseInterval = setInterval(() => {
+    pulseSize += 6;
+
+    if (pulseSize > radius * 2.5) {
+      pulseSize = radius;
+    }
+
+    if (leoidsState.basePulseCircle) {
+      leoidsState.basePulseCircle.setRadius(pulseSize);
+      leoidsState.basePulseCircle.setStyle({
+        fillOpacity: 0.08 * (1 - pulseSize / (radius * 2.5)),
+      });
+    }
+  }, 120);
+
+  // BASE ICON MARKER
   leoidsState.baseMarker = L.marker([point.lat, point.lng], {
     icon: L.divIcon({
       className: "leoids-base-icon",
       html: `
         <div style="
-          width:38px;
-          height:38px;
-          border-radius:50%;
           display:flex;
           align-items:center;
           justify-content:center;
-          background:rgba(0,212,255,.95);
-          border:3px solid white;
-          box-shadow:0 0 20px rgba(0,212,255,.95);
-          font-size:20px;
-          animation:leoidsBasePulse 1.4s infinite ease-in-out;
+          width:38px;
+          height:38px;
+          border-radius:50%;
+          background:#00d4ff;
+          color:#05070b;
+          font-weight:1000;
+          font-size:18px;
+          box-shadow:0 0 18px #00d4ff;
         ">
-          🛡️
+          🏁
         </div>
       `,
       iconSize: [38, 38],
       iconAnchor: [19, 19],
     }),
-  })
-    .bindTooltip("Jail / Rescue Base", {
-      permanent: false,
-      direction: "top",
-    })
-    .addTo(map);
-
-  if (!document.getElementById("leoids-base-pulse-style")) {
-    const style = document.createElement("style");
-    style.id = "leoids-base-pulse-style";
-    style.innerHTML = `
-      @keyframes leoidsBasePulse {
-        0% { transform:scale(1); box-shadow:0 0 12px rgba(0,212,255,.75); }
-        50% { transform:scale(1.16); box-shadow:0 0 28px rgba(0,212,255,1); }
-        100% { transform:scale(1); box-shadow:0 0 12px rgba(0,212,255,.75); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
+  }).addTo(map);
 }
+
 
 function shouldShowPlayerOnMap(player) {
   if (!player) return false;
