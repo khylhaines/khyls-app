@@ -2608,7 +2608,7 @@ function startOnlineSessionSync() {
 }
 
 
- function tickRound() {
+function tickRound() {
   if (!leoidsState.active) return;
 
   leoidsState.timeLeft = Math.max(0, leoidsState.timeLeft - 1);
@@ -2619,39 +2619,73 @@ function startOnlineSessionSync() {
       leoidsState.hunterDelayLeft - 1
     );
 
+    const releaseSoon =
+      leoidsState.hunterDelayLeft > 0 && leoidsState.hunterDelayLeft <= 10;
+
+    if (releaseSoon && !leoidsState.lastHunterCountdownSecond) {
+      leoidsState.lastHunterCountdownSecond = leoidsState.hunterDelayLeft;
+    }
+
+    if (
+      releaseSoon &&
+      leoidsState.lastHunterCountdownSecond !== leoidsState.hunterDelayLeft
+    ) {
+      leoidsState.lastHunterCountdownSecond = leoidsState.hunterDelayLeft;
+
+      if (
+        leoidsState.hunterDelayLeft === 10 ||
+        leoidsState.hunterDelayLeft === 5 ||
+        leoidsState.hunterDelayLeft <= 3
+      ) {
+        showLeoidsEvent(
+          "HUNTERS RELEASE SOON",
+          `${leoidsState.hunterDelayLeft} seconds`,
+          "⏱️",
+          "hunter"
+        );
+
+        speakText?.(`${leoidsState.hunterDelayLeft}`);
+      }
+    }
+
     if (leoidsState.hunterDelayLeft <= 0) {
       leoidsState.huntersReleased = true;
+      leoidsState.lastHunterCountdownSecond = null;
 
       const local = getLocalPlayer();
 
       if (local?.role === "hunter") {
         showLeoidsEvent(
           "HUNTERS RELEASED",
-          "Go and catch the runners.",
-          "🟥"
+          "Go. Catch the runners.",
+          "🔴",
+          "hunter"
         );
+
         speakText?.("Hunters released. Go and catch the runners.");
       } else {
         showLeoidsEvent(
           "HUNTERS RELEASED",
-          "Runners, keep moving. Do not get caught.",
-          "🏃"
+          "Run. Hide. Rescue your team.",
+          "🏃",
+          "runner"
         );
-        speakText?.("Hunters have been released. Runners, keep moving.");
+
+        speakText?.("Hunters released. Runners, keep moving.");
       }
     }
   }
 
-  // 🔥 AUTO RESCUE SYSTEM
   const local = getLocalPlayer();
+
   if (local?.role === "runner" && leoidsState.basePoint && local.position) {
     const distance = distanceMeters(local.position, leoidsState.basePoint);
 
-   if (
-  distance <= leoidsState.baseRadius &&
-  Date.now() - (leoidsState.lastRescueAt || 0) > 3000
-) {
-  leoidsState.lastRescueAt = Date.now();
+    if (
+      distance <= leoidsState.baseRadius &&
+      Date.now() - (leoidsState.lastRescueAt || 0) > 3000
+    ) {
+      leoidsState.lastRescueAt = Date.now();
       rescueJailedRunners();
     }
   }
@@ -2665,7 +2699,6 @@ function startOnlineSessionSync() {
 
   updatePanel();
 }
-
 
   function endRound(reason = "manual") {
     stopTimer();
