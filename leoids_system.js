@@ -3639,97 +3639,275 @@ function updateLeoidsBattleHud() {
   `;
 }
 
-  
-  
-  function wirePanelButtons() {
-    const setClick = (id, fn) => {
-      const el = $(id);
-      if (!el) return;
+  async function quickStartLeoidsGame() {
+  const map = getMapSafe();
 
-      el.onclick = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        fn();
-      };
-    };
-
-    setClick("btn-leoids-release-jail", tryReleaseJailedRunners);
-    setClick("btn-leoids-leaderboard", openLeoidsLeaderboard);
-    
-    setClick("btn-leoids-close", closeSetupPanel);
-    setClick("btn-leoids-close-x", closeSetupPanel);
-
-    setClick("btn-leoids-runner", () => setRole("runner"));
-    setClick("btn-leoids-hunter", () => setRole("hunter"));
-
-    setClick("btn-leoids-browse-games", openOnlineSessionBrowser);
-    setClick("btn-leoids-boundary-circle", () => {
-      setBoundaryMode("circle");
-    });
-
-    setClick("btn-leoids-boundary-polygon", () => {
-      setBoundaryMode("polygon");
-    });
-
-    const roundLength = $("leoids-round-length");
-    if (roundLength) {
-      roundLength.onchange = (e) => {
-        setRoundLength(Number(e.target.value || DEFAULT_ROUND_SECONDS));
-      };
-    }
-
-    const hunterDelay = $("leoids-hunter-delay");
-    if (hunterDelay) {
-      hunterDelay.onchange = (e) => {
-        setHunterDelay(Number(e.target.value || DEFAULT_HUNTER_DELAY_SECONDS));
-      };
-    }
-
-    const boundarySize = $("leoids-boundary-size");
-    if (boundarySize) {
-      boundarySize.onchange = (e) => {
-        setBoundaryRadius(Number(e.target.value || DEFAULT_BOUNDARY_RADIUS));
-      };
-    }
-
-    const baseRadius = $("leoids-base-radius");
-    if (baseRadius) {
-      baseRadius.onchange = (e) => {
-        setBaseRadius(Number(e.target.value || DEFAULT_BASE_RADIUS));
-      };
-    }
-
-    const tagRadius = $("leoids-tag-radius");
-    if (tagRadius) {
-      tagRadius.onchange = (e) => {
-        setTagRadius(Number(e.target.value || DEFAULT_TAG_RADIUS));
-      };
-    }
-
-    setClick("btn-leoids-set-boundary", setCircleBoundaryHere);
-
-    setClick("btn-leoids-add-point", () => {
-      leoidsState.mapMode = "boundary";
-      closeModal?.("leoids-modal");
-      showActionButton?.(false);
-      showLeoidsMapControls("boundary");
-      enableMapPointAdding();
-      speakText?.("Tap the map to add boundary points.");
-    });
-
-    setClick("btn-leoids-undo-point", undoStreetBoundaryPoint);
-   setClick("btn-leoids-confirm-boundary", confirmBoundaryFromMap);
-    setClick("btn-leoids-clear-boundary", clearBoundaryFull);
-
-    setClick("btn-leoids-set-base", setBaseHere);
-
-    setClick("btn-leoids-add-ai-runner", () => addAIPlayer("runner"));
-    setClick("btn-leoids-add-ai-hunter", () => addAIPlayer("hunter"));
-    setClick("btn-leoids-reset-players", resetLocalPlayers);
-
-    setClick("btn-leoids-start", startRound);
-    setClick("btn-leoids-end", () => endRound("manual"));
+  if (!map) {
+    alert("Map is not ready yet.");
+    speakText?.("Map is not ready yet.");
+    return;
   }
+
+  const center = map.getCenter();
+
+  const basePoint = {
+    lat: Number(center.lat),
+    lng: Number(center.lng),
+  };
+
+  leoidsState.roundTime = 300;
+  leoidsState.timeLeft = 300;
+
+  leoidsState.hunterDelay = 60;
+  leoidsState.hunterDelayLeft = 60;
+  leoidsState.huntersReleased = false;
+
+  leoidsState.boundaryMode = "circle";
+  leoidsState.boundaryRadius = 200;
+  leoidsState.boundaryCenter = basePoint;
+  leoidsState.boundaryPoints = [];
+
+  leoidsState.basePoint = basePoint;
+  leoidsState.pendingBasePoint = null;
+  leoidsState.baseRadius = 18;
+  leoidsState.tagRadius = 10;
+
+  window.__leoidsBasePoint = basePoint;
+
+  clearPolygonBoundary();
+  drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
+  drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
+
+  seedPlayerPositions();
+
+  await saveOnlineSessionConfig();
+
+  refreshBoundaryButtons();
+  renderPlayers();
+  drawPlayerMarkers();
+  updatePanel();
+
+  showLeoidsEvent(
+    "QUICK START READY",
+    "5 minute test round.\n1 minute hunter lock.\nBoundary and base set.",
+    "⚡",
+    "base"
+  );
+
+  speakText?.("Quick start ready. Boundary and base have been set.");
+}
+
+function openLeoidsInstructions() {
+  const old = document.getElementById("leoids-instructions-screen");
+  if (old) old.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "leoids-instructions-screen";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.zIndex = "999999";
+  modal.style.background = "rgba(0,0,0,.9)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "18px";
+
+  modal.innerHTML = `
+    <div style="
+      width:min(94vw,560px);
+      max-height:88vh;
+      overflow:auto;
+      border:2px solid #00d4ff;
+      border-radius:28px;
+      background:linear-gradient(180deg,#101827,#05070b);
+      color:white;
+      padding:22px;
+      box-shadow:0 0 40px rgba(0,212,255,.35);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    ">
+      <h2 style="
+        margin:0;
+        color:#00d4ff;
+        text-align:center;
+        letter-spacing:.08em;
+      ">
+        HOW TO PLAY LEOIDS
+      </h2>
+
+      <div style="
+        margin-top:16px;
+        padding:14px;
+        border-radius:16px;
+        background:rgba(255,255,255,.06);
+      ">
+        <strong style="color:#ff3b3b;">🔴 Hunters</strong>
+        <p style="margin:8px 0 0;line-height:1.45;">
+          Wait for the hunter release timer, then chase runners. Tap a runner on the map when they are inside tag range.
+        </p>
+      </div>
+
+      <div style="
+        margin-top:12px;
+        padding:14px;
+        border-radius:16px;
+        background:rgba(255,255,255,.06);
+      ">
+        <strong style="color:#22c55e;">🟢 Runners</strong>
+        <p style="margin:8px 0 0;line-height:1.45;">
+          Stay inside the boundary, avoid hunters, and rescue jailed runners by reaching the base.
+        </p>
+      </div>
+
+      <div style="
+        margin-top:12px;
+        padding:14px;
+        border-radius:16px;
+        background:rgba(255,255,255,.06);
+      ">
+        <strong style="color:#00d4ff;">🛡️ Base / Jail</strong>
+        <p style="margin:8px 0 0;line-height:1.45;">
+          Tagged runners are sent to base. Free runners can release them by entering the rescue zone.
+        </p>
+      </div>
+
+      <div style="
+        margin-top:12px;
+        padding:14px;
+        border-radius:16px;
+        background:rgba(255,255,255,.06);
+      ">
+        <strong style="color:#ffb000;">🟡 Boundary</strong>
+        <p style="margin:8px 0 0;line-height:1.45;">
+          Stay inside the boundary. Leaving the game area can cost points.
+        </p>
+      </div>
+
+      <div style="
+        margin-top:16px;
+        text-align:center;
+        font-weight:900;
+        color:#ffd54a;
+      ">
+        First test rule: Hunters chase. Runners survive and rescue. Stay inside the boundary.
+      </div>
+
+      <button id="btn-leoids-instructions-close" type="button" style="
+        width:100%;
+        min-height:46px;
+        border-radius:16px;
+        background:#00d4ff;
+        color:#05070b;
+        font-weight:1000;
+        margin-top:18px;
+        border:none;
+      ">
+        GOT IT
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document
+    .getElementById("btn-leoids-instructions-close")
+    ?.addEventListener("click", () => {
+      modal.remove();
+    });
+}
+
+  
+ function wirePanelButtons() {
+  const setClick = (id, fn) => {
+    const el = $(id);
+    if (!el) return;
+
+    el.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      fn();
+    };
+  };
+
+  setClick("btn-leoids-release-jail", tryReleaseJailedRunners);
+  setClick("btn-leoids-leaderboard", openLeoidsLeaderboard);
+  setClick("btn-leoids-quick-start", quickStartLeoidsGame);
+  setClick("btn-leoids-instructions", openLeoidsInstructions);
+
+  setClick("btn-leoids-close", closeSetupPanel);
+  setClick("btn-leoids-close-x", closeSetupPanel);
+
+  setClick("btn-leoids-runner", () => setRole("runner"));
+  setClick("btn-leoids-hunter", () => setRole("hunter"));
+
+  setClick("btn-leoids-browse-games", openOnlineSessionBrowser);
+
+  setClick("btn-leoids-boundary-circle", () => {
+    setBoundaryMode("circle");
+  });
+
+  setClick("btn-leoids-boundary-polygon", () => {
+    setBoundaryMode("polygon");
+  });
+
+  const roundLength = $("leoids-round-length");
+  if (roundLength) {
+    roundLength.onchange = (e) => {
+      setRoundLength(Number(e.target.value || DEFAULT_ROUND_SECONDS));
+    };
+  }
+
+  const hunterDelay = $("leoids-hunter-delay");
+  if (hunterDelay) {
+    hunterDelay.onchange = (e) => {
+      setHunterDelay(Number(e.target.value || DEFAULT_HUNTER_DELAY_SECONDS));
+    };
+  }
+
+  const boundarySize = $("leoids-boundary-size");
+  if (boundarySize) {
+    boundarySize.onchange = (e) => {
+      setBoundaryRadius(Number(e.target.value || DEFAULT_BOUNDARY_RADIUS));
+    };
+  }
+
+  const baseRadius = $("leoids-base-radius");
+  if (baseRadius) {
+    baseRadius.onchange = (e) => {
+      setBaseRadius(Number(e.target.value || DEFAULT_BASE_RADIUS));
+    };
+  }
+
+  const tagRadius = $("leoids-tag-radius");
+  if (tagRadius) {
+    tagRadius.onchange = (e) => {
+      setTagRadius(Number(e.target.value || DEFAULT_TAG_RADIUS));
+    };
+  }
+
+  setClick("btn-leoids-set-boundary", setCircleBoundaryHere);
+
+  setClick("btn-leoids-add-point", () => {
+    leoidsState.mapMode = "boundary";
+    closeModal?.("leoids-modal");
+    showActionButton?.(false);
+    showLeoidsMapControls("boundary");
+    enableMapPointAdding();
+    speakText?.("Tap the map to add boundary points.");
+  });
+
+  setClick("btn-leoids-undo-point", undoStreetBoundaryPoint);
+  setClick("btn-leoids-confirm-boundary", confirmBoundaryFromMap);
+  setClick("btn-leoids-clear-boundary", clearBoundaryFull);
+
+  setClick("btn-leoids-set-base", setBaseHere);
+
+  setClick("btn-leoids-add-ai-runner", () => addAIPlayer("runner"));
+  setClick("btn-leoids-add-ai-hunter", () => addAIPlayer("hunter"));
+  setClick("btn-leoids-reset-players", resetLocalPlayers);
+
+  setClick("btn-leoids-start", startRound);
+  setClick("btn-leoids-end", () => endRound("manual"));
+}
 
 return {
     state: leoidsState,
@@ -3738,7 +3916,8 @@ return {
     exitBattleMap,
     openSetupPanel,
     closeSetupPanel,
-
+    quickStartLeoidsGame,
+    openLeoidsInstructions,
     setRole,
     setBoundaryMode,
     setRoundLength,
