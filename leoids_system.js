@@ -741,7 +741,7 @@ export function createLeoidsSystem({
     enterBattleMap();
     disableMapPointAdding();
     hideLeoidsMapControls();
-    enterBattleMaps();
+    enterBattleMap();
     leoidsState.mapMode = "none";
 
     if ($("leoids-round-length")) {
