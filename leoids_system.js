@@ -700,9 +700,9 @@ async function joinOnlineSession({
   $("btn-leoids-boundary-circle")?.classList.toggle("active", isCircle);
   $("btn-leoids-boundary-polygon")?.classList.toggle("active", isPolygon);
 
-  const show = (id, display = "block") => {
+  const show = (id) => {
     const el = $(id);
-    if (el) el.style.display = display;
+    if (el) el.style.display = "block";
   };
 
   const hide = (id) => {
@@ -737,6 +737,7 @@ async function joinOnlineSession({
   show("btn-leoids-clear-boundary");
   show("btn-leoids-set-base");
 }
+
           
 function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
