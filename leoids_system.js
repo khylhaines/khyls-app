@@ -1209,48 +1209,48 @@ function closeSetupPanel() {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
   if (!isHost) {
-    speakText?.("Only the host can change the round time.");
+    speakText?.("Only the host can change round length.");
     return;
   }
 
-  const safeSeconds = Math.max(60, Number(seconds || DEFAULT_ROUND_SECONDS));
+  const safeTime = Math.max(60, Number(seconds || DEFAULT_ROUND_SECONDS));
 
-  leoidsState.roundTime = safeSeconds;
+  leoidsState.roundTime = safeTime;
+  leoidsState.timeLeft = safeTime;
 
-  if (!leoidsState.active) {
-    leoidsState.timeLeft = safeSeconds;
+  if ($("leoids-round-length")) {
+    $("leoids-round-length").value = String(safeTime);
   }
 
   saveOnlineSessionConfig?.();
-  updatePanel();
-  updateLeoidsBattleHud?.();
+  updatePanel?.();
 
-  speakText?.(`Round time set to ${formatTime(safeSeconds)}.`);
+  speakText?.(`Round length set to ${Math.floor(safeTime / 60)} minutes.`);
 }
 
-
-  function setHunterDelay(seconds = DEFAULT_HUNTER_DELAY_SECONDS) {
+ function setHunterDelay(seconds = DEFAULT_HUNTER_DELAY_SECONDS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
   if (!isHost) {
-    speakText?.("Only the host can change the hunter delay.");
+    speakText?.("Only the host can change hunter delay.");
     return;
   }
 
-  const safeSeconds = Math.max(0, Number(seconds || DEFAULT_HUNTER_DELAY_SECONDS));
+  const safeDelay = Math.max(0, Number(seconds || DEFAULT_HUNTER_DELAY_SECONDS));
 
-  leoidsState.hunterDelay = safeSeconds;
+  leoidsState.hunterDelay = safeDelay;
+  leoidsState.hunterDelayLeft = safeDelay;
 
-  if (!leoidsState.active) {
-    leoidsState.hunterDelayLeft = safeSeconds;
+  if ($("leoids-hunter-delay")) {
+    $("leoids-hunter-delay").value = String(safeDelay);
   }
 
   saveOnlineSessionConfig?.();
-  updatePanel();
-  updateLeoidsBattleHud?.();
+  updatePanel?.();
 
-  speakText?.(`Hunter delay set to ${formatTime(safeSeconds)}.`);
+  speakText?.(`Hunter delay set.`);
 }
+
 
 function setBaseHere() {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
@@ -1287,19 +1287,24 @@ function setBaseHere() {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
   if (!isHost) {
-    speakText?.("Only the host can change the tag radius.");
+    speakText?.("Only the host can change tag radius.");
     return;
   }
 
-  const safeRadius = Math.max(2, Number(radius || DEFAULT_TAG_RADIUS));
+  const safeRadius = Math.max(3, Number(radius || DEFAULT_TAG_RADIUS));
 
   leoidsState.tagRadius = safeRadius;
 
-  saveOnlineSessionConfig?.();
-  updatePanel();
+  if ($("leoids-tag-radius")) {
+    $("leoids-tag-radius").value = String(safeRadius);
+  }
 
-  speakText?.(`Tag radius set to ${leoidsState.tagRadius} metres.`);
+  saveOnlineSessionConfig?.();
+  updatePanel?.();
+
+  speakText?.(`Tag radius set to ${safeRadius} metres.`);
 }
+
 
 function setBaseRadius(radius = DEFAULT_BASE_RADIUS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
@@ -2937,66 +2942,75 @@ function handleOnlineCountdown(session) {
   }, 500);
 }
 
-function startRoundFromOnlineSession(session = null) {
-  if (session) {
-    applyOnlineSessionConfig(session);
-  }
+function startRound() {
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
-  if (leoidsState.active) {
-    updatePanel();
-    updateLeoidsBattleHud?.();
+  if (!isHost) {
+    alert("Only the host can start the round.");
     return;
   }
 
-  stopTimer();
-  stopAI();
+  if (!leoidsState.basePoint) {
+    alert("Set jail/base first.");
+    speakText?.("Set the jail base first.");
+    return;
+  }
 
-  hideCountdownBanner?.();
+  if (
+    leoidsState.boundaryMode === "circle" &&
+    !leoidsState.boundaryCenter
+  ) {
+    alert("Set boundary first.");
+    return;
+  }
+
+  if (
+    leoidsState.boundaryMode === "polygon" &&
+    leoidsState.boundaryPoints.length < 3
+  ) {
+    alert("Street boundary not complete.");
+    return;
+  }
 
   leoidsState.active = true;
-  leoidsState.status = "free";
-  leoidsState.score = 0;
-  leoidsState.coins = 0;
-  leoidsState.timeLeft = Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
+
+  leoidsState.timeLeft = Number(
+    leoidsState.roundTime || DEFAULT_ROUND_SECONDS
+  );
+
   leoidsState.hunterDelayLeft = Number(
     leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
   );
+
   leoidsState.huntersReleased = false;
-  leoidsState.startedAt = new Date().toISOString();
-  leoidsState.endedAt = null;
+  leoidsState.lastHunterCountdownSecond = null;
+
+  leoidsState.lastRescueAt = 0;
 
   leoidsState.players.forEach((player) => {
     player.status = "free";
-    player.score = Number(player.score || 0);
-    player.coins = Number(player.coins || 0);
     player.jailedAtBase = false;
   });
 
-  closeModal?.("leoids-modal");
+  seedPlayerPositions();
 
-  const lobby = document.getElementById("leoids-online-lobby-screen");
-  if (lobby) lobby.remove();
-
-  enterBattleMap?.();
-  hideLeoidsMapControls?.();
-
-  redrawAllMapObjects?.();
-  renderPlayers();
   drawPlayerMarkers();
+  renderPlayers();
   updatePanel();
-  showLeoidsBattleHud?.();
+  updateLeoidsBattleHud?.();
+
+  closeSetupPanel?.();
 
   showLeoidsEvent(
-    "ONLINE ROUND STARTED",
-    "Runners hide.\nHunters wait for release.",
-    "⚡",
-    "base"
+    "ROUND STARTED",
+    "Runners hide. Hunters wait.",
+    "🏁",
+    "runner"
   );
 
-  speakText?.("Online LEOIDS round started.");
-
-  leoidsState.intervalId = setInterval(tickRound, 1000);
+  speakText?.("Round started. Runners move.");
 }
+
 
 async function startOnlineCountdown(seconds = 60) {
   const supabase = getSupabaseSafe();
@@ -3281,34 +3295,39 @@ function tickRound() {
 
 
   function endRound(reason = "manual") {
-    stopTimer();
-    stopAI();
+  leoidsState.active = false;
 
-    leoidsState.active = false;
-    leoidsState.endedAt = new Date().toISOString();
+  const runnersFree = leoidsState.players.filter(
+    (p) => p.role === "runner" && p.status === "free"
+  ).length;
 
-    if (reason === "timer") {
-      leoidsState.players
-        .filter((p) => p.role === "runner" && p.status === "free")
-        .forEach((runner) => {
-          runner.score += 200;
-          runner.coins += 30;
-        });
+  const hunters = leoidsState.players.filter(
+    (p) => p.role === "hunter"
+  ).length;
 
-      speakText?.("Runners survive. Round complete.");
-    } else if (reason === "hunters") {
-      speakText?.("Hunters win the round.");
-    } else {
-      speakText?.("LEOIDs round ended.");
-    }
+  let resultText = "Round ended.";
 
-    renderPlayers();
-    updatePanel();
-    saveState?.();
-
-    showRoundEndScreen(reason);
+  if (reason === "timer") {
+    resultText =
+      runnersFree > 0
+        ? "Runners survived."
+        : "Hunters caught everyone.";
   }
 
+  showLeoidsEvent(
+    "ROUND COMPLETE",
+    resultText,
+    "🏆",
+    "base"
+  );
+
+  speakText?.(resultText);
+
+  updatePanel();
+  updateLeoidsBattleHud?.();
+}
+
+  
   function stopTimer() {
     if (leoidsState.intervalId) {
       clearInterval(leoidsState.intervalId);
