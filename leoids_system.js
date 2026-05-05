@@ -2165,7 +2165,7 @@ function setRunnerVisibilityMode(mode = "always") {
 
   await syncPlayerToOnline(runner);
 
-  if (taggedBy?.isOnline || taggedBy?.id === leoidsState.onlinePlayerId) {
+  if (taggedBy) {
     await syncPlayerToOnline(taggedBy);
   }
 
@@ -2250,7 +2250,7 @@ function setRunnerVisibilityMode(mode = "always") {
     return false;
   }
 
- function syncPlayerToOnline(player) {
+ async function syncPlayerToOnline(player) {
   const supabase = getSupabaseSafe();
 
   if (!supabase?.client || !player?.id) return null;
