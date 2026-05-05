@@ -3099,6 +3099,46 @@ function startRound() {
   speakText?.("Round started. Runners move.");
 }
 
+ async function startRoundFromOnlineSession(sessionData) {
+  if (!sessionData) {
+    console.warn("No session data provided to startRoundFromOnlineSession");
+    return;
+  }
+
+  // Apply session settings safely
+  leoidsState.active = true;
+  leoidsState.timeLeft = sessionData.round_length || DEFAULT_ROUND_SECONDS;
+  leoidsState.hunterDelayLeft = sessionData.hunter_delay || DEFAULT_HUNTER_DELAY_SECONDS;
+
+  // Boundary + base (if stored)
+  if (sessionData.boundary) {
+    leoidsState.boundary = sessionData.boundary;
+    drawBoundary?.();
+  }
+
+  if (sessionData.jail_lat && sessionData.jail_lng) {
+    leoidsState.base = {
+      lat: sessionData.jail_lat,
+      lng: sessionData.jail_lng,
+      radius: sessionData.base_radius || DEFAULT_BASE_RADIUS
+    };
+    drawBase?.();
+  }
+
+  // Reset players
+  resetAllPlayersToStart?.();
+
+  // Start timers
+  startRoundTimer?.();
+  startHunterDelayTimer?.();
+
+  // UI update
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
+
+  console.log("🟢 Online round started from session sync");
+}
+  
 
 async function startOnlineCountdown(seconds = 60) {
   const supabase = getSupabaseSafe();
