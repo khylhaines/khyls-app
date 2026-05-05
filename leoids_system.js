@@ -728,18 +728,31 @@ function stopGpsOnlineSync() {
   const isPolygon = leoidsState.boundaryMode === "polygon";
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
-  $("btn-leoids-boundary-circle")?.classList.toggle("active", isCircle);
-  $("btn-leoids-boundary-polygon")?.classList.toggle("active", isPolygon);
-
-  const show = (id) => {
+  const show = (id, display = "block") => {
     const el = $(id);
-    if (el) el.style.display = "block";
+    if (!el) return;
+    el.style.display = display;
   };
 
   const hide = (id) => {
     const el = $(id);
-    if (el) el.style.display = "none";
+    if (!el) return;
+    el.style.display = "none";
   };
+
+  const circleBtn = $("btn-leoids-boundary-circle");
+  const streetBtn = $("btn-leoids-boundary-polygon");
+  const boundarySize = $("leoids-boundary-size");
+
+  if (circleBtn) {
+    circleBtn.classList.toggle("active", isCircle);
+    circleBtn.innerText = isCircle ? "⭕ CIRCLE SELECTED" : "⭕ CIRCLE";
+  }
+
+  if (streetBtn) {
+    streetBtn.classList.toggle("active", isPolygon);
+    streetBtn.innerText = isPolygon ? "🟡 STREET SELECTED" : "🟡 STREET BOUNDARY";
+  }
 
   if (!isHost) {
     hide("btn-leoids-set-boundary");
@@ -748,7 +761,14 @@ function stopGpsOnlineSync() {
     hide("btn-leoids-confirm-boundary");
     hide("btn-leoids-clear-boundary");
     hide("btn-leoids-set-base");
+
+    if (boundarySize) boundarySize.disabled = true;
     return;
+  }
+
+  if (boundarySize) {
+    boundarySize.disabled = !isCircle;
+    boundarySize.style.opacity = isCircle ? "1" : ".45";
   }
 
   if (isCircle) {
@@ -768,6 +788,7 @@ function stopGpsOnlineSync() {
   show("btn-leoids-clear-boundary");
   show("btn-leoids-set-base");
 }
+
 
           
 function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
@@ -4584,45 +4605,41 @@ function wirePanelButtons() {
   };
 
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
-  const isSoloLocal = !leoidsState.onlineEnabled;
 
+  hideSetupButton("btn-leoids-quick-start");
+  hideSetupButton("btn-leoids-add-ai-runner");
+  hideSetupButton("btn-leoids-add-ai-hunter");
+  hideSetupButton("btn-leoids-reset-players");
   hideSetupButton("btn-leoids-release-jail");
   hideSetupButton("btn-leoids-leaderboard");
-
-  if (isHost) {
-    showSetupButton("btn-leoids-quick-start");
-  } else {
-    hideSetupButton("btn-leoids-quick-start");
-  }
-
-  if (isSoloLocal) {
-    showSetupButton("btn-leoids-add-ai-runner");
-    showSetupButton("btn-leoids-add-ai-hunter");
-    showSetupButton("btn-leoids-reset-players");
-  } else {
-    hideSetupButton("btn-leoids-add-ai-runner");
-    hideSetupButton("btn-leoids-add-ai-hunter");
-    hideSetupButton("btn-leoids-reset-players");
-  }
+  hideSetupButton("btn-leoids-rescue");
 
   if (isHost) {
     showSetupButton("btn-leoids-start");
     showSetupButton("btn-leoids-end");
+
+    showSetupButton("btn-leoids-set-boundary");
+    showSetupButton("btn-leoids-clear-boundary");
+    showSetupButton("btn-leoids-set-base");
   } else {
     hideSetupButton("btn-leoids-start");
     hideSetupButton("btn-leoids-end");
-  }
 
-  setClick("btn-leoids-quick-start", quickStartLeoidsGame);
-  setClick("btn-leoids-instructions", openLeoidsInstructions);
+    hideSetupButton("btn-leoids-set-boundary");
+    hideSetupButton("btn-leoids-add-point");
+    hideSetupButton("btn-leoids-undo-point");
+    hideSetupButton("btn-leoids-confirm-boundary");
+    hideSetupButton("btn-leoids-clear-boundary");
+    hideSetupButton("btn-leoids-set-base");
+  }
 
   setClick("btn-leoids-close", closeSetupPanel);
   setClick("btn-leoids-close-x", closeSetupPanel);
 
+  setClick("btn-leoids-browse-games", openOnlineSessionBrowser);
+
   setClick("btn-leoids-runner", () => setRole("runner"));
   setClick("btn-leoids-hunter", () => setRole("hunter"));
-
-  setClick("btn-leoids-browse-games", openOnlineSessionBrowser);
 
   setClick("btn-leoids-boundary-circle", () => {
     setBoundaryMode("circle");
@@ -4632,51 +4649,47 @@ function wirePanelButtons() {
     setBoundaryMode("polygon");
   });
 
-  const roundLength = $("leoids-round-length");
-  if (roundLength) {
-    roundLength.disabled = !isHost;
-    roundLength.onchange = (e) => {
-      setRoundLength(Number(e.target.value || DEFAULT_ROUND_SECONDS));
-    };
-  }
-
-  const hunterDelay = $("leoids-hunter-delay");
-  if (hunterDelay) {
-    hunterDelay.disabled = !isHost;
-    hunterDelay.onchange = (e) => {
-      setHunterDelay(Number(e.target.value || DEFAULT_HUNTER_DELAY_SECONDS));
-    };
-  }
-
   const boundarySize = $("leoids-boundary-size");
   if (boundarySize) {
     boundarySize.disabled = !isHost;
-    boundarySize.onchange = (e) => {
-      setBoundaryRadius(Number(e.target.value || DEFAULT_BOUNDARY_RADIUS));
+    boundarySize.onchange = (event) => {
+      setBoundaryRadius(Number(event.target.value || DEFAULT_BOUNDARY_RADIUS));
     };
   }
 
   const baseRadius = $("leoids-base-radius");
   if (baseRadius) {
     baseRadius.disabled = !isHost;
-    baseRadius.onchange = (e) => {
-      setBaseRadius(Number(e.target.value || DEFAULT_BASE_RADIUS));
+    baseRadius.onchange = (event) => {
+      setBaseRadius(Number(event.target.value || DEFAULT_BASE_RADIUS));
+    };
+  }
+
+  const roundLength = $("leoids-round-length");
+  if (roundLength) {
+    roundLength.disabled = !isHost;
+    roundLength.onchange = (event) => {
+      setRoundLength(Number(event.target.value || DEFAULT_ROUND_SECONDS));
+    };
+  }
+
+  const hunterDelay = $("leoids-hunter-delay");
+  if (hunterDelay) {
+    hunterDelay.disabled = !isHost;
+    hunterDelay.onchange = (event) => {
+      setHunterDelay(Number(event.target.value || DEFAULT_HUNTER_DELAY_SECONDS));
     };
   }
 
   const tagRadius = $("leoids-tag-radius");
   if (tagRadius) {
     tagRadius.disabled = !isHost;
-    tagRadius.onchange = (e) => {
-      setTagRadius(Number(e.target.value || DEFAULT_TAG_RADIUS));
+    tagRadius.onchange = (event) => {
+      setTagRadius(Number(event.target.value || DEFAULT_TAG_RADIUS));
     };
   }
 
   if (isHost) {
-    showSetupButton("btn-leoids-set-boundary");
-    showSetupButton("btn-leoids-clear-boundary");
-    showSetupButton("btn-leoids-set-base");
-
     setClick("btn-leoids-set-boundary", setCircleBoundaryHere);
 
     setClick("btn-leoids-add-point", () => {
@@ -4692,18 +4705,7 @@ function wirePanelButtons() {
     setClick("btn-leoids-confirm-boundary", confirmBoundaryFromMap);
     setClick("btn-leoids-clear-boundary", clearBoundaryFull);
     setClick("btn-leoids-set-base", setBaseHere);
-  } else {
-    hideSetupButton("btn-leoids-set-boundary");
-    hideSetupButton("btn-leoids-add-point");
-    hideSetupButton("btn-leoids-undo-point");
-    hideSetupButton("btn-leoids-confirm-boundary");
-    hideSetupButton("btn-leoids-clear-boundary");
-    hideSetupButton("btn-leoids-set-base");
   }
-
-  setClick("btn-leoids-add-ai-runner", () => addAIPlayer("runner"));
-  setClick("btn-leoids-add-ai-hunter", () => addAIPlayer("hunter"));
-  setClick("btn-leoids-reset-players", resetLocalPlayers);
 
   setClick("btn-leoids-start", () => {
     if (!isHost) {
@@ -4727,6 +4729,7 @@ function wirePanelButtons() {
   updatePanel();
 }
 
+  
 function showLeoidsCommandHub() {
   hideLeoidsCommandHub();
 
