@@ -1139,24 +1139,34 @@ function openSetupPanel() {
   enterBattleMap?.();
   hideLeoidsBattleHud?.();
 
-  if ($("leoids-round-length")) {
-    $("leoids-round-length").value = String(leoidsState.roundTime);
-  }
-
-  if ($("leoids-hunter-delay")) {
-    $("leoids-hunter-delay").value = String(leoidsState.hunterDelay);
-  }
-
   if ($("leoids-boundary-size")) {
-    $("leoids-boundary-size").value = String(leoidsState.boundaryRadius);
+    $("leoids-boundary-size").value = String(
+      leoidsState.boundaryRadius || DEFAULT_BOUNDARY_RADIUS
+    );
   }
 
   if ($("leoids-base-radius")) {
-    $("leoids-base-radius").value = String(leoidsState.baseRadius);
+    $("leoids-base-radius").value = String(
+      leoidsState.baseRadius || DEFAULT_BASE_RADIUS
+    );
+  }
+
+  if ($("leoids-round-length")) {
+    $("leoids-round-length").value = String(
+      leoidsState.roundTime || DEFAULT_ROUND_SECONDS
+    );
+  }
+
+  if ($("leoids-hunter-delay")) {
+    $("leoids-hunter-delay").value = String(
+      leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
+    );
   }
 
   if ($("leoids-tag-radius")) {
-    $("leoids-tag-radius").value = String(leoidsState.tagRadius);
+    $("leoids-tag-radius").value = String(
+      leoidsState.tagRadius || DEFAULT_TAG_RADIUS
+    );
   }
 
   showModal?.("leoids-modal");
@@ -1171,6 +1181,7 @@ function openSetupPanel() {
     speakText?.("Back to setup.");
   }
 }
+
 
 
 function closeSetupPanel() {
