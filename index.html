@@ -805,16 +805,43 @@
       </button>
     </div>
 
- <div id="leoids-modal" class="full-modal leoids-modal">
+<div id="leoids-modal" class="full-modal leoids-modal">
   <div class="modal-header">
     <h2 style="color: var(--gold)">LEOIDS BATTLE MAP</h2>
-    <button
-      type="button"
-      class="close-x"
-      id="btn-leoids-close-x"
-      aria-label="Close LEOIDS"
-    >
+    <button type="button" class="close-x" id="btn-leoids-close-x" aria-label="Close LEOIDS">
       ✕
+    </button>
+  </div>
+
+  <div class="settings-card">
+    <h3>MISSION CONTROL</h3>
+    <div class="settings-mini">
+      Host starts the mission. Other players wait for the host.
+    </div>
+
+    <button
+      class="win-btn"
+      id="btn-leoids-start"
+      type="button"
+      style="
+        margin-top: 12px;
+        min-height: 56px;
+        background: #22c55e;
+        color: #05070b;
+        font-weight: 1000;
+        box-shadow: 0 0 22px rgba(34,197,94,.42);
+      "
+    >
+      START MISSION
+    </button>
+
+    <button
+      class="win-btn"
+      id="btn-leoids-end"
+      type="button"
+      style="background: #222; color: #fff; margin-top: 10px"
+    >
+      END ROUND
     </button>
   </div>
 
@@ -831,7 +858,6 @@
 
   <div class="settings-card">
     <h3>BOUNDARY</h3>
-
     <div class="settings-mini">
       Choose a play area. Circle is quick. Street lets you build a custom zone.
     </div>
@@ -840,7 +866,6 @@
       <button class="pill active" id="btn-leoids-boundary-circle" type="button">
         CIRCLE
       </button>
-
       <button class="pill" id="btn-leoids-boundary-polygon" type="button">
         STREET BOUNDARY
       </button>
@@ -856,65 +881,34 @@
       </select>
     </div>
 
-    <button
-      class="win-btn"
-      id="btn-leoids-set-boundary"
-      type="button"
-      style="margin-top: 12px"
-    >
+    <button class="win-btn" id="btn-leoids-set-boundary" type="button" style="margin-top: 12px">
       SET CIRCLE HERE
     </button>
 
-    <button
-      class="win-btn"
-      id="btn-leoids-add-point"
-      type="button"
-      style="background: #172033; color: #fff; margin-top: 10px"
-    >
+    <button class="win-btn" id="btn-leoids-add-point" type="button" style="background: #172033; color: #fff; margin-top: 10px">
       ADD STREET POINT
     </button>
 
-    <button
-      class="win-btn"
-      id="btn-leoids-undo-point"
-      type="button"
-      style="background: #222; color: #fff; margin-top: 10px"
-    >
+    <button class="win-btn" id="btn-leoids-undo-point" type="button" style="background: #222; color: #fff; margin-top: 10px">
       UNDO POINT
     </button>
 
-    <button
-      class="win-btn"
-      id="btn-leoids-confirm-boundary"
-      type="button"
-      style="background: var(--gold); color: #111; margin-top: 10px"
-    >
+    <button class="win-btn" id="btn-leoids-confirm-boundary" type="button" style="background: var(--gold); color: #111; margin-top: 10px">
       CONFIRM BOUNDARY
     </button>
 
-    <button
-      class="win-btn"
-      id="btn-leoids-clear-boundary"
-      type="button"
-      style="background: #111; color: #fff; margin-top: 10px"
-    >
+    <button class="win-btn" id="btn-leoids-clear-boundary" type="button" style="background: #111; color: #fff; margin-top: 10px">
       CLEAR BOUNDARY
     </button>
   </div>
 
   <div class="settings-card">
     <h3>JAIL / BASE</h3>
-
     <div class="settings-mini">
       Tagged runners are sent here. Teammates can rescue them.
     </div>
 
-    <button
-      class="win-btn"
-      id="btn-leoids-set-base"
-      type="button"
-      style="margin-top: 10px"
-    >
+    <button class="win-btn" id="btn-leoids-set-base" type="button" style="margin-top: 10px">
       SET JAIL / BASE
     </button>
 
@@ -930,19 +924,13 @@
 
   <div class="settings-card">
     <h3>ROLE</h3>
-
     <div class="settings-mini">
       Runners hide and survive. Hunters chase and tag.
     </div>
 
     <div class="pill-row" style="margin-top: 12px">
-      <button class="pill active" id="btn-leoids-runner" type="button">
-        RUNNER
-      </button>
-
-      <button class="pill" id="btn-leoids-hunter" type="button">
-        HUNTER
-      </button>
+      <button class="pill active" id="btn-leoids-runner" type="button">RUNNER</button>
+      <button class="pill" id="btn-leoids-hunter" type="button">HUNTER</button>
     </div>
 
     <div id="leoids-player-list" class="leoids-player-list">
@@ -952,7 +940,6 @@
 
   <div class="settings-card">
     <h3>ROUND SETUP</h3>
-
     <div class="settings-mini">
       Set how long the round lasts and how long hunters wait before release.
     </div>
@@ -987,24 +974,6 @@
         <option value="30">30m test</option>
       </select>
     </div>
-
-    <button
-      class="win-btn"
-      id="btn-leoids-start"
-      type="button"
-      style="margin-top: 14px"
-    >
-      START ROUND
-    </button>
-
-    <button
-      class="win-btn"
-      id="btn-leoids-end"
-      type="button"
-      style="background: #222; color: #fff; margin-top: 10px"
-    >
-      END ROUND
-    </button>
   </div>
 
   <button
@@ -1016,6 +985,7 @@
     CLOSE
   </button>
 </div>
+
 
     <div id="home-modal" class="full-modal">
       <div class="modal-header">
