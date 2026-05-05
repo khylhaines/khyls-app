@@ -1187,16 +1187,18 @@ function openSetupPanel() {
 function closeSetupPanel() {
   closeModal?.("leoids-modal");
 
-  if (leoidsState.mapMode === "boundary" || leoidsState.mapMode === "base") {
-    enableMapPointAdding?.();
-    return;
-  }
+  disableMapPointAdding?.();
+  hideLeoidsMapControls?.();
+
+  leoidsState.mapMode = "none";
+  leoidsState.pendingBasePoint = null;
 
   if ($("map")?.classList.contains("leoids-battle-map")) {
     showLeoidsBattleHud?.();
   }
+
+  updateLeoidsBattleHud?.();
 }
-  
   
  function setRoundLength(seconds = DEFAULT_ROUND_SECONDS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
