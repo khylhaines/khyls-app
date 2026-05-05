@@ -605,6 +605,42 @@ async function joinOnlineSession({
   return player;
 }
 
+
+  async function updateOnlineSession(patchData) {
+  if (!leoidsState.onlineSessionId) return;
+
+  const payload = {
+    status: patchData.status ?? leoidsState.status,
+
+    boundary: patchData.boundary ?? leoidsState.boundary ?? null,
+
+    jail_lat: patchData.jail_lat ?? leoidsState.base?.lat ?? null,
+    jail_lng: patchData.jail_lng ?? leoidsState.base?.lng ?? null,
+
+    base_lat: patchData.base_lat ?? leoidsState.base?.lat ?? null,
+    base_lng: patchData.base_lng ?? leoidsState.base?.lng ?? null,
+
+    // ✅ THIS is your correct column name
+    round_started_at:
+      patchData.round_started_at ?? new Date().toISOString(),
+  };
+
+  try {
+    const { error } = await supabase
+      .from("leoids_sessions")
+      .update(payload)
+      .eq("id", leoidsState.onlineSessionId);
+
+    if (error) {
+      console.error("❌ Supabase PATCH failed:", error.message, payload);
+    } else {
+      console.log("✅ Session updated:", payload);
+    }
+  } catch (err) {
+    console.error("❌ PATCH crash:", err);
+  }
+}
+
   
   async function stopOnlinePlayerSync() {
     const supabase = getSupabaseSafe();
