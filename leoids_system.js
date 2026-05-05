@@ -2135,7 +2135,7 @@ function setRunnerVisibilityMode(mode = "always") {
     drawPlayerMarkers();
   }
 
-  function sendRunnerToJail(runner, taggedBy = null) {
+ async function sendRunnerToJail(runner, taggedBy = null) {
   if (!runner || runner.role !== "runner") return false;
   if (runner.status === "jailed") return false;
 
@@ -2153,10 +2153,20 @@ function setRunnerVisibilityMode(mode = "always") {
     taggedBy.score = Number(taggedBy.score || 0) + 50;
     taggedBy.coins = Number(taggedBy.coins || 0) + 10;
 
-    if (taggedBy.isLocal || taggedBy.id === leoidsState.onlinePlayerId || !taggedBy.isOnline) {
+    if (
+      taggedBy.isLocal ||
+      taggedBy.id === leoidsState.onlinePlayerId ||
+      !taggedBy.isOnline
+    ) {
       leoidsState.score = Number(leoidsState.score || 0) + 50;
       leoidsState.coins = Number(leoidsState.coins || 0) + 10;
     }
+  }
+
+  await syncPlayerToOnline(runner);
+
+  if (taggedBy?.isOnline || taggedBy?.id === leoidsState.onlinePlayerId) {
+    await syncPlayerToOnline(taggedBy);
   }
 
   drawPlayerMarkers?.();
@@ -2183,7 +2193,7 @@ function setRunnerVisibilityMode(mode = "always") {
 }
 
 
- function tagSpecificRunner(runner) {
+ async function tagSpecificRunner(runner) {
   const local = getLocalPlayer();
 
   if (!local || !runner) return false;
@@ -2194,13 +2204,7 @@ function setRunnerVisibilityMode(mode = "always") {
   }
 
   if (local.role !== "hunter") {
-    showLeoidsEvent(
-      "HUNTERS ONLY",
-      "Only hunters can tag runners.",
-      "🔴",
-      "hunter"
-    );
-
+    showLeoidsEvent("HUNTERS ONLY", "Only hunters can tag runners.", "🔴", "hunter");
     speakText?.("Only hunters can tag runners.");
     return false;
   }
@@ -2212,35 +2216,23 @@ function setRunnerVisibilityMode(mode = "always") {
       "⏱️",
       "hunter"
     );
-
     speakText?.("Hunters have not been released yet.");
     return false;
   }
 
-  if (runner.role !== "runner") {
-    speakText?.("That player is not a runner.");
+  if (runner.role !== "runner" || runner.status === "jailed") {
+    speakText?.("That runner cannot be tagged.");
     return false;
   }
 
-  if (runner.status === "jailed") {
-    speakText?.("That runner is already jailed.");
-    return false;
-  }
-
-  if (!local.position) {
+  if (!local.position || !runner.position) {
     showLeoidsEvent(
       "LOCATION NEEDED",
-      "Your hunter position is not known yet.",
+      "Both hunter and runner need a known position.",
       "📍",
       "hunter"
     );
-
-    speakText?.("Your location is not known yet.");
-    return false;
-  }
-
-  if (!runner.position) {
-    speakText?.("Runner position unknown.");
+    speakText?.("Location needed for tag verification.");
     return false;
   }
 
@@ -2254,14 +2246,41 @@ function setRunnerVisibilityMode(mode = "always") {
       "📍",
       "hunter"
     );
-
     speakText?.("Runner is not in tag range.");
     return false;
   }
 
-  return sendRunnerToJail(runner, local);
+async function syncPlayerToOnline(player) {
+  const supabase = getSupabaseSafe();
+
+  if (!supabase?.client || !player?.id) return null;
+
+  const payload = {
+    role: player.role || "runner",
+    status: player.status || "free",
+    score: Number(player.score || 0),
+    coins: Number(player.coins || 0),
+    lat: player.position ? Number(player.position.lat) : null,
+    lng: player.position ? Number(player.position.lng) : null,
+    last_seen: new Date().toISOString(),
+  };
+
+  const { error } = await supabase.client
+    .from("leoids_players")
+    .update(payload)
+    .eq("id", player.id);
+
+  if (error) {
+    console.warn("Could not sync tagged player:", error, payload);
+    return null;
+  }
+
+  return payload;
 }
 
+   
+  return await sendRunnerToJail(runner, local);
+}
 
   function tagNearestRunner() {
   const local = getLocalPlayer();
@@ -5274,7 +5293,7 @@ return {
   syncLocalPlayerPosition,
   startGpsOnlineSync,
   stopGpsOnlineSync,
-
+  syncPlayerToOnline,
   saveOnlineSessionConfig,
   loadAndApplyOnlineSession,
   startOnlineSessionSync,
