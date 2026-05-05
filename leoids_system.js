@@ -2132,10 +2132,33 @@ function setRunnerVisibilityMode(mode = "always") {
 
  function rescueJailedRunners() {
   const local = getLocalPlayer();
-  if (!local) return;
+
+  if (!local) {
+    speakText?.("No local player found.");
+    return;
+  }
 
   if (local.role !== "runner") {
-    speakText?.("Only runners can rescue.");
+    showLeoidsEvent(
+      "RUNNERS ONLY",
+      "Only runners can rescue jailed players.",
+      "🟢",
+      "runner"
+    );
+
+    speakText?.("Only runners can rescue jailed players.");
+    return;
+  }
+
+  if (local.status === "jailed") {
+    showLeoidsEvent(
+      "YOU ARE JAILED",
+      "You cannot rescue while jailed.\nWait for another runner.",
+      "🔒",
+      "danger"
+    );
+
+    speakText?.("You are jailed. Wait for another runner to rescue you.");
     return;
   }
 
@@ -2144,60 +2167,87 @@ function setRunnerVisibilityMode(mode = "always") {
   }
 
   if (!leoidsState.basePoint) {
+    showLeoidsEvent(
+      "NO JAIL BASE",
+      "Set the jail/base before rescuing.",
+      "🛡️",
+      "base"
+    );
+
     speakText?.("Set the jail base first.");
     return;
   }
 
   if (!local.position) {
-    local.position = leoidsState.basePoint;
-  }
-
-  const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
-
-  if (distanceToBase > leoidsState.baseRadius) {
-    speakText?.("You are not close enough to the jail base.");
-
     showLeoidsEvent(
-      "TOO FAR FROM BASE",
-      `Get inside the ${leoidsState.baseRadius}m rescue zone.`,
+      "LOCATION NEEDED",
+      "Your position is not known yet.",
       "📍",
-      "runner"
+      "base"
     );
 
+    speakText?.("Your location is not known yet.");
     return;
   }
 
-  const jailed = leoidsState.players.filter(
-    (p) =>
-      p.role === "runner" &&
-      p.status === "jailed" &&
-      distanceMeters(p.position, leoidsState.basePoint) <= leoidsState.baseRadius
+  const now = Date.now();
+
+  if (now - Number(leoidsState.lastRescueAt || 0) < 3000) {
+    return;
+  }
+
+  const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
+  const baseRadius = Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
+
+  if (distanceToBase > baseRadius) {
+    showLeoidsEvent(
+      "TOO FAR FROM BASE",
+      `Get inside the rescue zone.\nDistance: ${Math.round(distanceToBase)}m / ${baseRadius}m`,
+      "📍",
+      "base"
+    );
+
+    speakText?.("You are not close enough to the jail base.");
+    return;
+  }
+
+  const jailedRunners = leoidsState.players.filter(
+    (player) =>
+      player.role === "runner" &&
+      player.status === "jailed"
   );
 
-  if (!jailed.length) {
+  if (!jailedRunners.length) {
     showLeoidsEvent(
       "NO ONE TO RESCUE",
-      "No jailed runners are inside the base zone.",
+      "There are no jailed runners right now.",
       "🛡️",
       "base"
     );
 
-    speakText?.("No jailed runners are at the base.");
+    speakText?.("No runners need rescuing.");
     return;
   }
 
-  jailed.forEach((runner) => {
+  jailedRunners.forEach((runner) => {
     runner.status = "free";
     runner.jailedAtBase = false;
-    runner.position = randomNearbyPoint(leoidsState.basePoint, 15);
+    runner.position = randomNearbyPoint(leoidsState.basePoint, 18);
   });
 
-  local.score += 75;
-  local.coins += 15;
+  const rescuedCount = jailedRunners.length;
+  const points = rescuedCount * 75;
+  const coins = rescuedCount * 15;
 
-  leoidsState.score += 75;
-  leoidsState.coins += 15;
-  leoidsState.lastRescueAt = Date.now();
+  local.score = Number(local.score || 0) + points;
+  local.coins = Number(local.coins || 0) + coins;
+
+  if (local.isLocal || local.id === leoidsState.onlinePlayerId || !local.isOnline) {
+    leoidsState.score = Number(leoidsState.score || 0) + points;
+    leoidsState.coins = Number(leoidsState.coins || 0) + coins;
+  }
+
+  leoidsState.lastRescueAt = now;
 
   drawPlayerMarkers();
   renderPlayers();
@@ -2206,7 +2256,7 @@ function setRunnerVisibilityMode(mode = "always") {
 
   showLeoidsEvent(
     "RESCUE COMPLETE",
-    `${jailed.length} runner${jailed.length === 1 ? "" : "s"} released.\n+75 points`,
+    `${rescuedCount} runner${rescuedCount === 1 ? "" : "s"} rescued.\n+${points} points`,
     "🟢",
     "runner"
   );
@@ -2215,7 +2265,11 @@ function setRunnerVisibilityMode(mode = "always") {
     navigator.vibrate([80, 60, 80, 60, 220]);
   }
 
-  speakText?.("Rescue complete. Jailed runners released.");
+  speakText?.(
+    rescuedCount === 1
+      ? "Rescue complete. One runner released."
+      : `Rescue complete. ${rescuedCount} runners released.`
+  );
 }
   function runAITagChecks() {
     if (!leoidsState.active) return;
@@ -4091,11 +4145,12 @@ function tryReleaseJailedRunners() {
   if (local.role !== "runner") {
     showLeoidsEvent(
       "RUNNERS ONLY",
-      "Only runners can release jailed players.",
-      "🟦",
+      "Only runners can rescue jailed players.",
+      "🟢",
       "runner"
     );
-    speakText?.("Only runners can release jailed players.");
+
+    speakText?.("Only runners can rescue jailed players.");
     return;
   }
 
