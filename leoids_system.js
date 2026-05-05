@@ -803,14 +803,19 @@ function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
 
   leoidsState.boundaryRadius = safeRadius;
 
-  if (leoidsState.boundaryCenter) {
-    drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
+  if ($("leoids-boundary-size")) {
+    $("leoids-boundary-size").value = String(safeRadius);
+  }
+
+  if (leoidsState.boundaryMode === "circle" && leoidsState.boundaryCenter) {
+    drawCircleBoundary(leoidsState.boundaryCenter, safeRadius);
   }
 
   saveOnlineSessionConfig?.();
-  updatePanel();
+  refreshBoundaryButtons?.();
+  updatePanel?.();
 
-  speakText?.(`Boundary radius set to ${leoidsState.boundaryRadius} metres.`);
+  speakText?.(`Circle size set to ${safeRadius} metres.`);
 }
 
           
@@ -1247,27 +1252,36 @@ function closeSetupPanel() {
   speakText?.(`Hunter delay set to ${formatTime(safeSeconds)}.`);
 }
 
- function setBaseRadius(radius = DEFAULT_BASE_RADIUS) {
+function setBaseHere() {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
   if (!isHost) {
-    speakText?.("Only the host can change the jail base radius.");
+    alert("Only the host can set the jail base.");
+    speakText?.("Only the host can set the jail base.");
     return;
   }
 
-  const safeRadius = Math.max(5, Number(radius || DEFAULT_BASE_RADIUS));
+  leoidsState.mapMode = "base";
+  leoidsState.pendingBasePoint = null;
 
-  leoidsState.baseRadius = safeRadius;
+  closeModal?.("leoids-modal");
+  showActionButton?.(false);
+  hideLeoidsBattleHud?.();
+  hideLeoidsCommandHub?.();
 
-  if (leoidsState.basePoint) {
-    drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
-  }
+  showLeoidsMapControls("base");
+  enableMapPointAdding();
 
-  saveOnlineSessionConfig?.();
-  updatePanel();
+  showLeoidsEvent(
+    "SET JAIL BASE",
+    "Tap the map where caught runners should go.",
+    "🛡️",
+    "base"
+  );
 
-  speakText?.(`Jail base radius set to ${leoidsState.baseRadius} metres.`);
+  speakText?.("Tap the map to set the jail base.");
 }
+
 
   function setTagRadius(radius = DEFAULT_TAG_RADIUS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
@@ -1286,7 +1300,35 @@ function closeSetupPanel() {
 
   speakText?.(`Tag radius set to ${leoidsState.tagRadius} metres.`);
 }
-  function setCircleBoundaryHere() {
+
+function setBaseRadius(radius = DEFAULT_BASE_RADIUS) {
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    speakText?.("Only the host can change the jail base radius.");
+    return;
+  }
+
+  const safeRadius = Math.max(5, Number(radius || DEFAULT_BASE_RADIUS));
+
+  leoidsState.baseRadius = safeRadius;
+
+  if ($("leoids-base-radius")) {
+    $("leoids-base-radius").value = String(safeRadius);
+  }
+
+  if (leoidsState.basePoint) {
+    drawBasePoint(leoidsState.basePoint, safeRadius);
+  }
+
+  saveOnlineSessionConfig?.();
+  updatePanel?.();
+
+  speakText?.(`Jail base radius set to ${safeRadius} metres.`);
+}
+
+  
+ function setCircleBoundaryHere() {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
   if (!isHost) {
@@ -1296,6 +1338,7 @@ function closeSetupPanel() {
   }
 
   const map = getMapSafe();
+
   if (!map) {
     alert("Map is not ready yet.");
     speakText?.("Map is not ready yet.");
@@ -1312,24 +1355,31 @@ function closeSetupPanel() {
 
   leoidsState.boundaryPoints = [];
   leoidsState.mapMode = "none";
+  leoidsState.pendingBasePoint = null;
+
+  disableMapPointAdding?.();
+  hideLeoidsMapControls?.();
 
   clearPolygonBoundary();
   drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
-  refreshBoundaryButtons();
+
+  refreshBoundaryButtons?.();
   seedPlayerPositions();
-  updatePanel();
+  redrawAllMapObjects?.();
+  updatePanel?.();
 
   saveOnlineSessionConfig?.();
 
   showLeoidsEvent(
-    "CIRCLE BOUNDARY SET",
-    `Play area set around the map centre.\nRadius: ${leoidsState.boundaryRadius}m`,
+    "CIRCLE SET",
+    `Battle zone ready.\nRadius: ${leoidsState.boundaryRadius}m`,
     "⭕",
     "base"
   );
 
   speakText?.("Circle boundary set.");
 }
+
   function addStreetBoundaryPointHere() {
     const map = getMapSafe();
     if (!map) return;
@@ -1365,6 +1415,14 @@ function closeSetupPanel() {
   }
 
  async function confirmBoundaryFromMap() {
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    alert("Only the host can confirm the boundary.");
+    speakText?.("Only the host can confirm the boundary.");
+    return;
+  }
+
   if (!hasValidBoundary()) {
     alert("Street boundary needs at least 3 points.");
     speakText?.("Street boundary needs at least three points.");
@@ -1375,16 +1433,26 @@ function closeSetupPanel() {
   leoidsState.mapMode = "none";
   leoidsState.pendingBasePoint = null;
 
-  disableMapPointAdding();
-  hideLeoidsMapControls();
-  seedPlayerPositions();
+  disableMapPointAdding?.();
+  hideLeoidsMapControls?.();
   showActionButton?.(false);
 
-  await saveOnlineSessionConfig();
+  seedPlayerPositions();
+  drawPolygonBoundary();
+  drawPlayerMarkers();
 
-  openSetupPanel();
+  await saveOnlineSessionConfig?.();
 
-  speakText?.("Boundary confirmed.");
+  openSetupPanel?.();
+
+  showLeoidsEvent(
+    "BOUNDARY READY",
+    "Street boundary confirmed.",
+    "🟡",
+    "base"
+  );
+
+  speakText?.("Street boundary confirmed.");
 }
 
 async function confirmBaseFromMap() {
@@ -1430,24 +1498,24 @@ async function confirmBaseFromMap() {
 
   drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
 
-  disableMapPointAdding();
-  hideLeoidsMapControls();
+  disableMapPointAdding?.();
+  hideLeoidsMapControls?.();
   showActionButton?.(false);
 
-  await saveOnlineSessionConfig();
+  await saveOnlineSessionConfig?.();
 
-  updatePanel();
-  renderPlayers();
-  drawPlayerMarkers();
+  updatePanel?.();
+  renderPlayers?.();
+  drawPlayerMarkers?.();
 
   showLeoidsEvent(
     "JAIL BASE READY",
-    `Rescue zone set.\nRadius: ${leoidsState.baseRadius}m`,
+    `Rescue zone active.\nRadius: ${leoidsState.baseRadius}m`,
     "🛡️",
     "base"
   );
 
-  openSetupPanel();
+  openSetupPanel?.();
 
   speakText?.("Jail base confirmed.");
 }
@@ -1475,13 +1543,14 @@ async function confirmBaseFromMap() {
 
   showLeoidsEvent(
     "SET JAIL BASE",
-    "Tap the map where jailed runners should go.\nThen press CONFIRM JAIL / BASE.",
+    "Tap the map where caught runners should go.",
     "🛡️",
     "base"
   );
 
-  speakText?.("Tap the map where you want the jail base, then press confirm.");
+  speakText?.("Tap the map to set the jail base.");
 }
+
 
   
 function backToLeoidsPanelFromMap() {
