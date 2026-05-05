@@ -4925,7 +4925,7 @@ function showLeoidsCommandHub() {
 function setRole(role = "runner") {
   leoidsState.role = role === "hunter" ? "hunter" : "runner";
 
-  const local = getLocalPlayer?.();
+  const local = getLocalPlayer();
   if (local) {
     local.role = leoidsState.role;
     local.status = "free";
@@ -4937,8 +4937,9 @@ function setRole(role = "runner") {
 
   if (runnerBtn) {
     const active = leoidsState.role === "runner";
+
     runnerBtn.classList.toggle("active", active);
-    runnerBtn.innerText = active ? "🟢 RUNNER SELECTED" : "🟢 PLAY AS RUNNER";
+    runnerBtn.innerText = active ? "🟢 RUNNER SELECTED" : "🟢 RUNNER";
     runnerBtn.style.background = active ? "#22c55e" : "#10251a";
     runnerBtn.style.color = active ? "#05070b" : "#d1fae5";
     runnerBtn.style.border = active
@@ -4952,8 +4953,9 @@ function setRole(role = "runner") {
 
   if (hunterBtn) {
     const active = leoidsState.role === "hunter";
+
     hunterBtn.classList.toggle("active", active);
-    hunterBtn.innerText = active ? "🔴 HUNTER SELECTED" : "🔴 PLAY AS HUNTER";
+    hunterBtn.innerText = active ? "🔴 HUNTER SELECTED" : "🔴 HUNTER";
     hunterBtn.style.background = active ? "#ff3b3b" : "#2a1116";
     hunterBtn.style.color = active ? "white" : "#fecaca";
     hunterBtn.style.border = active
