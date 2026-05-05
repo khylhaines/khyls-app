@@ -606,38 +606,38 @@ async function joinOnlineSession({
 }
 
 
-  async function updateOnlineSession(patchData) {
-  if (!leoidsState.onlineSessionId) return;
+  async function updateOnlineSession(patchData = {}) {
+  const supabase = getSupabaseSafe();
 
-  const payload = {
-    status: patchData.status ?? leoidsState.status,
+  if (!supabase || !supabase.client || !leoidsState.onlineSessionId) {
+    return null;
+  }
 
-    boundary: patchData.boundary ?? leoidsState.boundary ?? null,
+  const cleanPayload = {};
 
-    jail_lat: patchData.jail_lat ?? leoidsState.base?.lat ?? null,
-    jail_lng: patchData.jail_lng ?? leoidsState.base?.lng ?? null,
-
-    base_lat: patchData.base_lat ?? leoidsState.base?.lat ?? null,
-    base_lng: patchData.base_lng ?? leoidsState.base?.lng ?? null,
-
-    // ✅ THIS is your correct column name
-    round_started_at:
-      patchData.round_started_at ?? new Date().toISOString(),
-  };
+  Object.entries(patchData).forEach(([key, value]) => {
+    if (value !== undefined) {
+      cleanPayload[key] = value;
+    }
+  });
 
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase.client
       .from("leoids_sessions")
-      .update(payload)
-      .eq("id", leoidsState.onlineSessionId);
+      .update(cleanPayload)
+      .eq("id", leoidsState.onlineSessionId)
+      .select()
+      .single();
 
     if (error) {
-      console.error("❌ Supabase PATCH failed:", error.message, payload);
-    } else {
-      console.log("✅ Session updated:", payload);
+      console.error("LEOIDS session update failed:", error, cleanPayload);
+      return null;
     }
-  } catch (err) {
-    console.error("❌ PATCH crash:", err);
+
+    return data;
+  } catch (error) {
+    console.error("LEOIDS session update crashed:", error, cleanPayload);
+    return null;
   }
 }
 
@@ -2881,30 +2881,30 @@ function showRoundEndScreen(reason = "manual") {
 
 function buildOnlineSessionConfig() {
   return {
+    status: leoidsState.active ? "active" : "lobby",
+
     boundary: {
       mode: leoidsState.boundaryMode,
       radius: Number(leoidsState.boundaryRadius || DEFAULT_BOUNDARY_RADIUS),
-      center: leoidsState.boundaryCenter,
-      points: leoidsState.boundaryPoints || [],
+      center: leoidsState.boundaryCenter || null,
+      points: Array.isArray(leoidsState.boundaryPoints)
+        ? leoidsState.boundaryPoints
+        : [],
     },
-    basePoint: leoidsState.basePoint,
-    roundTime: Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS),
-    hunterDelay: Number(leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS),
-    baseRadius: Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS),
-    tagRadius: Number(leoidsState.tagRadius || DEFAULT_TAG_RADIUS),
-    countdownSeconds: Number(leoidsState.countdownSeconds || 60),
+
+    jail_lat: leoidsState.basePoint ? Number(leoidsState.basePoint.lat) : null,
+    jail_lng: leoidsState.basePoint ? Number(leoidsState.basePoint.lng) : null,
+
+    base_lat: leoidsState.basePoint ? Number(leoidsState.basePoint.lat) : null,
+    base_lng: leoidsState.basePoint ? Number(leoidsState.basePoint.lng) : null,
   };
 }
 
+
 async function saveOnlineSessionConfig() {
-  const supabase = getSupabaseSafe();
+  if (!leoidsState.onlineSessionId) return null;
 
-  if (!supabase || !leoidsState.onlineSessionId) return null;
-
-  return await supabase.updateSessionConfig(
-    leoidsState.onlineSessionId,
-    buildOnlineSessionConfig()
-  );
+  return await updateOnlineSession(buildOnlineSessionConfig());
 }
 
 function applyOnlineSessionConfig(session) {
@@ -3042,20 +3042,11 @@ function handleOnlineCountdown(session) {
 
       hideCountdownBanner();
 
-      const supabase = getSupabaseSafe();
-
-      if (leoidsState.isLobbyHost && supabase?.client && leoidsState.onlineSessionId) {
-        try {
-          await supabase.client
-            .from("leoids_sessions")
-            .update({
-              status: "active",
-              started_at: new Date().toISOString(),
-            })
-            .eq("id", leoidsState.onlineSessionId);
-        } catch (error) {
-          console.warn("Could not mark LEOIDS session active:", error);
-        }
+      if (leoidsState.isLobbyHost && leoidsState.onlineSessionId) {
+        await updateOnlineSession({
+          status: "active",
+          round_started_at: new Date().toISOString(),
+        });
       }
 
       startRoundFromOnlineSession({
@@ -3066,74 +3057,6 @@ function handleOnlineCountdown(session) {
   }, 500);
 }
 
-function startRound() {
-  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
-
-  if (!isHost) {
-    alert("Only the host can start the round.");
-    return;
-  }
-
-  if (!leoidsState.basePoint) {
-    alert("Set jail/base first.");
-    speakText?.("Set the jail base first.");
-    return;
-  }
-
-  if (
-    leoidsState.boundaryMode === "circle" &&
-    !leoidsState.boundaryCenter
-  ) {
-    alert("Set boundary first.");
-    return;
-  }
-
-  if (
-    leoidsState.boundaryMode === "polygon" &&
-    leoidsState.boundaryPoints.length < 3
-  ) {
-    alert("Street boundary not complete.");
-    return;
-  }
-
-  leoidsState.active = true;
-
-  leoidsState.timeLeft = Number(
-    leoidsState.roundTime || DEFAULT_ROUND_SECONDS
-  );
-
-  leoidsState.hunterDelayLeft = Number(
-    leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
-  );
-
-  leoidsState.huntersReleased = false;
-  leoidsState.lastHunterCountdownSecond = null;
-
-  leoidsState.lastRescueAt = 0;
-
-  leoidsState.players.forEach((player) => {
-    player.status = "free";
-    player.jailedAtBase = false;
-  });
-
-  seedPlayerPositions();
-
-  drawPlayerMarkers();
-  renderPlayers();
-  updatePanel();
-  updateLeoidsBattleHud?.();
-
-  closeSetupPanel?.();
-
-  showLeoidsEvent(
-    "ROUND STARTED",
-    "Runners hide. Hunters wait.",
-    "🏁",
-    "runner"
-  );
-
-  speakText?.("Round started. Runners move.");
-}
 
  function startRoundFromOnlineSession(session = null) {
   if (session) {
