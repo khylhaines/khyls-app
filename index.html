@@ -805,7 +805,7 @@
       </button>
     </div>
 
-    <div id="leoids-modal" class="full-modal leoids-modal">
+ <div id="leoids-modal" class="full-modal leoids-modal">
   <div class="modal-header">
     <h2 style="color: var(--gold)">LEOIDS BATTLE MAP</h2>
     <button
@@ -820,6 +820,9 @@
 
   <div class="settings-card">
     <h3>ONLINE</h3>
+    <div class="settings-mini">
+      Join or host an online match with other players.
+    </div>
 
     <button id="btn-leoids-browse-games" class="win-btn" type="button">
       BROWSE ONLINE GAMES
@@ -828,6 +831,10 @@
 
   <div class="settings-card">
     <h3>BOUNDARY</h3>
+
+    <div class="settings-mini">
+      Choose a play area. Circle is quick. Street lets you build a custom zone.
+    </div>
 
     <div class="pill-row" style="margin-top: 12px">
       <button class="pill active" id="btn-leoids-boundary-circle" type="button">
@@ -839,11 +846,21 @@
       </button>
     </div>
 
+    <div style="margin-top: 12px">
+      <div class="case-label">Circle Size</div>
+      <select id="leoids-boundary-size">
+        <option value="100">100m - small</option>
+        <option value="200" selected>200m - normal</option>
+        <option value="350">350m - large</option>
+        <option value="500">500m - huge</option>
+      </select>
+    </div>
+
     <button
       class="win-btn"
       id="btn-leoids-set-boundary"
       type="button"
-      style="margin-top: 14px"
+      style="margin-top: 12px"
     >
       SET CIRCLE HERE
     </button>
@@ -888,6 +905,10 @@
   <div class="settings-card">
     <h3>JAIL / BASE</h3>
 
+    <div class="settings-mini">
+      Tagged runners are sent here. Teammates can rescue them.
+    </div>
+
     <button
       class="win-btn"
       id="btn-leoids-set-base"
@@ -898,17 +919,21 @@
     </button>
 
     <div style="margin-top: 12px">
-      <div class="case-label">Jail/Base Radius</div>
+      <div class="case-label">Base Radius</div>
       <select id="leoids-base-radius">
-        <option value="10">10m tight base</option>
-        <option value="15" selected>15m normal base</option>
-        <option value="25">25m easy rescue base</option>
+        <option value="10">10m tight</option>
+        <option value="15" selected>15m normal</option>
+        <option value="25">25m easy</option>
       </select>
     </div>
   </div>
 
   <div class="settings-card">
     <h3>ROLE</h3>
+
+    <div class="settings-mini">
+      Runners hide and survive. Hunters chase and tag.
+    </div>
 
     <div class="pill-row" style="margin-top: 12px">
       <button class="pill active" id="btn-leoids-runner" type="button">
@@ -927,6 +952,10 @@
 
   <div class="settings-card">
     <h3>ROUND SETUP</h3>
+
+    <div class="settings-mini">
+      Set how long the round lasts and how long hunters wait before release.
+    </div>
 
     <div style="margin-top: 14px">
       <div class="case-label">Round Length</div>
@@ -950,12 +979,12 @@
     </div>
 
     <div style="margin-top: 12px">
-      <div class="case-label">Tag Detection Radius</div>
+      <div class="case-label">Tag Radius</div>
       <select id="leoids-tag-radius">
-        <option value="5">5m hard tag</option>
-        <option value="10" selected>10m normal tag</option>
-        <option value="15">15m easy tag</option>
-        <option value="30">30m test mode</option>
+        <option value="5">5m hard</option>
+        <option value="10" selected>10m normal</option>
+        <option value="15">15m easy</option>
+        <option value="30">30m test</option>
       </select>
     </div>
 
@@ -965,7 +994,7 @@
       type="button"
       style="margin-top: 14px"
     >
-      START LEOIDS ROUND
+      START ROUND
     </button>
 
     <button
@@ -978,13 +1007,6 @@
     </button>
   </div>
 
-  <div class="settings-card">
-    <h3>BATTLE STATUS</h3>
-    <div id="leoids-status" class="settings-mini">
-      Set a boundary, set jail/base, choose a role, then start.
-    </div>
-  </div>
-
   <button
     class="win-btn"
     id="btn-leoids-close"
@@ -994,7 +1016,6 @@
     CLOSE
   </button>
 </div>
-
 
     <div id="home-modal" class="full-modal">
       <div class="modal-header">
