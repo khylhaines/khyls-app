@@ -3559,9 +3559,8 @@ function isLocalLobbyHost(session = null) {
 
   const hostName = session?.host_name || "";
 
-  return !!localName && !!hostName && localName === hostName;
+  return !!localName && !!hostName && localName.trim() === hostName.trim();
 }
-
 
 async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
   const supabase = window.LEOIDSSupabase;
@@ -4923,8 +4922,12 @@ function showLeoidsCommandHub() {
   hideLeoidsCommandHub();
 
   const local = getLocalPlayer();
-  const isHost = !!leoidsState.isLobbyHost;
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
   const isRunner = local?.role === "runner";
+  const hostName =
+    window.LEOIDSSupabase?.hostName ||
+    leoidsState.onlineHostName ||
+    "Host";
 
   const hub = document.createElement("div");
   hub.id = "leoids-command-hub";
@@ -4946,18 +4949,17 @@ function showLeoidsCommandHub() {
       box-shadow:0 0 34px rgba(0,212,255,.3);
       font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     ">
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:10px;
-      ">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
         <div>
           <div style="color:#00d4ff;font-weight:1000;font-size:18px;">
             LEOIDS COMMAND
           </div>
-          <div style="opacity:.75;font-size:12px;margin-top:2px;">
-            ${local ? `${getPlayerIcon(local)} ${local.name} • ${local.role}` : "Game controls"}
+          <div style="opacity:.8;font-size:12px;margin-top:2px;">
+            ${
+              isHost
+                ? "You are hosting this game"
+                : `Hosted by ${hostName}`
+            }
           </div>
         </div>
 
@@ -4976,10 +4978,41 @@ function showLeoidsCommandHub() {
       </div>
 
       <div style="
+        display:${isHost ? "block" : "none"};
+        margin-top:14px;
+      ">
+        <button id="btn-command-start-game" type="button" style="
+          width:100%;
+          min-height:52px;
+          border-radius:18px;
+          border:none;
+          background:#22c55e;
+          color:#05070b;
+          font-weight:1000;
+          box-shadow:0 0 22px rgba(34,197,94,.42);
+        ">
+          🚀 START GAME
+        </button>
+      </div>
+
+      <div style="
+        display:${isHost ? "none" : "block"};
+        margin-top:14px;
+        padding:12px;
+        border-radius:16px;
+        background:rgba(255,255,255,.07);
+        color:#cbd5e1;
+        font-weight:800;
+        text-align:center;
+      ">
+        Waiting for the host to start the game.
+      </div>
+
+      <div style="
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:10px;
-        margin-top:16px;
+        margin-top:14px;
       ">
         <button id="btn-command-leaderboard" type="button" style="
           min-height:48px;
@@ -5011,7 +5044,7 @@ function showLeoidsCommandHub() {
           color:${isRunner ? "#05070b" : "#cbd5e1"};
           font-weight:1000;
         ">
-          🛡️ Release
+          🛡️ Rescue
         </button>
 
         <button id="btn-command-map-refresh" type="button" style="
@@ -5022,7 +5055,7 @@ function showLeoidsCommandHub() {
           color:white;
           font-weight:1000;
         ">
-          🗺️ Refresh Map
+          🗺️ Refresh
         </button>
       </div>
 
@@ -5040,7 +5073,7 @@ function showLeoidsCommandHub() {
           color:#00d4ff;
           font-weight:1000;
         ">
-          ⚙️ Host Setup
+          ⚙️ Setup
         </button>
 
         <button id="btn-command-end-round" type="button" style="
@@ -5051,7 +5084,7 @@ function showLeoidsCommandHub() {
           color:white;
           font-weight:1000;
         ">
-          ⛔ End Round
+          ⛔ End
         </button>
       </div>
     </div>
@@ -5060,6 +5093,22 @@ function showLeoidsCommandHub() {
   document.body.appendChild(hub);
 
   document.getElementById("btn-leoids-command-close")?.addEventListener("click", hideLeoidsCommandHub);
+
+  document.getElementById("btn-command-start-game")?.addEventListener("click", async () => {
+    if (!isHost) {
+      alert("Only the host can start the game.");
+      return;
+    }
+
+    hideLeoidsCommandHub();
+
+    if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
+      await startOnlineCountdown(leoidsState.countdownSeconds || 60);
+      return;
+    }
+
+    startRound();
+  });
 
   document.getElementById("btn-command-leaderboard")?.addEventListener("click", () => {
     hideLeoidsCommandHub();
@@ -5084,15 +5133,26 @@ function showLeoidsCommandHub() {
   });
 
   document.getElementById("btn-command-host-setup")?.addEventListener("click", () => {
+    if (!isHost) {
+      alert("Only the host can edit setup.");
+      return;
+    }
+
     hideLeoidsCommandHub();
     openSetupPanel();
   });
 
   document.getElementById("btn-command-end-round")?.addEventListener("click", () => {
+    if (!isHost) {
+      alert("Only the host can end the round.");
+      return;
+    }
+
     hideLeoidsCommandHub();
     endRound("manual");
   });
 }
+
 
   function hideLeoidsCommandHub() {
   const hub = document.getElementById("leoids-command-hub");
