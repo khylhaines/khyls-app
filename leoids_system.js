@@ -3460,62 +3460,30 @@ function tickRound() {
       ? `ONLINE • ${leoidsState.onlineSessionId || "session ready"}`
       : "LOCAL";
 
-    const boundaryText =
-      leoidsState.boundaryMode === "circle"
-        ? leoidsState.boundaryCenter
-          ? `Circle ${leoidsState.boundaryRadius}m`
-          : "No circle boundary set"
-        : leoidsState.boundaryPoints.length >= 3
-        ? `Street boundary set with ${leoidsState.boundaryPoints.length} points`
-        : `Street boundary needs ${
-            3 - leoidsState.boundaryPoints.length
-          } more point(s)`;
-
-    const baseText = leoidsState.basePoint
-      ? `Jail/Base set • ${leoidsState.baseRadius}m rescue radius`
-      : "No jail/base set";
-
-    const releaseText =
-      leoidsState.role === "hunter"
-        ? leoidsState.huntersReleased
-          ? "Hunters released"
-          : `Hunter release: ${formatTime(leoidsState.hunterDelayLeft)}`
-        : `Hunter delay: ${formatTime(leoidsState.hunterDelay)}`;
-
-    const freeRunners = leoidsState.players.filter(
-      (p) => p.role === "runner" && p.status === "free"
-    ).length;
-
-    const jailedRunners = leoidsState.players.filter(
-      (p) => p.role === "runner" && p.status === "jailed"
-    ).length;
-
     statusEl.innerText =
       `Connection: ${onlineText}\n` +
       `Mode: ${statusText}\n` +
-      `Boundary: ${boundaryText}\n` +
-      `Base: ${baseText}\n` +
       `Your Role: ${roleText}\n` +
       `Round Time: ${formatTime(leoidsState.timeLeft)}\n` +
-      `${releaseText}\n` +
-      `Auto Tag Radius: ${leoidsState.tagRadius}m\n` +
-      `Free Runners: ${freeRunners}\n` +
-      `Jailed Runners: ${jailedRunners}\n` +
+      `Hunter Delay: ${formatTime(leoidsState.hunterDelayLeft)}\n` +
       `Score: ${leoidsState.score}\n` +
-      `Coins earned: ${leoidsState.coins}`;
+      `Coins: ${leoidsState.coins}`;
   }
 
   const startBtn = $("btn-leoids-start");
   if (startBtn) {
-    startBtn.innerText = leoidsState.active ? "ROUND RUNNING" : "START ROUND";
+    startBtn.style.display = isHost ? "block" : "none";
     startBtn.disabled = !isHost || leoidsState.active;
 
-    startBtn.style.display = isHost ? "block" : "none";
-    startBtn.style.minHeight = "54px";
-    startBtn.style.borderRadius = "18px";
+    startBtn.innerText = leoidsState.active
+      ? "MISSION RUNNING"
+      : "🚀 START MISSION";
+
+    startBtn.style.minHeight = "58px";
+    startBtn.style.borderRadius = "20px";
     startBtn.style.border = "none";
     startBtn.style.fontWeight = "1000";
-    startBtn.style.fontSize = "15px";
+    startBtn.style.fontSize = "16px";
     startBtn.style.letterSpacing = ".05em";
 
     if (leoidsState.active) {
@@ -3525,7 +3493,7 @@ function tickRound() {
     } else {
       startBtn.style.background = "#22c55e";
       startBtn.style.color = "#05070b";
-      startBtn.style.boxShadow = "0 0 22px rgba(34,197,94,.42)";
+      startBtn.style.boxShadow = "0 0 26px rgba(34,197,94,.5)";
     }
   }
 
@@ -3548,6 +3516,7 @@ function tickRound() {
 
   updateLeoidsBattleHud?.();
 }
+
   
 function isLocalLobbyHost(session = null) {
   if (leoidsState.isLobbyHost) return true;
@@ -4805,14 +4774,12 @@ function wirePanelButtons() {
   if (isHost) {
     showSetupButton("btn-leoids-start");
     showSetupButton("btn-leoids-end");
-
     showSetupButton("btn-leoids-set-boundary");
     showSetupButton("btn-leoids-clear-boundary");
     showSetupButton("btn-leoids-set-base");
   } else {
     hideSetupButton("btn-leoids-start");
     hideSetupButton("btn-leoids-end");
-
     hideSetupButton("btn-leoids-set-boundary");
     hideSetupButton("btn-leoids-add-point");
     hideSetupButton("btn-leoids-undo-point");
@@ -4895,9 +4862,14 @@ function wirePanelButtons() {
     setClick("btn-leoids-set-base", setBaseHere);
   }
 
-  setClick("btn-leoids-start", () => {
+  setClick("btn-leoids-start", async () => {
     if (!isHost) {
-      alert("Only the host can start the round.");
+      alert("Only the host can start the mission.");
+      return;
+    }
+
+    if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
+      await startOnlineCountdown(leoidsState.countdownSeconds || 60);
       return;
     }
 
@@ -4916,6 +4888,7 @@ function wirePanelButtons() {
   refreshBoundaryButtons();
   updatePanel();
 }
+
 
   
 function showLeoidsCommandHub() {
