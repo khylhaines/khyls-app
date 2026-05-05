@@ -2250,7 +2250,7 @@ function setRunnerVisibilityMode(mode = "always") {
     return false;
   }
 
-async function syncPlayerToOnline(player) {
+ function syncPlayerToOnline(player) {
   const supabase = getSupabaseSafe();
 
   if (!supabase?.client || !player?.id) return null;
