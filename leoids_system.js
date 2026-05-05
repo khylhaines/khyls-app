@@ -3143,14 +3143,24 @@ function tickRound() {
 
   const local = getLocalPlayer();
 
-  if (local?.role === "runner" && leoidsState.basePoint && local.position) {
-    const distance = distanceMeters(local.position, leoidsState.basePoint);
+  if (
+    local?.role === "runner" &&
+    local.status === "free" &&
+    leoidsState.basePoint &&
+    local.position
+  ) {
+    const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
+    const baseRadius = Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
+
+    const hasJailedRunners = leoidsState.players.some(
+      (player) => player.role === "runner" && player.status === "jailed"
+    );
 
     if (
-      distance <= leoidsState.baseRadius &&
-      Date.now() - (leoidsState.lastRescueAt || 0) > 3000
+      hasJailedRunners &&
+      distanceToBase <= baseRadius &&
+      Date.now() - Number(leoidsState.lastRescueAt || 0) > 3000
     ) {
-      leoidsState.lastRescueAt = Date.now();
       rescueJailedRunners();
     }
   }
@@ -3163,7 +3173,9 @@ function tickRound() {
   }
 
   updatePanel();
+  updateLeoidsBattleHud?.();
 }
+
 
   function endRound(reason = "manual") {
     stopTimer();
