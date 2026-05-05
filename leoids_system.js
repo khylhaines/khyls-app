@@ -2744,10 +2744,10 @@ function handleOnlineCountdown(session) {
     leoidsState.countdownIntervalId = null;
   }
 
-  leoidsState.countdownIntervalId = setInterval(() => {
+  leoidsState.countdownIntervalId = setInterval(async () => {
     const secondsLeft = Math.ceil((startsAtMs - Date.now()) / 1000);
 
-    showCountdownBanner(secondsLeft);
+    showCountdownBanner(Math.max(0, secondsLeft));
     updatePanel();
 
     if (secondsLeft <= 0) {
@@ -2755,7 +2755,27 @@ function handleOnlineCountdown(session) {
       leoidsState.countdownIntervalId = null;
 
       hideCountdownBanner();
-      startRoundFromOnlineSession(session);
+
+      const supabase = getSupabaseSafe();
+
+      if (leoidsState.isLobbyHost && supabase?.client && leoidsState.onlineSessionId) {
+        try {
+          await supabase.client
+            .from("leoids_sessions")
+            .update({
+              status: "active",
+              started_at: new Date().toISOString(),
+            })
+            .eq("id", leoidsState.onlineSessionId);
+        } catch (error) {
+          console.warn("Could not mark LEOIDS session active:", error);
+        }
+      }
+
+      startRoundFromOnlineSession({
+        ...session,
+        status: "active",
+      });
     }
   }, 500);
 }
@@ -2765,11 +2785,21 @@ function startRoundFromOnlineSession(session = null) {
     applyOnlineSessionConfig(session);
   }
 
+  if (leoidsState.active) {
+    updatePanel();
+    updateLeoidsBattleHud?.();
+    return;
+  }
+
   stopTimer();
   stopAI();
 
+  hideCountdownBanner?.();
+
   leoidsState.active = true;
   leoidsState.status = "free";
+  leoidsState.score = 0;
+  leoidsState.coins = 0;
   leoidsState.timeLeft = Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
   leoidsState.hunterDelayLeft = Number(
     leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
@@ -2778,16 +2808,33 @@ function startRoundFromOnlineSession(session = null) {
   leoidsState.startedAt = new Date().toISOString();
   leoidsState.endedAt = null;
 
-  leoidsState.players = leoidsState.players.filter((p) => !p.isAI);
-
   leoidsState.players.forEach((player) => {
     player.status = "free";
+    player.score = Number(player.score || 0);
+    player.coins = Number(player.coins || 0);
     player.jailedAtBase = false;
   });
 
-  updatePanel();
+  closeModal?.("leoids-modal");
+
+  const lobby = document.getElementById("leoids-online-lobby-screen");
+  if (lobby) lobby.remove();
+
+  enterBattleMap?.();
+  hideLeoidsMapControls?.();
+
+  redrawAllMapObjects?.();
   renderPlayers();
   drawPlayerMarkers();
+  updatePanel();
+  showLeoidsBattleHud?.();
+
+  showLeoidsEvent(
+    "ONLINE ROUND STARTED",
+    "Runners hide.\nHunters wait for release.",
+    "⚡",
+    "base"
+  );
 
   speakText?.("Online LEOIDS round started.");
 
@@ -2802,12 +2849,36 @@ async function startOnlineCountdown(seconds = 60) {
     return null;
   }
 
+  const safeSeconds = Math.max(3, Number(seconds || 60));
+
   await saveOnlineSessionConfig();
 
-  const session = await supabase.startCountdown(
-    leoidsState.onlineSessionId,
-    Number(seconds || 60)
-  );
+  let session = null;
+
+  if (typeof supabase.startCountdown === "function") {
+    session = await supabase.startCountdown(leoidsState.onlineSessionId, safeSeconds);
+  } else if (supabase.client) {
+    const startsAt = new Date(Date.now() + safeSeconds * 1000).toISOString();
+
+    const { data, error } = await supabase.client
+      .from("leoids_sessions")
+      .update({
+        status: "countdown",
+        game_starts_at: startsAt,
+        countdown_seconds: safeSeconds,
+      })
+      .eq("id", leoidsState.onlineSessionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn("Could not start online countdown:", error);
+      speakText?.("Could not start countdown.");
+      return null;
+    }
+
+    session = data;
+  }
 
   if (session) {
     applyOnlineSessionConfig(session);
@@ -2817,6 +2888,7 @@ async function startOnlineCountdown(seconds = 60) {
 
   return session;
 }
+
 
 function handleOnlineSessionUpdate(payload) {
   const session = payload?.new || payload;
@@ -2867,45 +2939,62 @@ function startOnlineSessionSync() {
   }
 
   if (leoidsState.active) {
-    console.warn("Round already active — blocking restart loop");
+    console.warn("Round already active — blocking duplicate start.");
     return;
   }
 
+  if (!hasValidBoundary()) {
+    alert("Set a LEOIDS boundary first.");
+    speakText?.("Set a valid boundary first.");
+    return;
+  }
+
+  if (!leoidsState.basePoint && window.__leoidsBasePoint) {
+    leoidsState.basePoint = window.__leoidsBasePoint;
+  }
+
   if (!leoidsState.basePoint) {
-    alert("Set the jail/base first.");
+    alert("Set the Jail / Base point first.");
     speakText?.("Set the jail base first.");
     return;
   }
 
-  if (
-    leoidsState.boundaryMode === "polygon" &&
-    leoidsState.boundaryPoints.length < 3
-  ) {
-    alert("Finish the boundary first.");
-    speakText?.("Finish the boundary first.");
+  if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
+    startOnlineCountdown(leoidsState.countdownSeconds || 60);
     return;
   }
 
-  if (
-    leoidsState.boundaryMode === "circle" &&
-    !leoidsState.boundaryCenter
-  ) {
-    alert("Set the boundary first.");
-    speakText?.("Set the boundary first.");
-    return;
-  }
-
-  leoidsState.active = true;
-  leoidsState.roundStartedAt = Date.now();
-
-  leoidsState.timeLeft = leoidsState.roundTime;
-
-  leoidsState.hunterDelayLeft = leoidsState.hunterDelay;
-  leoidsState.huntersReleased = false;
+  stopTimer();
+  stopAI();
 
   seedPlayerPositions();
 
-  closeSetupPanel();
+  leoidsState.active = true;
+  leoidsState.status = "free";
+  leoidsState.score = 0;
+  leoidsState.coins = 0;
+  leoidsState.timeLeft = Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
+  leoidsState.hunterDelayLeft = Number(
+    leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
+  );
+  leoidsState.huntersReleased = false;
+  leoidsState.startedAt = new Date().toISOString();
+  leoidsState.endedAt = null;
+
+  leoidsState.players.forEach((player) => {
+    player.status = "free";
+    player.score = 0;
+    player.coins = 0;
+    player.jailedAtBase = false;
+  });
+
+  closeSetupPanel?.();
+  enterBattleMap?.();
+
+  updatePanel();
+  renderPlayers();
+  drawPlayerMarkers();
+  showLeoidsBattleHud?.();
 
   showLeoidsEvent(
     "ROUND STARTED",
@@ -2914,11 +3003,20 @@ function startOnlineSessionSync() {
     "base"
   );
 
-  speakText?.("Round started. Runners hide. Hunters wait.");
+  speakText?.("LEOIDS round started. Runners hide now. Hunters wait.");
 
-  runLeoidsGameLoop();
+  leoidsState.intervalId = setInterval(tickRound, 1000);
+
+  leoidsState.aiIntervalId = setInterval(() => {
+    moveAIPlayers();
+    checkBoundaryRules();
+    runAITagChecks();
+    renderPlayers();
+    updatePanel();
+  }, 2500);
+
+  saveState?.();
 }
-
 
 
 function tickRound() {
