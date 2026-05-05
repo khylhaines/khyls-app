@@ -2135,6 +2135,39 @@ function setRunnerVisibilityMode(mode = "always") {
     drawPlayerMarkers();
   }
 
+
+async function syncPlayerToOnline(player) {
+  const supabase = getSupabaseSafe();
+
+  if (!supabase?.client || !player?.id) {
+    return null;
+  }
+
+  const payload = {
+    role: player.role || "runner",
+    status: player.status || "free",
+    score: Number(player.score || 0),
+    coins: Number(player.coins || 0),
+    lat: player.position ? Number(player.position.lat) : null,
+    lng: player.position ? Number(player.position.lng) : null,
+    last_seen: new Date().toISOString(),
+  };
+
+  const { error } = await supabase.client
+    .from("leoids_players")
+    .update(payload)
+    .eq("id", player.id);
+
+  if (error) {
+    console.warn("Could not sync player online:", error, payload);
+    return null;
+  }
+
+  return payload;
+}
+
+
+  
  async function sendRunnerToJail(runner, taggedBy = null) {
   if (!runner || runner.role !== "runner") return false;
   if (runner.status === "jailed") return false;
