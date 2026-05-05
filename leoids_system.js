@@ -3099,44 +3099,69 @@ function startRound() {
   speakText?.("Round started. Runners move.");
 }
 
- async function startRoundFromOnlineSession(sessionData) {
-  if (!sessionData) {
-    console.warn("No session data provided to startRoundFromOnlineSession");
+ function startRoundFromOnlineSession(session = null) {
+  if (session) {
+    applyOnlineSessionConfig?.(session);
+  }
+
+  if (leoidsState.active) {
+    updatePanel?.();
+    updateLeoidsBattleHud?.();
     return;
   }
 
-  // Apply session settings safely
+  stopTimer?.();
+  stopAI?.();
+  hideCountdownBanner?.();
+
   leoidsState.active = true;
-  leoidsState.timeLeft = sessionData.round_length || DEFAULT_ROUND_SECONDS;
-  leoidsState.hunterDelayLeft = sessionData.hunter_delay || DEFAULT_HUNTER_DELAY_SECONDS;
+  leoidsState.status = "free";
+  leoidsState.score = 0;
+  leoidsState.coins = 0;
 
-  // Boundary + base (if stored)
-  if (sessionData.boundary) {
-    leoidsState.boundary = sessionData.boundary;
-    drawBoundary?.();
-  }
+  leoidsState.timeLeft = Number(
+    leoidsState.roundTime || session?.round_time || DEFAULT_ROUND_SECONDS
+  );
 
-  if (sessionData.jail_lat && sessionData.jail_lng) {
-    leoidsState.base = {
-      lat: sessionData.jail_lat,
-      lng: sessionData.jail_lng,
-      radius: sessionData.base_radius || DEFAULT_BASE_RADIUS
-    };
-    drawBase?.();
-  }
+  leoidsState.hunterDelayLeft = Number(
+    leoidsState.hunterDelay || session?.hunter_delay || DEFAULT_HUNTER_DELAY_SECONDS
+  );
 
-  // Reset players
-  resetAllPlayersToStart?.();
+  leoidsState.huntersReleased = false;
+  leoidsState.lastHunterCountdownSecond = null;
+  leoidsState.lastRescueAt = 0;
+  leoidsState.startedAt = new Date().toISOString();
+  leoidsState.endedAt = null;
 
-  // Start timers
-  startRoundTimer?.();
-  startHunterDelayTimer?.();
+  leoidsState.players.forEach((player) => {
+    player.status = "free";
+    player.jailedAtBase = false;
+  });
 
-  // UI update
+  closeModal?.("leoids-modal");
+
+  const lobby = document.getElementById("leoids-online-lobby-screen");
+  if (lobby) lobby.remove();
+
+  enterBattleMap?.();
+  hideLeoidsMapControls?.();
+
+  redrawAllMapObjects?.();
+  renderPlayers?.();
+  drawPlayerMarkers?.();
   updatePanel?.();
-  updateLeoidsBattleHud?.();
+  showLeoidsBattleHud?.();
 
-  console.log("🟢 Online round started from session sync");
+  showLeoidsEvent(
+    "MISSION STARTED",
+    "Runners hide.\nHunters wait for release.",
+    "🚀",
+    "base"
+  );
+
+  speakText?.("Online LEOIDS mission started.");
+
+  leoidsState.intervalId = setInterval(tickRound, 1000);
 }
   
 
@@ -5295,7 +5320,7 @@ return {
   loadAndApplyOnlineSession,
   startOnlineSessionSync,
   startOnlineCountdown,
-
+  startRoundFromOnlineSession,
   showLeoidsBattleHud,
   hideLeoidsBattleHud,
   updateLeoidsBattleHud,
