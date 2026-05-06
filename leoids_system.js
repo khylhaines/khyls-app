@@ -580,43 +580,57 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   return session;
 }
 
-  function startOnlinePlayerSync() {
-    const supabase = getSupabaseSafe();
+ function startOnlinePlayerSync() {
+  const supabase = getSupabaseSafe();
 
-    if (!supabase) {
-      console.warn("LEOIDS Supabase module not loaded.");
-      return false;
-    }
+  if (!supabase) {
+    console.warn("LEOIDS Supabase module not loaded.");
+    return false;
+  }
 
-    if (!supabase.sessionId && leoidsState.onlineSessionId) {
-      supabase.sessionId = leoidsState.onlineSessionId;
-    }
+  if (!supabase.sessionId && leoidsState.onlineSessionId) {
+    supabase.sessionId = leoidsState.onlineSessionId;
+  }
 
-    if (!supabase.sessionId) {
-      console.warn("No online session selected.");
-      return false;
-    }
+  if (!supabase.sessionId) {
+    console.warn("No online session selected.");
+    return false;
+  }
 
-    if (typeof supabase.subscribeToPlayers !== "function") {
-      console.warn("LEOIDS Supabase subscribeToPlayers not available.");
-      return false;
-    }
+  leoidsState.onlineEnabled = true;
+  leoidsState.onlineSessionId = supabase.sessionId;
+  leoidsState.onlineSyncStarted = true;
 
+  if (typeof supabase.subscribeToPlayers === "function") {
     supabase.subscribeToPlayers((payload) => {
       applyOnlinePlayerPayload(payload);
+      loadOnlinePlayers();
+      drawPlayerMarkers();
+      renderPlayers?.();
+      updatePanel?.();
+      updateLeoidsBattleHud?.();
     });
-
-    leoidsState.onlineEnabled = true;
-    leoidsState.onlineSessionId = supabase.sessionId;
-    leoidsState.onlineSyncStarted = true;
-
-    loadOnlinePlayers();
-
-    console.log("LEOIDS online player sync started.");
-    speakText?.("Online player sync started.");
-
-    return true;
   }
+
+  if (leoidsState.onlinePlayerRefreshIntervalId) {
+    clearInterval(leoidsState.onlinePlayerRefreshIntervalId);
+  }
+
+  loadOnlinePlayers();
+
+  leoidsState.onlinePlayerRefreshIntervalId = setInterval(async () => {
+    await loadOnlinePlayers();
+    drawPlayerMarkers();
+    renderPlayers?.();
+    updatePanel?.();
+    updateLeoidsBattleHud?.();
+  }, 2000);
+
+  console.log("LEOIDS online player sync started.");
+  speakText?.("Online player sync started.");
+
+  return true;
+}
 
 async function joinOnlineSession({
   sessionId,
