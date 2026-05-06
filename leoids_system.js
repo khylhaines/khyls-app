@@ -776,66 +776,59 @@ function stopGpsOnlineSync() {
 }
   
 function startGpsOnlineSync() {
-  stopGpsOnlineSync();
-
   if (!navigator.geolocation) {
-    console.warn("Geolocation not supported.");
-    return;
+    speakText?.("GPS is not available on this device.");
+    return false;
   }
+
+  if (!leoidsState.onlineEnabled || !leoidsState.onlineSessionId) {
+    speakText?.("Join an online LEOIDS session first.");
+    console.warn("Cannot start GPS: no online session.");
+    return false;
+  }
+
+  stopGpsOnlineSync();
 
   leoidsState.gpsWatchId = navigator.geolocation.watchPosition(
     async (position) => {
-      const lat = Number(position.coords.latitude);
-      const lng = Number(position.coords.longitude);
+      const point = {
+        lat: Number(position.coords.latitude),
+        lng: Number(position.coords.longitude),
+      };
 
       const local = getLocalPlayer();
-
       if (local) {
-        local.position = { lat, lng };
-        local.lat = lat;
-        local.lng = lng;
+        local.position = point;
+        local.lat = point.lat;
+        local.lng = point.lng;
       }
 
-      console.log("GPS UPDATE", lat, lng);
+      await syncLocalPlayerPosition(point);
 
-      drawPlayerMarkers?.();
+      await loadOnlinePlayers();
+
+      drawPlayerMarkers();
+      renderPlayers?.();
       updatePanel?.();
+      updateLeoidsBattleHud?.();
 
-      try {
-        await syncLocalPlayerPosition?.({
-          lat,
-          lng,
-        });
-      } catch (error) {
-        console.warn("GPS sync failed:", error);
-      }
+      console.log("GPS UPDATE + PLAYERS REFRESHED", point);
     },
-
     (error) => {
-      console.warn("GPS WATCH ERROR", error);
-
-      if (error.code === 1) {
-        speakText?.("Location permission denied.");
-      }
-
-      if (error.code === 2) {
-        speakText?.("Location unavailable.");
-      }
-
-      if (error.code === 3) {
-        console.warn("GPS timeout. Waiting for retry...");
-      }
+      console.warn("LEOIDS GPS sync error:", error);
     },
-
     {
       enableHighAccuracy: true,
+      maximumAge: 5000,
       timeout: 30000,
-      maximumAge: 0,
     }
   );
 
   console.log("GPS WATCH STARTED", leoidsState.gpsWatchId);
+  speakText?.("Online GPS sync started.");
+  return true;
 }
+
 
          
  function refreshBoundaryButtons() {
