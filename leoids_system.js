@@ -432,26 +432,47 @@ function checkBoundaryRules() {
     updatePanel();
   }
 
-  async function loadOnlinePlayers() {
-    const supabase = getSupabaseSafe();
+ async function loadOnlinePlayers() {
+  const supabase = getSupabaseSafe();
 
-    if (!supabase || typeof supabase.loadPlayers !== "function") {
-      console.warn("LEOIDS Supabase loadPlayers not available.");
-      return [];
-    }
-
-    const rows = await supabase.loadPlayers();
-
-    rows.forEach((row) => {
-      upsertOnlinePlayer(row);
-    });
-
-    drawPlayerMarkers();
-    renderPlayers();
-    updatePanel();
-
-    return rows;
+  if (!supabase?.client) {
+    console.warn("LEOIDS Supabase client not available.");
+    return [];
   }
+
+  const sessionId = leoidsState.onlineSessionId || supabase.sessionId;
+
+  if (!sessionId) {
+    console.warn("No session ID for loading online players.");
+    return [];
+  }
+
+  const { data, error } = await supabase.client
+    .from("leoids_players")
+    .select("*")
+    .eq("session_id", sessionId);
+
+  if (error) {
+    console.warn("Could not load online players:", error);
+    return [];
+  }
+
+  const rows = data || [];
+
+  rows.forEach((row) => {
+    upsertOnlinePlayer(row);
+  });
+
+  console.log("ONLINE PLAYERS LOADED", rows);
+
+  drawPlayerMarkers?.();
+  renderPlayers?.();
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
+
+  return rows;
+}
+
 
 async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   const supabase = getSupabaseSafe();
@@ -662,44 +683,64 @@ async function joinOnlineSession({
   }
 
   async function syncLocalPlayerPosition(position, accuracy = null, heading = null) {
-    const supabase = getSupabaseSafe();
-    const local = getLocalPlayer();
+  const supabase = getSupabaseSafe();
+  const local = getLocalPlayer();
 
-    if (!supabase || !position) return false;
-    if (!supabase.playerId && leoidsState.onlinePlayerId) {
-      supabase.playerId = leoidsState.onlinePlayerId;
-    }
+  if (!supabase?.client || !position) return false;
 
-    if (!supabase.playerId) return false;
+  const playerId = leoidsState.onlinePlayerId || supabase.playerId;
 
-    const point = {
-      lat: Number(position.lat),
-      lng: Number(position.lng),
-    };
-
-    if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) {
-      return false;
-    }
-
-    if (local) {
-      local.position = point;
-    }
-
-    leoidsState.lastOnlinePositionSyncAt = Date.now();
-
-    if (typeof supabase.updatePosition === "function") {
-      await supabase.updatePosition(point.lat, point.lng, accuracy, heading);
-    } else if (typeof supabase.syncMyPosition === "function") {
-      await supabase.syncMyPosition(point.lat, point.lng, accuracy, heading);
-    }
-
-    drawPlayerMarkers();
-    renderPlayers();
-    updatePanel();
-
-    return true;
+  if (!playerId) {
+    console.warn("No online player ID for GPS sync.");
+    return false;
   }
 
+  const point = {
+    lat: Number(position.lat),
+    lng: Number(position.lng),
+  };
+
+  if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) {
+    console.warn("Bad GPS point:", point);
+    return false;
+  }
+
+  if (local) {
+    local.id = playerId;
+    local.isLocal = true;
+    local.isOnline = true;
+    local.position = point;
+  }
+
+  leoidsState.lastOnlinePositionSyncAt = Date.now();
+
+  const payload = {
+    lat: point.lat,
+    lng: point.lng,
+    status: local?.status || leoidsState.status || "free",
+    role: local?.role || leoidsState.role || "runner",
+    last_seen: new Date().toISOString(),
+  };
+
+  const { error } = await supabase.client
+    .from("leoids_players")
+    .update(payload)
+    .eq("id", playerId);
+
+  if (error) {
+    console.warn("GPS position sync failed:", error, payload);
+    return false;
+  }
+
+  console.log("GPS SYNC OK", payload);
+
+  drawPlayerMarkers?.();
+  renderPlayers?.();
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
+
+  return true;
+}
 function stopGpsOnlineSync() {
   if (leoidsState.gpsWatchId !== null && leoidsState.gpsWatchId !== undefined) {
     try {
@@ -712,14 +753,15 @@ function stopGpsOnlineSync() {
   leoidsState.gpsWatchId = null;
 }
   
-  function startGpsOnlineSync() {
+ function startGpsOnlineSync() {
   if (!navigator.geolocation) {
     speakText?.("GPS is not available on this device.");
     return false;
   }
 
-  if (!leoidsState.onlineEnabled) {
+  if (!leoidsState.onlineEnabled || !leoidsState.onlinePlayerId) {
     speakText?.("Join an online LEOIDS session first.");
+    console.warn("Cannot start GPS sync: no online player.");
     return false;
   }
 
@@ -729,7 +771,7 @@ function stopGpsOnlineSync() {
     async (position) => {
       const now = Date.now();
 
-      if (now - leoidsState.lastOnlinePositionSyncAt < 2000) {
+      if (now - Number(leoidsState.lastOnlinePositionSyncAt || 0) < 1500) {
         return;
       }
 
@@ -746,18 +788,21 @@ function stopGpsOnlineSync() {
     },
     (error) => {
       console.warn("LEOIDS GPS sync error:", error);
-      speakText?.("GPS sync error.");
+      speakText?.("GPS sync error. Check location permission.");
     },
     {
       enableHighAccuracy: true,
       maximumAge: 1000,
-      timeout: 12000,
+      timeout: 15000,
     }
   );
 
   speakText?.("Online GPS sync started.");
+  console.log("GPS WATCH STARTED", leoidsState.gpsWatchId);
+
   return true;
 }
+
          
  function refreshBoundaryButtons() {
   const isCircle = leoidsState.boundaryMode === "circle";
