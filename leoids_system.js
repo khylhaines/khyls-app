@@ -270,16 +270,31 @@ function checkBoundaryRules() {
     return R * (2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)));
   }
 
-  function getLocalPlayer() {
-    if (leoidsState.onlinePlayerId) {
-      const onlineLocal = leoidsState.players.find((p) => p.id === leoidsState.onlinePlayerId);
-      if (onlineLocal) return onlineLocal;
-    }
+function getLocalPlayer() {
+  const supabase = getSupabaseSafe();
 
-    return leoidsState.players.find((p) => p.isLocal) ||
-      leoidsState.players.find((p) => !p.isAI && !p.isOnline) ||
-      leoidsState.players[0];
+  const playerId =
+    leoidsState.onlinePlayerId ||
+    supabase?.playerId ||
+    null;
+
+  if (playerId) {
+    const onlineLocal = leoidsState.players.find((p) => p.id === playerId);
+
+    if (onlineLocal) {
+      onlineLocal.isLocal = true;
+      onlineLocal.isOnline = true;
+      return onlineLocal;
+    }
   }
+
+  return (
+    leoidsState.players.find((p) => p.isLocal) ||
+    leoidsState.players.find((p) => !p.isAI && !p.isOnline) ||
+    leoidsState.players[0] ||
+    null
+  );
+}
 
  function getPlayerIcon(player) {
   if (player?.avatar) return player.avatar;
@@ -361,44 +376,68 @@ function checkBoundaryRules() {
   };
 }
 
- function upsertOnlinePlayer(row) {
-  const onlinePlayer = normaliseOnlinePlayer(row);
-  if (!onlinePlayer || !onlinePlayer.id) return null;
+function upsertOnlinePlayer(row) {
+  if (!row || !row.id) return null;
 
-  let existing = leoidsState.players.find((p) => p.id === onlinePlayer.id);
+  const supabase = getSupabaseSafe();
 
-  if (!existing) {
-    existing = onlinePlayer;
-    leoidsState.players.push(existing);
-  } else {
-    existing.name = onlinePlayer.name;
-    existing.avatar = onlinePlayer.avatar;
-    existing.role = onlinePlayer.role;
-    existing.status = onlinePlayer.status;
-    existing.isAI = false;
-    existing.isOnline = true;
-    existing.isLocal = onlinePlayer.isLocal;
-    existing.score = Number(onlinePlayer.score || 0);
-    existing.coins = Number(onlinePlayer.coins || 0);
-    existing.jailedAtBase = onlinePlayer.jailedAtBase;
-    existing.lastSeen = onlinePlayer.lastSeen;
-  }
+  const localPlayerId =
+    leoidsState.onlinePlayerId ||
+    supabase?.playerId ||
+    null;
 
-  if (
+  const isLocal = row.id === localPlayerId;
+
+  let existing = leoidsState.players.find((p) => p.id === row.id);
+
+  const position =
     row.lat !== null &&
     row.lat !== undefined &&
     row.lng !== null &&
     row.lng !== undefined
-  ) {
-    existing.position = {
-      lat: Number(row.lat),
-      lng: Number(row.lng),
+      ? {
+          lat: Number(row.lat),
+          lng: Number(row.lng),
+        }
+      : null;
+
+  if (!existing) {
+    existing = {
+      id: row.id,
+      name: row.display_name || row.name || "Online Player",
+      avatar: row.avatar || "🧍",
+      role: row.role || "runner",
+      status: row.status || "free",
+      isAI: false,
+      isOnline: true,
+      isLocal,
+      score: Number(row.score || 0),
+      coins: Number(row.coins || 0),
+      position,
+      jailedAtBase: row.status === "jailed",
+      lastSeen: row.last_seen || null,
     };
-  } else if (onlinePlayer.position) {
-    existing.position = onlinePlayer.position;
+
+    leoidsState.players.push(existing);
+  } else {
+    existing.name = row.display_name || row.name || existing.name || "Online Player";
+    existing.avatar = row.avatar || existing.avatar || "🧍";
+    existing.role = row.role || existing.role || "runner";
+    existing.status = row.status || existing.status || "free";
+    existing.isAI = false;
+    existing.isOnline = true;
+    existing.isLocal = isLocal;
+    existing.score = Number(row.score || existing.score || 0);
+    existing.coins = Number(row.coins || existing.coins || 0);
+    existing.jailedAtBase = existing.status === "jailed";
+    existing.lastSeen = row.last_seen || existing.lastSeen || null;
+
+    if (position) {
+      existing.position = position;
+    }
   }
 
-  if (existing.isLocal) {
+  if (isLocal) {
     leoidsState.role = existing.role;
     leoidsState.status = existing.status;
     leoidsState.score = Number(existing.score || 0);
