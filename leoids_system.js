@@ -361,42 +361,52 @@ function checkBoundaryRules() {
   };
 }
 
-  function upsertOnlinePlayer(row) {
-    const onlinePlayer = normaliseOnlinePlayer(row);
-    if (!onlinePlayer || !onlinePlayer.id) return null;
+ function upsertOnlinePlayer(row) {
+  const onlinePlayer = normaliseOnlinePlayer(row);
+  if (!onlinePlayer || !onlinePlayer.id) return null;
 
-    let existing = leoidsState.players.find((p) => p.id === onlinePlayer.id);
+  let existing = leoidsState.players.find((p) => p.id === onlinePlayer.id);
 
-    if (!existing) {
-      existing = onlinePlayer;
-      leoidsState.players.push(existing);
-    } else {
-      existing.name = onlinePlayer.name;
-      existing.avatar = onlinePlayer.avatar;
-      existing.role = onlinePlayer.role;
-      existing.status = onlinePlayer.status;
-      existing.isAI = false;
-      existing.isOnline = true;
-      existing.isLocal = onlinePlayer.isLocal;
-      existing.score = onlinePlayer.score;
-      existing.coins = onlinePlayer.coins;
-      existing.jailedAtBase = onlinePlayer.jailedAtBase;
-      existing.lastSeen = onlinePlayer.lastSeen;
-
-      if (onlinePlayer.position) {
-        existing.position = onlinePlayer.position;
-      }
-    }
-
-    if (existing.isLocal) {
-      leoidsState.role = existing.role;
-      leoidsState.status = existing.status;
-      leoidsState.score = Number(existing.score || 0);
-      leoidsState.coins = Number(existing.coins || 0);
-    }
-
-    return existing;
+  if (!existing) {
+    existing = onlinePlayer;
+    leoidsState.players.push(existing);
+  } else {
+    existing.name = onlinePlayer.name;
+    existing.avatar = onlinePlayer.avatar;
+    existing.role = onlinePlayer.role;
+    existing.status = onlinePlayer.status;
+    existing.isAI = false;
+    existing.isOnline = true;
+    existing.isLocal = onlinePlayer.isLocal;
+    existing.score = Number(onlinePlayer.score || 0);
+    existing.coins = Number(onlinePlayer.coins || 0);
+    existing.jailedAtBase = onlinePlayer.jailedAtBase;
+    existing.lastSeen = onlinePlayer.lastSeen;
   }
+
+  if (
+    row.lat !== null &&
+    row.lat !== undefined &&
+    row.lng !== null &&
+    row.lng !== undefined
+  ) {
+    existing.position = {
+      lat: Number(row.lat),
+      lng: Number(row.lng),
+    };
+  } else if (onlinePlayer.position) {
+    existing.position = onlinePlayer.position;
+  }
+
+  if (existing.isLocal) {
+    leoidsState.role = existing.role;
+    leoidsState.status = existing.status;
+    leoidsState.score = Number(existing.score || 0);
+    leoidsState.coins = Number(existing.coins || 0);
+  }
+
+  return existing;
+}
 
   function removeOnlinePlayer(playerId) {
     if (!playerId) return;
@@ -1889,7 +1899,29 @@ function setRunnerVisibilityMode(mode = "always") {
   leoidsState.playerMarkers = [];
 
   leoidsState.players.forEach((player) => {
-    if (!player.position) return;
+    let position = player.position;
+
+    if (
+      !position &&
+      player.lat !== null &&
+      player.lat !== undefined &&
+      player.lng !== null &&
+      player.lng !== undefined
+    ) {
+      position = {
+        lat: Number(player.lat),
+        lng: Number(player.lng),
+      };
+
+      player.position = position;
+    }
+
+    if (!position) return;
+
+    const lat = Number(position.lat);
+    const lng = Number(position.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
     if (!shouldShowPlayerOnMap(player)) return;
 
     const isHunter = player.role === "hunter";
@@ -1899,7 +1931,7 @@ function setRunnerVisibilityMode(mode = "always") {
     const color = isJailed ? "#8b8b8b" : isHunter ? "#ff3b3b" : "#22c55e";
     const emoji = getPlayerIcon(player);
 
-    const marker = L.marker([player.position.lat, player.position.lng], {
+    const marker = L.marker([lat, lng], {
       icon: L.divIcon({
         className: "leoids-player-icon",
         html: `
@@ -1923,13 +1955,10 @@ function setRunnerVisibilityMode(mode = "always") {
         iconAnchor: [isLocal ? 20 : 17, isLocal ? 20 : 17],
       }),
     })
-      .bindTooltip(
-        `${emoji} ${player.name} • ${player.role} • ${player.status}`,
-        {
-          permanent: false,
-          direction: "top",
-        }
-      )
+      .bindTooltip(`${emoji} ${player.name} • ${player.role} • ${player.status}`, {
+        permanent: false,
+        direction: "top",
+      })
       .addTo(map);
 
     marker.on("click", () => {
@@ -1964,6 +1993,8 @@ function setRunnerVisibilityMode(mode = "always") {
   speakText?.(`${player.name}. ${player.role}. ${player.status}.`);
 }
 
+
+  
   function clearCircleBoundary() {
     const map = getMapSafe();
 
