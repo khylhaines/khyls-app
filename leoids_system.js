@@ -442,11 +442,11 @@ function checkBoundaryRules() {
     updatePanel();
   }
 
- async function loadOnlinePlayers() {
+async function loadOnlinePlayers() {
   const supabase = getSupabaseSafe();
 
-  if (!supabase?.client) {
-    console.warn("LEOIDS Supabase client not available.");
+  if (!supabase) {
+    console.warn("LEOIDS Supabase module not available.");
     return [];
   }
 
@@ -457,17 +457,30 @@ function checkBoundaryRules() {
     return [];
   }
 
-  const { data, error } = await supabase.client
-    .from("leoids_players")
-    .select("*")
-    .eq("session_id", sessionId);
-
-  if (error) {
-    console.warn("Could not load online players:", error);
-    return [];
+  if (!supabase.sessionId) {
+    supabase.sessionId = sessionId;
   }
 
-  const rows = data || [];
+  let rows = [];
+
+  if (typeof supabase.loadPlayers === "function") {
+    rows = await supabase.loadPlayers();
+  } else if (supabase.client) {
+    const { data, error } = await supabase.client
+      .from("leoids_players")
+      .select("*")
+      .eq("session_id", sessionId);
+
+    if (error) {
+      console.warn("Could not load online players:", error);
+      return [];
+    }
+
+    rows = data || [];
+  } else {
+    console.warn("No valid Supabase player loader available.");
+    return [];
+  }
 
   rows.forEach((row) => {
     upsertOnlinePlayer(row);
@@ -482,7 +495,6 @@ function checkBoundaryRules() {
 
   return rows;
 }
-
 
 async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   const supabase = getSupabaseSafe();
