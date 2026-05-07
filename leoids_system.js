@@ -1915,34 +1915,22 @@ function shouldShowPlayerOnMap(player) {
   // Always show yourself
   if (player.id === local.id) return true;
 
-  // Always show hunters for now
+  // Always show hunters
   if (player.role === "hunter") return true;
 
-  // Runner visibility rules
-  if (player.role === "runner") {
-    if (leoidsState.runnerVisibilityMode === "always") return true;
+  // Hunters must be able to see runners for testing/tagging
+  if (local.role === "hunter" && player.role === "runner") {
+    return true;
+  }
 
-    if (leoidsState.runnerVisibilityMode === "hidden") return false;
-
-    if (leoidsState.runnerVisibilityMode === "hunters_only") {
-      return local.role === "hunter";
-    }
-
-    if (leoidsState.runnerVisibilityMode === "pulse") {
-      const visibleSeconds = Number(leoidsState.runnerVisibleSeconds || 5);
-      const hiddenSeconds = Number(leoidsState.runnerHiddenSeconds || 55);
-      const cycle = visibleSeconds + hiddenSeconds;
-
-      if (cycle <= 0) return false;
-
-      const elapsed = Math.floor(Date.now() / 1000) % cycle;
-
-      return elapsed < visibleSeconds;
-    }
+  // Runners can see other runners for now while we test multiplayer
+  if (local.role === "runner" && player.role === "runner") {
+    return true;
   }
 
   return true;
 }
+
 
 function setRunnerVisibilityMode(mode = "always") {
   const allowed = ["always", "pulse", "hidden", "hunters_only"];
