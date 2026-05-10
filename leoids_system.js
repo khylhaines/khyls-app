@@ -482,59 +482,64 @@ function upsertOnlinePlayer(row) {
   }
 
 async function loadOnlinePlayers() {
+  const firebase = window.firebasePlayers;
   const supabase = getSupabaseSafe();
 
-  if (!supabase) {
-    console.warn("LEOIDS Supabase module not available.");
+  if (!firebase) {
+    console.warn("Firebase players module not available.");
     return [];
   }
 
-  const sessionId = leoidsState.onlineSessionId || supabase.sessionId;
+  const sessionId =
+    leoidsState.onlineSessionId ||
+    supabase?.sessionId ||
+    null;
 
   if (!sessionId) {
-    console.warn("No session ID for loading online players.");
+    console.warn("No session ID for Firebase players.");
     return [];
   }
 
-  if (!supabase.sessionId) {
-    supabase.sessionId = sessionId;
-  }
+  const allPlayers = await new Promise((resolve) => {
+    firebase.watchPlayers((playersObj) => {
+      const rows = Object.values(playersObj || {}).filter((player) => {
+        return player.sessionId === sessionId;
+      });
 
-  let rows = [];
-
-  if (typeof supabase.loadPlayers === "function") {
-    rows = await supabase.loadPlayers();
-  } else if (supabase.client) {
-    const { data, error } = await supabase.client
-      .from("leoids_players")
-      .select("*")
-      .eq("session_id", sessionId);
-
-    if (error) {
-      console.warn("Could not load online players:", error);
-      return [];
-    }
-
-    rows = data || [];
-  } else {
-    console.warn("No valid Supabase player loader available.");
-    return [];
-  }
-
-  rows.forEach((row) => {
-    upsertOnlinePlayer(row);
+      resolve(rows);
+    });
   });
 
-  console.log("ONLINE PLAYERS LOADED", rows);
+  leoidsState.players = leoidsState.players.filter((player) => {
+    return !player.isOnline || player.isLocal;
+  });
+
+  allPlayers.forEach((row) => {
+    upsertOnlinePlayer({
+      id: row.id,
+      display_name: row.name,
+      avatar: row.avatar,
+      role: row.role,
+      status: row.status,
+      score: row.score || 0,
+      coins: row.coins || 0,
+      lat: row.lat,
+      lng: row.lng,
+      last_seen: row.updatedAt,
+    });
+  });
+
+  console.log("FIREBASE ONLINE PLAYERS LOADED", allPlayers);
 
   drawPlayerMarkers?.();
   renderPlayers?.();
   updatePanel?.();
   updateLeoidsBattleHud?.();
 
-  return rows;
+  return allPlayers;
 }
 
+  
 async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   const supabase = getSupabaseSafe();
 
@@ -580,57 +585,75 @@ async function createOnlineSession(name = "Barrow LEOIDS Online Session") {
   return session;
 }
 
- function startOnlinePlayerSync() {
+function startOnlinePlayerSync() {
+  const firebase = window.firebasePlayers;
   const supabase = getSupabaseSafe();
 
-  if (!supabase) {
-    console.warn("LEOIDS Supabase module not loaded.");
+  if (!firebase) {
+    console.warn("Firebase players module not loaded.");
     return false;
   }
 
-  if (!supabase.sessionId && leoidsState.onlineSessionId) {
-    supabase.sessionId = leoidsState.onlineSessionId;
-  }
+  const sessionId =
+    leoidsState.onlineSessionId ||
+    supabase?.sessionId ||
+    null;
 
-  if (!supabase.sessionId) {
-    console.warn("No online session selected.");
+  if (!sessionId) {
+    console.warn("No online session selected for Firebase sync.");
     return false;
   }
 
   leoidsState.onlineEnabled = true;
-  leoidsState.onlineSessionId = supabase.sessionId;
+  leoidsState.onlineSessionId = sessionId;
   leoidsState.onlineSyncStarted = true;
 
-  if (typeof supabase.subscribeToPlayers === "function") {
-    supabase.subscribeToPlayers((payload) => {
-      applyOnlinePlayerPayload(payload);
-      loadOnlinePlayers();
-      drawPlayerMarkers();
-      renderPlayers?.();
-      updatePanel?.();
-      updateLeoidsBattleHud?.();
+  if (leoidsState.firebasePlayersStarted) {
+    return true;
+  }
+
+  leoidsState.firebasePlayersStarted = true;
+
+  firebase.watchPlayers((playersObj) => {
+    const rows = Object.values(playersObj || {}).filter((player) => {
+      return player.sessionId === sessionId;
     });
-  }
 
-  if (leoidsState.onlinePlayerRefreshIntervalId) {
-    clearInterval(leoidsState.onlinePlayerRefreshIntervalId);
-  }
+    leoidsState.players = leoidsState.players.filter((player) => {
+      return !player.isOnline || player.isLocal;
+    });
 
-  loadOnlinePlayers();
+    rows.forEach((row) => {
+      upsertOnlinePlayer({
+        id: row.id,
+        display_name: row.name,
+        avatar: row.avatar,
+        role: row.role,
+        status: row.status,
+        score: row.score || 0,
+        coins: row.coins || 0,
+        lat: row.lat,
+        lng: row.lng,
+        last_seen: row.updatedAt,
+      });
+    });
 
-  leoidsState.onlinePlayerRefreshIntervalId = setInterval(async () => {
-    await loadOnlinePlayers();
-    drawPlayerMarkers();
+    console.log("FIREBASE PLAYERS LIVE", rows);
+
+    drawPlayerMarkers?.();
     renderPlayers?.();
     updatePanel?.();
     updateLeoidsBattleHud?.();
-  }, 2000);
+  });
 
-  console.log("LEOIDS online player sync started.");
-  speakText?.("Online player sync started.");
+  loadOnlinePlayers();
+
+  console.log("LEOIDS Firebase player sync started.");
+  speakText?.("Firebase player sync started.");
 
   return true;
 }
+
 
 async function joinOnlineSession({
   sessionId,
@@ -757,18 +780,29 @@ async function joinOnlineSession({
     console.log("LEOIDS online player sync stopped.");
   }
 
-  async function syncLocalPlayerPosition(position, accuracy = null, heading = null) {
+ async function syncLocalPlayerPosition(position, accuracy = null, heading = null) {
+  const firebase = window.firebasePlayers;
   const supabase = getSupabaseSafe();
   const local = getLocalPlayer();
 
-  if (!supabase?.client || !position) return false;
-
-  const playerId = leoidsState.onlinePlayerId || supabase.playerId;
-
-  if (!playerId) {
-    console.warn("No online player ID for GPS sync.");
+  if (!firebase || !position) {
+    console.warn("Firebase players module not available yet.");
     return false;
   }
+
+  const sessionId =
+    leoidsState.onlineSessionId ||
+    supabase?.sessionId ||
+    "local_test_session";
+
+  const playerId =
+    leoidsState.onlinePlayerId ||
+    supabase?.playerId ||
+    local?.id ||
+    `player_${Date.now()}`;
+
+  leoidsState.onlineSessionId = sessionId;
+  leoidsState.onlinePlayerId = playerId;
 
   const point = {
     lat: Number(position.lat),
@@ -776,7 +810,7 @@ async function joinOnlineSession({
   };
 
   if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) {
-    console.warn("Bad GPS point:", point);
+    console.warn("Bad Firebase GPS point:", point);
     return false;
   }
 
@@ -787,27 +821,31 @@ async function joinOnlineSession({
     local.position = point;
   }
 
-  leoidsState.lastOnlinePositionSyncAt = Date.now();
-
   const payload = {
+    id: playerId,
+    sessionId,
+    name:
+      leoidsState.onlinePlayerName ||
+      supabase?.playerName ||
+      local?.name ||
+      "Player",
+    avatar: local?.avatar || "🧍",
+    role: local?.role || leoidsState.role || "runner",
+    status: local?.status || leoidsState.status || "free",
     lat: point.lat,
     lng: point.lng,
-    status: local?.status || leoidsState.status || "free",
-    role: local?.role || leoidsState.role || "runner",
-    last_seen: new Date().toISOString(),
+    accuracy,
+    heading,
+    online: true,
+    updatedAt: Date.now(),
   };
 
-  const { error } = await supabase.client
-    .from("leoids_players")
-    .update(payload)
-    .eq("id", playerId);
+  await firebase.updatePlayer(`${sessionId}_${playerId}`, payload);
+  firebase.setupDisconnect(`${sessionId}_${playerId}`);
 
-  if (error) {
-    console.warn("GPS position sync failed:", error, payload);
-    return false;
-  }
+  leoidsState.lastOnlinePositionSyncAt = Date.now();
 
-  console.log("GPS SYNC OK", payload);
+  console.log("FIREBASE GPS SYNC OK", payload);
 
   drawPlayerMarkers?.();
   renderPlayers?.();
@@ -816,6 +854,7 @@ async function joinOnlineSession({
 
   return true;
 }
+
 function stopGpsOnlineSync() {
   if (leoidsState.gpsWatchId !== null && leoidsState.gpsWatchId !== undefined) {
     try {
