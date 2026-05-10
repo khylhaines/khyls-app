@@ -2341,7 +2341,7 @@ async function syncPlayerToOnline(player) {
 
 
   
- async function sendRunnerToJail(runner, taggedBy = null) {
+async function sendRunnerToJail(runner, taggedBy = null) {
   if (!runner || runner.role !== "runner") return false;
   if (runner.status === "jailed") return false;
 
@@ -2359,20 +2359,31 @@ async function syncPlayerToOnline(player) {
     taggedBy.score = Number(taggedBy.score || 0) + 50;
     taggedBy.coins = Number(taggedBy.coins || 0) + 10;
 
-    if (
-      taggedBy.isLocal ||
-      taggedBy.id === leoidsState.onlinePlayerId ||
-      !taggedBy.isOnline
-    ) {
+    if (taggedBy.isLocal || taggedBy.id === leoidsState.onlinePlayerId || !taggedBy.isOnline) {
       leoidsState.score = Number(leoidsState.score || 0) + 50;
       leoidsState.coins = Number(leoidsState.coins || 0) + 10;
     }
   }
 
-  await syncPlayerToOnline(runner);
+  const firebase = window.firebasePlayers;
+  const supabase = getSupabaseSafe();
+  const sessionId = leoidsState.onlineSessionId || supabase?.sessionId;
 
-  if (taggedBy) {
-    await syncPlayerToOnline(taggedBy);
+  if (firebase && sessionId && runner.id) {
+    await firebase.updatePlayer(`${sessionId}_${runner.id}`, {
+      id: runner.id,
+      sessionId,
+      name: runner.name || "Runner",
+      avatar: runner.avatar || "🧍",
+      role: "runner",
+      status: "jailed",
+      lat: runner.position?.lat ?? null,
+      lng: runner.position?.lng ?? null,
+      online: true,
+      updatedAt: Date.now(),
+    });
+
+    console.log("FIREBASE TAG SYNC OK", runner.name);
   }
 
   drawPlayerMarkers?.();
@@ -2488,7 +2499,7 @@ async function syncPlayerToOnline(player) {
   return await sendRunnerToJail(runner, local);
 }
 
-  function tagNearestRunner() {
+  async function tagNearestRunner() {
   const local = getLocalPlayer();
 
   if (!local) {
@@ -2571,6 +2582,14 @@ async function syncPlayerToOnline(player) {
 
   const tagRadius = Number(leoidsState.tagRadius || DEFAULT_TAG_RADIUS);
 
+  console.log("TAG CHECK", {
+    hunter: local.name,
+    runner: closestRunner?.name,
+    distance: Math.round(closestDistance),
+    tagRadius,
+    huntersReleased: leoidsState.huntersReleased,
+  });
+
   if (!closestRunner || closestDistance > tagRadius) {
     showLeoidsEvent(
       "NO TAG",
@@ -2583,8 +2602,9 @@ async function syncPlayerToOnline(player) {
     return false;
   }
 
-  return tagSpecificRunner(closestRunner);
+  return await sendRunnerToJail(closestRunner, local);
 }
+
 
  function rescueJailedRunners() {
   const local = getLocalPlayer();
