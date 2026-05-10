@@ -5166,6 +5166,8 @@ function showLeoidsCommandHub() {
   const local = getLocalPlayer();
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
   const isRunner = local?.role === "runner";
+  const isHunter = local?.role === "hunter";
+
   const hostName =
     window.LEOIDSSupabase?.hostName ||
     leoidsState.onlineHostName ||
@@ -5219,10 +5221,7 @@ function showLeoidsCommandHub() {
         </button>
       </div>
 
-      <div style="
-        display:${isHost ? "block" : "none"};
-        margin-top:14px;
-      ">
+      <div style="display:${isHost ? "block" : "none"};margin-top:14px;">
         <button id="btn-command-start-game" type="button" style="
           width:100%;
           min-height:52px;
@@ -5238,24 +5237,35 @@ function showLeoidsCommandHub() {
       </div>
 
       <div style="
-        display:${isHost ? "none" : "block"};
-        margin-top:14px;
-        padding:12px;
-        border-radius:16px;
-        background:rgba(255,255,255,.07);
-        color:#cbd5e1;
-        font-weight:800;
-        text-align:center;
-      ">
-        Waiting for the host to start the game.
-      </div>
-
-      <div style="
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:10px;
         margin-top:14px;
       ">
+        <button id="btn-command-tag" type="button" style="
+          min-height:52px;
+          border-radius:16px;
+          border:none;
+          background:${isHunter ? "#ff3b3b" : "#374151"};
+          color:white;
+          font-weight:1000;
+          opacity:${isHunter ? "1" : ".55"};
+        ">
+          🔴 TAG RUNNER
+        </button>
+
+        <button id="btn-command-release" type="button" style="
+          min-height:52px;
+          border-radius:16px;
+          border:none;
+          background:${isRunner ? "#22c55e" : "#374151"};
+          color:${isRunner ? "#05070b" : "#cbd5e1"};
+          font-weight:1000;
+          opacity:${isRunner ? "1" : ".55"};
+        ">
+          🛡️ RESCUE
+        </button>
+
         <button id="btn-command-leaderboard" type="button" style="
           min-height:48px;
           border-radius:16px;
@@ -5278,17 +5288,6 @@ function showLeoidsCommandHub() {
           ❓ Help
         </button>
 
-        <button id="btn-command-release" type="button" style="
-          min-height:48px;
-          border-radius:16px;
-          border:none;
-          background:${isRunner ? "#22c55e" : "#374151"};
-          color:${isRunner ? "#05070b" : "#cbd5e1"};
-          font-weight:1000;
-        ">
-          🛡️ Rescue
-        </button>
-
         <button id="btn-command-map-refresh" type="button" style="
           min-height:48px;
           border-radius:16px;
@@ -5299,16 +5298,10 @@ function showLeoidsCommandHub() {
         ">
           🗺️ Refresh
         </button>
-      </div>
 
-      <div style="
-        display:${isHost ? "grid" : "none"};
-        grid-template-columns:1fr 1fr;
-        gap:10px;
-        margin-top:10px;
-      ">
         <button id="btn-command-host-setup" type="button" style="
-          min-height:46px;
+          display:${isHost ? "block" : "none"};
+          min-height:48px;
           border-radius:16px;
           border:1px solid rgba(0,212,255,.45);
           background:#111827;
@@ -5317,8 +5310,11 @@ function showLeoidsCommandHub() {
         ">
           ⚙️ Setup
         </button>
+      </div>
 
+      <div style="display:${isHost ? "block" : "none"};margin-top:10px;">
         <button id="btn-command-end-round" type="button" style="
+          width:100%;
           min-height:46px;
           border-radius:16px;
           border:1px solid rgba(255,59,59,.55);
@@ -5326,7 +5322,7 @@ function showLeoidsCommandHub() {
           color:white;
           font-weight:1000;
         ">
-          ⛔ End
+          ⛔ End Round
         </button>
       </div>
     </div>
@@ -5352,6 +5348,29 @@ function showLeoidsCommandHub() {
     startRound();
   });
 
+  document.getElementById("btn-command-tag")?.addEventListener("click", async () => {
+    hideLeoidsCommandHub();
+
+    if (!isHunter) {
+      showLeoidsEvent(
+        "HUNTERS ONLY",
+        "Only hunters can tag runners.",
+        "🔴",
+        "hunter"
+      );
+
+      speakText?.("Only hunters can tag runners.");
+      return;
+    }
+
+    await tagNearestRunner();
+  });
+
+  document.getElementById("btn-command-release")?.addEventListener("click", () => {
+    hideLeoidsCommandHub();
+    tryReleaseJailedRunners();
+  });
+
   document.getElementById("btn-command-leaderboard")?.addEventListener("click", () => {
     hideLeoidsCommandHub();
     openLeoidsLeaderboard();
@@ -5362,14 +5381,10 @@ function showLeoidsCommandHub() {
     openLeoidsInstructions();
   });
 
-  document.getElementById("btn-command-release")?.addEventListener("click", () => {
-    hideLeoidsCommandHub();
-    tryReleaseJailedRunners();
-  });
-
-  document.getElementById("btn-command-map-refresh")?.addEventListener("click", () => {
-    redrawAllMapObjects();
-    drawPlayerMarkers();
+  document.getElementById("btn-command-map-refresh")?.addEventListener("click", async () => {
+    await loadOnlinePlayers?.();
+    redrawAllMapObjects?.();
+    drawPlayerMarkers?.();
     updateLeoidsBattleHud?.();
     speakText?.("Map refreshed.");
   });
@@ -5394,6 +5409,7 @@ function showLeoidsCommandHub() {
     endRound("manual");
   });
 }
+
 
 
   function hideLeoidsCommandHub() {
