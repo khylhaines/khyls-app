@@ -781,28 +781,17 @@ async function joinOnlineSession({
   }
 
  async function syncLocalPlayerPosition(position, accuracy = null, heading = null) {
-  const firebase = window.firebasePlayers;
   const supabase = getSupabaseSafe();
   const local = getLocalPlayer();
 
-  if (!firebase || !position) {
-    console.warn("Firebase players module not available yet.");
+  if (!supabase?.client || !position) return false;
+
+  const playerId = leoidsState.onlinePlayerId || supabase.playerId;
+
+  if (!playerId) {
+    console.warn("No online player ID for GPS sync.");
     return false;
   }
-
-  const sessionId =
-    leoidsState.onlineSessionId ||
-    supabase?.sessionId ||
-    "local_test_session";
-
-  const playerId =
-    leoidsState.onlinePlayerId ||
-    supabase?.playerId ||
-    local?.id ||
-    `player_${Date.now()}`;
-
-  leoidsState.onlineSessionId = sessionId;
-  leoidsState.onlinePlayerId = playerId;
 
   const point = {
     lat: Number(position.lat),
@@ -810,9 +799,36 @@ async function joinOnlineSession({
   };
 
   if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) {
-    console.warn("Bad Firebase GPS point:", point);
+    console.warn("Bad GPS point:", point);
     return false;
   }
+
+  const now = Date.now();
+
+  const lastPoint = leoidsState.lastGpsPoint || null;
+  const lastSyncAt = leoidsState.lastOnlinePositionSyncAt || 0;
+
+  let movedDistance = Infinity;
+
+  if (lastPoint) {
+    movedDistance = distanceMeters(lastPoint, point);
+  }
+
+  const FORCE_SYNC_MS = 5000;
+  const MIN_MOVE_METERS = 2;
+
+  const shouldForceSync =
+    now - lastSyncAt > FORCE_SYNC_MS;
+
+  const shouldSyncMovement =
+    movedDistance >= MIN_MOVE_METERS;
+
+  if (!shouldForceSync && !shouldSyncMovement) {
+    return false;
+  }
+
+  leoidsState.lastGpsPoint = point;
+  leoidsState.lastOnlinePositionSyncAt = now;
 
   if (local) {
     local.id = playerId;
@@ -822,30 +838,36 @@ async function joinOnlineSession({
   }
 
   const payload = {
-    id: playerId,
-    sessionId,
-    name:
-      leoidsState.onlinePlayerName ||
-      supabase?.playerName ||
-      local?.name ||
-      "Player",
-    avatar: local?.avatar || "🧍",
-    role: local?.role || leoidsState.role || "runner",
-    status: local?.status || leoidsState.status || "free",
     lat: point.lat,
     lng: point.lng,
-    accuracy,
-    heading,
-    online: true,
-    updatedAt: Date.now(),
+    accuracy: Number.isFinite(accuracy)
+      ? Math.round(accuracy)
+      : null,
+    heading: Number.isFinite(heading)
+      ? Math.round(heading)
+      : null,
+    status: local?.status || leoidsState.status || "free",
+    role: local?.role || leoidsState.role || "runner",
+    last_seen: new Date().toISOString(),
   };
 
-  await firebase.updatePlayer(`${sessionId}_${playerId}`, payload);
-  firebase.setupDisconnect(`${sessionId}_${playerId}`);
+  const { error } = await supabase.client
+    .from("leoids_players")
+    .update(payload)
+    .eq("id", playerId);
 
-  leoidsState.lastOnlinePositionSyncAt = Date.now();
+  if (error) {
+    console.warn("GPS position sync failed:", error, payload);
+    return false;
+  }
 
-  console.log("FIREBASE GPS SYNC OK", payload);
+  console.log(
+    "GPS SYNC OK",
+    payload,
+    "Moved:",
+    Math.round(movedDistance),
+    "m"
+  );
 
   drawPlayerMarkers?.();
   renderPlayers?.();
