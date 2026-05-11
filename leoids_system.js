@@ -4628,11 +4628,20 @@ async function openOnlineSessionBrowser() {
     const session = await createOnlineSession(name);
     if (!session) return;
 
-    await joinSessionSafely({
-      sessionId: session.id,
-      displayName: hostName,
-      role: leoidsState.role || "runner",
-    });
+   await joinSessionSafely({
+  sessionId: session.id,
+  displayName: hostName,
+  role: "runner",
+});
+
+leoidsState.role = "runner";
+
+const local = getLocalPlayer?.();
+if (local) {
+  local.role = "runner";
+  local.status = "free";
+  local.jailedAtBase = false;
+}
 
     leoidsState.isLobbyHost = true;
     leoidsState.onlineSessionId = session.id;
