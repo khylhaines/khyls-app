@@ -21,7 +21,7 @@ export function createLeoidsSystem({
     active: false,
     role: "runner",
     status: "free",
-
+    playerMarkers: {},
     onlineEnabled: false,
     onlineSessionId: null,
     onlinePlayerId: null,
@@ -1983,86 +1983,90 @@ function setRunnerVisibilityMode(mode = "always") {
 }
 
   
- function drawPlayerMarkers() {
-  const map = getMapSafe();
+function drawPlayerMarkers() {
+  const map = getMapSafe?.();
+
   if (!map) return;
 
-  leoidsState.playerMarkers.forEach((marker) => {
-    try {
-      map.removeLayer(marker);
-    } catch {}
-  });
+  if (!leoidsState.playerMarkers) {
+    leoidsState.playerMarkers = {};
+  }
 
-  leoidsState.playerMarkers = [];
+  const activeIds = new Set();
 
   leoidsState.players.forEach((player) => {
-    let position = player.position;
+    if (!player.position) return;
+
+    const id = String(player.id || player.name);
+
+    activeIds.add(id);
+
+    const latlng = [
+      Number(player.position.lat),
+      Number(player.position.lng),
+    ];
 
     if (
-      !position &&
-      player.lat !== null &&
-      player.lat !== undefined &&
-      player.lng !== null &&
-      player.lng !== undefined
+      !Number.isFinite(latlng[0]) ||
+      !Number.isFinite(latlng[1])
     ) {
-      position = {
-        lat: Number(player.lat),
-        lng: Number(player.lng),
-      };
-
-      player.position = position;
+      return;
     }
 
-    if (!position) return;
+    let color = "#22c55e";
 
-    const lat = Number(position.lat);
-    const lng = Number(position.lng);
+    if (player.role === "hunter") {
+      color = "#ff3b3b";
+    }
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    if (!shouldShowPlayerOnMap(player)) return;
+    if (player.status === "jailed") {
+      color = "#9ca3af";
+    }
 
-    const isHunter = player.role === "hunter";
-    const isJailed = player.status === "jailed";
-    const isLocal = player.isLocal || player.id === leoidsState.onlinePlayerId;
-
-    const color = isJailed ? "#8b8b8b" : isHunter ? "#ff3b3b" : "#22c55e";
-    const emoji = getPlayerIcon(player);
-
-    const marker = L.marker([lat, lng], {
-      icon: L.divIcon({
-        className: "leoids-player-icon",
-        html: `
-          <div style="
-            width:${isLocal ? 40 : 34}px;
-            height:${isLocal ? 40 : 34}px;
-            border-radius:50%;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            background:${color};
-            border:${isLocal ? 4 : 3}px solid white;
-            box-shadow:0 0 ${isLocal ? 22 : 14}px ${color};
-            font-size:${isLocal ? 21 : 18}px;
-            font-weight:900;
-          ">
-            ${emoji}
-          </div>
-        `,
-        iconSize: [isLocal ? 40 : 34, isLocal ? 40 : 34],
-        iconAnchor: [isLocal ? 20 : 17, isLocal ? 20 : 17],
-      }),
-    })
-      .bindTooltip(`${emoji} ${player.name} • ${player.role} • ${player.status}`, {
-        permanent: false,
-        direction: "top",
-      })
-      .addTo(map);
-
-    marker.on("click", () => {
-      handlePlayerMarkerTap(player);
+    const icon = L.divIcon({
+      className: "leoids-player-marker",
+      html: `
+        <div style="
+          width:20px;
+          height:20px;
+          border-radius:50%;
+          background:${color};
+          border:3px solid white;
+          box-shadow:0 0 14px ${color};
+        "></div>
+      `,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
     });
 
-    leoidsState.playerMarkers.push(marker);
+    let marker = leoidsState.playerMarkers[id];
+
+    if (!marker) {
+      marker = L.marker(latlng, {
+        icon,
+        zIndexOffset: player.isLocal ? 1000 : 0,
+      }).addTo(map);
+
+      marker.bindTooltip(
+        `${player.name} (${player.role})`,
+        {
+          permanent: false,
+          direction: "top",
+        }
+      );
+
+      leoidsState.playerMarkers[id] = marker;
+    } else {
+      marker.setLatLng(latlng);
+      marker.setIcon(icon);
+    }
+  });
+
+  Object.keys(leoidsState.playerMarkers).forEach((id) => {
+    if (!activeIds.has(id)) {
+      map.removeLayer(leoidsState.playerMarkers[id]);
+      delete leoidsState.playerMarkers[id];
+    }
   });
 }
 
