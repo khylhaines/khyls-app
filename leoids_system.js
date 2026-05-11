@@ -5400,7 +5400,6 @@ setClick("btn-leoids-start", async () => {
   startOnlinePlayerSync?.();
   startOnlineSessionSync?.();
   loadOnlinePlayers?.();
-
   startGpsOnlineSync?.();
 
   setTimeout(() => {
@@ -5408,27 +5407,29 @@ setClick("btn-leoids-start", async () => {
     drawPlayerMarkers?.();
     showLeoidsBattleHud?.();
     updatePanel?.();
-
-    const map = getMapSafe?.();
-    const local = getLocalPlayer?.();
-
-    if (map && local?.position) {
-      map.setView(
-        [local.position.lat, local.position.lng],
-        Math.max(map.getZoom(), 17)
-      );
-    }
   }, 500);
 
   if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
-    speakText?.("Starting online mission.");
-    await startOnlineCountdown(leoidsState.countdownSeconds || 10);
+    await updateOnlineSession?.({
+      status: "active",
+      round_started_at: new Date().toISOString(),
+    });
+
+    startRoundFromOnlineSession?.({
+      status: "active",
+      round_time: leoidsState.roundTime,
+      hunter_delay: leoidsState.hunterDelay,
+      base_radius: leoidsState.baseRadius,
+      tag_radius: leoidsState.tagRadius,
+    });
+
+    speakText?.("Online mission started.");
     return;
   }
 
-  speakText?.("Starting local mission.");
   startRound();
 });
+
 
 
   setClick("btn-leoids-end", () => {
