@@ -4829,134 +4829,202 @@ function hideLeoidsBattleHud() {
 
 
 function updateLeoidsBattleHud() {
-  const hud = document.getElementById("leoids-battle-hud");
-  if (!hud) return;
+  let hud = document.getElementById("leoids-battle-hud");
 
-  const mapEl = $("map");
-  const setupModal = $("leoids-modal");
+  if (!hud) {
+    hud = document.createElement("div");
+    hud.id = "leoids-battle-hud";
 
-  const setupIsOpen =
-    setupModal &&
-    !setupModal.classList.contains("hidden") &&
-    setupModal.style.display !== "none";
+    hud.style.position = "fixed";
+    hud.style.top = "12px";
+    hud.style.left = "50%";
+    hud.style.transform = "translateX(-50%)";
+    hud.style.zIndex = "999999";
+    hud.style.minWidth = "240px";
+    hud.style.maxWidth = "92vw";
+    hud.style.pointerEvents = "none";
 
-  if (!mapEl || !mapEl.classList.contains("leoids-battle-map") || setupIsOpen) {
-    hideLeoidsBattleHud();
-    return;
+    document.body.appendChild(hud);
   }
 
   const local = getLocalPlayer();
-  const role = (local?.role || leoidsState.role || "runner").toUpperCase();
-  const isHunter = role === "HUNTER";
-  const isJailed = local?.status === "jailed";
 
-  const freeRunners = leoidsState.players.filter(
-    (p) => p.role === "runner" && p.status === "free"
-  ).length;
+  if (!leoidsState.active || !local) {
+    hud.style.display = "none";
+    return;
+  }
 
-  const jailedRunners = leoidsState.players.filter(
-    (p) => p.role === "runner" && p.status === "jailed"
-  ).length;
+  hud.style.display = "block";
 
-  const roleColor = isJailed ? "#9ca3af" : isHunter ? "#ff3b3b" : "#22c55e";
-  const glowColor = isHunter
-    ? "rgba(255,59,59,.55)"
-    : isJailed
-    ? "rgba(156,163,175,.45)"
-    : "rgba(34,197,94,.55)";
+  const roleColor =
+    local.role === "hunter"
+      ? "#ff3b3b"
+      : local.status === "jailed"
+      ? "#9ca3af"
+      : "#22c55e";
+
+  const roleLabel =
+    local.role === "hunter"
+      ? "HUNTER"
+      : local.status === "jailed"
+      ? "JAILED"
+      : "RUNNER";
 
   const statusText = getLeoidsHudStatusText();
 
-  const statusBg =
-    !leoidsState.active
-      ? "#202a3c"
-      : isJailed
-      ? "#6b7280"
-      : isHunter
-      ? "#ff3b3b"
-      : "#22c55e";
+  let nearestDistance = Infinity;
+  let nearestLabel = "NONE";
+
+  leoidsState.players.forEach((player) => {
+    if (
+      !player.position ||
+      !local.position ||
+      player.id === local.id
+    ) {
+      return;
+    }
+
+    if (
+      local.role === "hunter" &&
+      player.role !== "runner"
+    ) {
+      return;
+    }
+
+    if (
+      local.role === "runner" &&
+      player.role !== "hunter"
+    ) {
+      return;
+    }
+
+    const distance = distanceMeters(
+      local.position,
+      player.position
+    );
+
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestLabel = player.name || player.role || "PLAYER";
+    }
+  });
+
+  const nearestText =
+    Number.isFinite(nearestDistance)
+      ? `${Math.round(nearestDistance)}m`
+      : "--";
+
+  const accuracy =
+    Number.isFinite(local.accuracy)
+      ? `${Math.round(local.accuracy)}m`
+      : "--";
 
   hud.innerHTML = `
     <div style="
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:6px;
-      min-height:36px;
-      padding:5px 8px;
+      background:rgba(5,10,18,.92);
       border:2px solid ${roleColor};
-      border-radius:999px;
-      background:linear-gradient(90deg,rgba(5,7,11,.94),rgba(12,18,30,.94));
+      border-radius:20px;
+      padding:12px 16px;
+      box-shadow:0 0 24px ${roleColor}55;
+      backdrop-filter:blur(10px);
       color:white;
-      box-shadow:0 0 14px ${glowColor};
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-      backdrop-filter:blur(8px);
-      white-space:nowrap;
-      overflow:hidden;
+      font-family:system-ui,-apple-system,sans-serif;
     ">
-      <span style="
-        color:#00d4ff;
-        font-weight:1000;
-        font-size:11px;
-        letter-spacing:.08em;
-        padding-left:2px;
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:16px;
       ">
-        LEOIDS
-      </span>
+        <div>
+          <div style="
+            font-size:12px;
+            opacity:.7;
+            letter-spacing:1px;
+          ">
+            ROLE
+          </div>
 
-      <span style="
-        background:${roleColor};
-        color:#05070b;
-        border-radius:999px;
-        padding:3px 8px;
-        font-size:10px;
-        font-weight:1000;
-        letter-spacing:.05em;
-      ">
-        ${role}
-      </span>
+          <div style="
+            font-size:20px;
+            font-weight:1000;
+            color:${roleColor};
+          ">
+            ${roleLabel}
+          </div>
+        </div>
 
-      <span style="
-        font-size:19px;
-        line-height:1;
-        font-weight:1000;
-        color:white;
-        text-shadow:0 0 8px ${glowColor};
-      ">
-        ${formatTime(leoidsState.timeLeft)}
-      </span>
+        <div style="text-align:center;">
+          <div style="
+            font-size:12px;
+            opacity:.7;
+            letter-spacing:1px;
+          ">
+            STATUS
+          </div>
 
-      <span style="
-        background:${statusBg};
-        color:${isHunter || isJailed ? "white" : "#05070b"};
-        border-radius:999px;
-        padding:3px 7px;
-        font-size:10px;
-        font-weight:1000;
-        letter-spacing:.04em;
-      ">
-        ${statusText}
-      </span>
+          <div style="
+            font-size:22px;
+            font-weight:1000;
+          ">
+            ${statusText}
+          </div>
+        </div>
 
-      <span style="
-        color:#22c55e;
-        font-size:10px;
-        font-weight:1000;
-      ">
-        F:${freeRunners}
-      </span>
+        <div style="text-align:right;">
+          <div style="
+            font-size:12px;
+            opacity:.7;
+            letter-spacing:1px;
+          ">
+            GPS
+          </div>
 
-      <span style="
-        color:#9ca3af;
-        font-size:10px;
-        font-weight:1000;
-        padding-right:2px;
+          <div style="
+            font-size:18px;
+            font-weight:900;
+          ">
+            ${accuracy}
+          </div>
+        </div>
+      </div>
+
+      <div style="
+        margin-top:10px;
+        border-top:1px solid rgba(255,255,255,.12);
+        padding-top:10px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
       ">
-        J:${jailedRunners}
-      </span>
+        <div>
+          <div style="
+            font-size:11px;
+            opacity:.65;
+          ">
+            NEAREST
+          </div>
+
+          <div style="
+            font-size:15px;
+            font-weight:900;
+          ">
+            ${nearestLabel}
+          </div>
+        </div>
+
+        <div style="
+          font-size:24px;
+          font-weight:1000;
+          color:${roleColor};
+        ">
+          ${nearestText}
+        </div>
+      </div>
     </div>
   `;
 }
+
 
 
 
