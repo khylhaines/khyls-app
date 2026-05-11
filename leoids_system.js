@@ -4850,16 +4850,13 @@ function updateLeoidsBattleHud() {
   if (!hud) {
     hud = document.createElement("div");
     hud.id = "leoids-battle-hud";
-
     hud.style.position = "fixed";
-    hud.style.top = "12px";
+    hud.style.top = "8px";
     hud.style.left = "50%";
     hud.style.transform = "translateX(-50%)";
     hud.style.zIndex = "999999";
-    hud.style.minWidth = "240px";
-    hud.style.maxWidth = "92vw";
+    hud.style.width = "min(96vw,430px)";
     hud.style.pointerEvents = "none";
-
     document.body.appendChild(hud);
   }
 
@@ -4888,160 +4885,113 @@ function updateLeoidsBattleHud() {
 
   const statusText = getLeoidsHudStatusText();
 
+  const freeRunners = leoidsState.players.filter(
+    (p) => p.role === "runner" && p.status === "free"
+  ).length;
+
+  const jailedRunners = leoidsState.players.filter(
+    (p) => p.role === "runner" && p.status === "jailed"
+  ).length;
+
   let nearestDistance = Infinity;
-  let nearestLabel = "NONE";
 
   leoidsState.players.forEach((player) => {
-    if (
-      !player.position ||
-      !local.position ||
-      player.id === local.id
-    ) {
-      return;
-    }
+    if (!player.position || !local.position || player.id === local.id) return;
 
-    if (
-      local.role === "hunter" &&
-      player.role !== "runner"
-    ) {
-      return;
-    }
+    if (local.role === "hunter" && player.role !== "runner") return;
+    if (local.role === "runner" && player.role !== "hunter") return;
 
-    if (
-      local.role === "runner" &&
-      player.role !== "hunter"
-    ) {
-      return;
-    }
-
-    const distance = distanceMeters(
-      local.position,
-      player.position
-    );
-
-    if (distance < nearestDistance) {
-      nearestDistance = distance;
-      nearestLabel = player.name || player.role || "PLAYER";
-    }
+    const distance = distanceMeters(local.position, player.position);
+    if (distance < nearestDistance) nearestDistance = distance;
   });
 
-  const nearestText =
-    Number.isFinite(nearestDistance)
-      ? `${Math.round(nearestDistance)}m`
-      : "--";
+  const nearestText = Number.isFinite(nearestDistance)
+    ? `${Math.round(nearestDistance)}m`
+    : "--";
 
-  const accuracy =
-    Number.isFinite(local.accuracy)
-      ? `${Math.round(local.accuracy)}m`
-      : "--";
+  const accuracy = Number.isFinite(local.accuracy)
+    ? `${Math.round(local.accuracy)}m`
+    : "--";
+
+  const hunterDelayText = leoidsState.huntersReleased
+    ? "RELEASED"
+    : formatTime(leoidsState.hunterDelayLeft || 0);
 
   hud.innerHTML = `
     <div style="
-      background:rgba(5,10,18,.92);
       border:2px solid ${roleColor};
-      border-radius:20px;
-      padding:12px 16px;
-      box-shadow:0 0 24px ${roleColor}55;
-      backdrop-filter:blur(10px);
+      border-radius:22px;
+      background:linear-gradient(90deg,rgba(5,7,11,.95),rgba(12,18,30,.95));
       color:white;
-      font-family:system-ui,-apple-system,sans-serif;
+      box-shadow:0 0 18px ${roleColor}66;
+      backdrop-filter:blur(10px);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      overflow:hidden;
     ">
       <div style="
         display:flex;
-        justify-content:space-between;
         align-items:center;
-        gap:16px;
+        justify-content:space-between;
+        gap:8px;
+        padding:8px 10px;
+        border-bottom:1px solid rgba(255,255,255,.12);
       ">
-        <div>
-          <div style="
-            font-size:12px;
-            opacity:.7;
-            letter-spacing:1px;
-          ">
-            ROLE
-          </div>
+        <strong style="color:#00d4ff;font-size:12px;letter-spacing:.08em;">LEOIDS</strong>
 
-          <div style="
-            font-size:20px;
-            font-weight:1000;
-            color:${roleColor};
-          ">
-            ${roleLabel}
-          </div>
-        </div>
+        <span style="
+          background:${roleColor};
+          color:${local.role === "hunter" || local.status === "jailed" ? "white" : "#05070b"};
+          border-radius:999px;
+          padding:4px 8px;
+          font-size:10px;
+          font-weight:1000;
+        ">
+          ${roleLabel}
+        </span>
 
-        <div style="text-align:center;">
-          <div style="
-            font-size:12px;
-            opacity:.7;
-            letter-spacing:1px;
-          ">
-            STATUS
-          </div>
+        <span style="font-size:22px;font-weight:1000;">
+          ${formatTime(leoidsState.timeLeft || 0)}
+        </span>
 
-          <div style="
-            font-size:22px;
-            font-weight:1000;
-          ">
-            ${statusText}
-          </div>
-        </div>
-
-        <div style="text-align:right;">
-          <div style="
-            font-size:12px;
-            opacity:.7;
-            letter-spacing:1px;
-          ">
-            GPS
-          </div>
-
-          <div style="
-            font-size:18px;
-            font-weight:900;
-          ">
-            ${accuracy}
-          </div>
-        </div>
+        <span style="
+          background:#202a3c;
+          border-radius:999px;
+          padding:4px 8px;
+          font-size:10px;
+          font-weight:1000;
+        ">
+          ${statusText}
+        </span>
       </div>
 
       <div style="
-        margin-top:10px;
-        border-top:1px solid rgba(255,255,255,.12);
-        padding-top:10px;
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        gap:6px;
+        padding:8px 10px;
+        font-size:11px;
+        text-align:center;
       ">
         <div>
-          <div style="
-            font-size:11px;
-            opacity:.65;
-          ">
-            NEAREST
-          </div>
-
-          <div style="
-            font-size:15px;
-            font-weight:900;
-          ">
-            ${nearestLabel}
-          </div>
+          <div style="opacity:.65;">HUNTERS</div>
+          <strong>${hunterDelayText}</strong>
         </div>
 
-        <div style="
-          font-size:24px;
-          font-weight:1000;
-          color:${roleColor};
-        ">
-          ${nearestText}
+        <div>
+          <div style="opacity:.65;">RUNNERS</div>
+          <strong style="color:#22c55e;">F:${freeRunners}</strong>
+          <strong style="color:#9ca3af;margin-left:4px;">J:${jailedRunners}</strong>
+        </div>
+
+        <div>
+          <div style="opacity:.65;">NEAREST / GPS</div>
+          <strong>${nearestText}</strong>
+          <span style="opacity:.75;"> / ${accuracy}</span>
         </div>
       </div>
     </div>
   `;
 }
-
-
 
 
 async function quickStartLeoidsGame() {
