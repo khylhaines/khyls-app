@@ -1994,6 +1994,57 @@ function drawPlayerMarkers() {
 
   const activeIds = new Set();
 
+  function animateMarkerTo(marker, targetLatLng) {
+    const startLatLng = marker.getLatLng();
+    const startLat = Number(startLatLng.lat);
+    const startLng = Number(startLatLng.lng);
+    const endLat = Number(targetLatLng[0]);
+    const endLng = Number(targetLatLng[1]);
+
+    if (
+      !Number.isFinite(startLat) ||
+      !Number.isFinite(startLng) ||
+      !Number.isFinite(endLat) ||
+      !Number.isFinite(endLng)
+    ) {
+      marker.setLatLng(targetLatLng);
+      return;
+    }
+
+    const distance = distanceMeters(
+      { lat: startLat, lng: startLng },
+      { lat: endLat, lng: endLng }
+    );
+
+    if (distance > 80) {
+      marker.setLatLng(targetLatLng);
+      return;
+    }
+
+    const duration = 900;
+    const startedAt = performance.now();
+
+    if (marker.__leoidsMoveFrame) {
+      cancelAnimationFrame(marker.__leoidsMoveFrame);
+    }
+
+    function step(now) {
+      const t = Math.min(1, (now - startedAt) / duration);
+      const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+      const lat = startLat + (endLat - startLat) * eased;
+      const lng = startLng + (endLng - startLng) * eased;
+
+      marker.setLatLng([lat, lng]);
+
+      if (t < 1) {
+        marker.__leoidsMoveFrame = requestAnimationFrame(step);
+      }
+    }
+
+    marker.__leoidsMoveFrame = requestAnimationFrame(step);
+  }
+
   leoidsState.players.forEach((player) => {
     if (!player.position) return;
 
@@ -2023,20 +2074,31 @@ function drawPlayerMarkers() {
       color = "#9ca3af";
     }
 
+    const size = player.isLocal ? 26 : 22;
+    const glow = player.isLocal ? 22 : 14;
+
     const icon = L.divIcon({
       className: "leoids-player-marker",
       html: `
         <div style="
-          width:20px;
-          height:20px;
+          width:${size}px;
+          height:${size}px;
           border-radius:50%;
           background:${color};
           border:3px solid white;
-          box-shadow:0 0 14px ${color};
-        "></div>
+          box-shadow:0 0 ${glow}px ${color};
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          color:white;
+          font-size:12px;
+          font-weight:1000;
+        ">
+          ${player.role === "hunter" ? "H" : player.status === "jailed" ? "J" : "R"}
+        </div>
       `,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
     });
 
     let marker = leoidsState.playerMarkers[id];
@@ -2048,23 +2110,38 @@ function drawPlayerMarkers() {
       }).addTo(map);
 
       marker.bindTooltip(
-        `${player.name} (${player.role})`,
+        `${player.name || "Player"} • ${player.role} • ${player.status}`,
         {
           permanent: false,
           direction: "top",
         }
       );
 
+      marker.on("click", () => {
+        handlePlayerMarkerTap?.(player);
+      });
+
       leoidsState.playerMarkers[id] = marker;
     } else {
-      marker.setLatLng(latlng);
       marker.setIcon(icon);
+
+      marker.setTooltipContent?.(
+        `${player.name || "Player"} • ${player.role} • ${player.status}`
+      );
+
+      animateMarkerTo(marker, latlng);
     }
   });
 
   Object.keys(leoidsState.playerMarkers).forEach((id) => {
     if (!activeIds.has(id)) {
-      map.removeLayer(leoidsState.playerMarkers[id]);
+      const marker = leoidsState.playerMarkers[id];
+
+      if (marker.__leoidsMoveFrame) {
+        cancelAnimationFrame(marker.__leoidsMoveFrame);
+      }
+
+      map.removeLayer(marker);
       delete leoidsState.playerMarkers[id];
     }
   });
