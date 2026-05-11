@@ -3958,39 +3958,29 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
 
   modal.innerHTML = `
     <div style="
-      width:min(94vw,560px);
+      width:min(94vw,520px);
       max-height:88vh;
       overflow:auto;
       border:2px solid rgba(0,212,255,.85);
       border-radius:28px;
       background:linear-gradient(180deg,#101827,#05070b);
       color:white;
-      padding:22px;
+      padding:20px;
       box-shadow:0 0 38px rgba(0,212,255,.25);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     ">
-      <h2 id="leoids-lobby-title" style="margin:0;color:#00d4ff;">LEOIDS Lobby</h2>
+      <h2 id="leoids-lobby-title" style="margin:0;color:#00d4ff;text-align:center;">
+        LEOIDS LOBBY
+      </h2>
 
-      <div id="leoids-lobby-host" style="opacity:.85;margin-top:8px;">
+      <div id="leoids-lobby-host" style="opacity:.85;margin-top:8px;text-align:center;font-size:13px;">
         Host: loading...
-      </div>
-
-      <div id="leoids-lobby-host-badge" style="
-        display:none;
-        margin-top:10px;
-        padding:10px;
-        border-radius:14px;
-        background:rgba(255,213,74,.12);
-        color:#ffd54a;
-        font-weight:1000;
-        text-align:center;
-      ">
-        HOST CONTROLS ENABLED
       </div>
 
       <div id="leoids-lobby-status" style="
         margin-top:12px;
         padding:12px;
-        border-radius:14px;
+        border-radius:16px;
         background:rgba(0,212,255,.12);
         color:#00d4ff;
         font-weight:1000;
@@ -3999,46 +3989,51 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
         Loading lobby...
       </div>
 
-      <div style="margin-top:18px;">
-        <h3 style="margin:0 0 8px;color:#00d4ff;">Players</h3>
-        <div id="leoids-lobby-player-list">
-          <div style="opacity:.75;margin-top:10px;">Loading players...</div>
-        </div>
-      </div>
+      <button id="btn-leoids-lobby-gps" type="button" style="
+        width:100%;
+        min-height:58px;
+        border-radius:20px;
+        background:#22c55e;
+        color:#05070b;
+        font-weight:1000;
+        font-size:16px;
+        margin-top:16px;
+        border:none;
+        box-shadow:0 0 24px rgba(34,197,94,.42);
+      ">
+        📍 START LOCATION & ENTER GAME
+      </button>
 
-      <div id="leoids-host-controls" style="display:none;margin-top:18px;">
-        <h3 style="margin:0 0 8px;color:#ffd54a;">Host Controls</h3>
-
+      <div id="leoids-host-controls" style="display:none;margin-top:12px;">
         <button id="btn-leoids-lobby-start-countdown" type="button" style="
           width:100%;
-          min-height:46px;
-          border-radius:14px;
+          min-height:52px;
+          border-radius:18px;
           background:#ffd54a;
           color:#05070b;
           font-weight:1000;
-          margin-top:8px;
           border:none;
         ">
-          START GAME COUNTDOWN
+          🚀 START MISSION
         </button>
 
         <button id="btn-leoids-lobby-host-setup" type="button" style="
           width:100%;
-          min-height:44px;
-          border-radius:14px;
+          min-height:46px;
+          border-radius:16px;
           background:#202a3c;
           color:white;
           font-weight:900;
           margin-top:10px;
           border:none;
         ">
-          HOST SETUP / EDIT GAME
+          ⚙️ MISSION SETUP
         </button>
 
         <button id="btn-leoids-lobby-end-session" type="button" style="
           width:100%;
           min-height:42px;
-          border-radius:14px;
+          border-radius:16px;
           background:#3a1111;
           color:white;
           font-weight:900;
@@ -4049,83 +4044,72 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
         </button>
       </div>
 
-      <div style="margin-top:18px;">
-        <h3 style="margin:0 0 8px;color:#00d4ff;">Location</h3>
-
-        <button id="btn-leoids-lobby-gps" type="button" style="
-          width:100%;
-          min-height:46px;
-          border-radius:14px;
-          background:#00d4ff;
-          color:#05070b;
-          font-weight:1000;
-          margin-top:8px;
-          border:none;
-        ">
-          START LOCATION & OPEN GAME MAP
-        </button>
-      </div>
-
-      <div style="margin-top:18px;">
-        <h3 style="margin:0 0 8px;color:#00d4ff;">Prepare</h3>
-
+      <div style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-top:14px;
+      ">
         <button id="btn-leoids-lobby-runner" type="button" style="
-          width:100%;
-          min-height:44px;
-          border-radius:14px;
+          min-height:46px;
+          border-radius:16px;
           background:#22c55e;
           color:#05070b;
           font-weight:1000;
-          margin-top:8px;
           border:none;
         ">
-          PLAY AS RUNNER
+          🟢 RUNNER
         </button>
 
         <button id="btn-leoids-lobby-hunter" type="button" style="
-          width:100%;
-          min-height:44px;
-          border-radius:14px;
+          min-height:46px;
+          border-radius:16px;
           background:#ff3b3b;
           color:white;
           font-weight:1000;
-          margin-top:8px;
           border:none;
         ">
-          PLAY AS HUNTER
-        </button>
-
-        <button id="btn-leoids-lobby-help" type="button" style="
-          width:100%;
-          min-height:44px;
-          border-radius:14px;
-          background:#202a3c;
-          color:white;
-          font-weight:900;
-          margin-top:12px;
-          border:none;
-        ">
-          HELP / RULES / ITEMS
+          🔴 HUNTER
         </button>
       </div>
 
+      <div style="margin-top:16px;">
+        <h3 style="margin:0 0 8px;color:#00d4ff;">Players</h3>
+        <div id="leoids-lobby-player-list">
+          <div style="opacity:.75;margin-top:10px;">Loading players...</div>
+        </div>
+      </div>
+
+      <button id="btn-leoids-lobby-help" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:16px;
+        background:#202a3c;
+        color:white;
+        font-weight:900;
+        margin-top:14px;
+        border:none;
+      ">
+        ❓ HELP / RULES
+      </button>
+
       <button id="btn-leoids-lobby-map" type="button" style="
         width:100%;
-        min-height:46px;
-        border-radius:14px;
+        min-height:44px;
+        border-radius:16px;
         background:#00d4ff;
         color:#05070b;
         font-weight:1000;
-        margin-top:18px;
+        margin-top:10px;
         border:none;
       ">
-        OPEN GAME MAP
+        🗺️ OPEN MAP ONLY
       </button>
 
       <button id="btn-leoids-lobby-close" type="button" style="
         width:100%;
-        min-height:44px;
-        border-radius:14px;
+        min-height:42px;
+        border-radius:16px;
         background:#111827;
         color:white;
         font-weight:900;
@@ -4155,17 +4139,12 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
     const status = document.getElementById("leoids-lobby-status");
     const playerList = document.getElementById("leoids-lobby-player-list");
     const hostControls = document.getElementById("leoids-host-controls");
-    const hostBadge = document.getElementById("leoids-lobby-host-badge");
 
     if (title) title.innerText = session?.name || "LEOIDS Lobby";
     if (host) host.innerText = `Host: ${session?.host_name || "Unknown"}`;
 
     if (hostControls) {
       hostControls.style.display = leoidsState.isLobbyHost ? "block" : "none";
-    }
-
-    if (hostBadge) {
-      hostBadge.style.display = leoidsState.isLobbyHost ? "block" : "none";
     }
 
     if (status) {
@@ -4177,34 +4156,30 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
 
         status.innerText = `Starting in ${secondsLeft}s`;
       } else if (session?.status === "active") {
-        status.innerText = "Game active";
+        status.innerText = "Mission active";
       } else {
         status.innerText = leoidsState.isLobbyHost
-          ? "Waiting in lobby • You can start the game"
+          ? "You are host • Set up or start the mission"
           : "Waiting for host to start";
       }
     }
 
     if (playerList) {
       playerList.innerHTML = players.length
-        ? players
-            .map(
-              (player) => `
-                <div style="
-                  display:flex;
-                  justify-content:space-between;
-                  gap:10px;
-                  padding:10px;
-                  border-radius:12px;
-                  background:rgba(255,255,255,.07);
-                  margin-top:8px;
-                ">
-                  <span>${player.avatar || "🧍"} ${player.display_name || "Player"}</span>
-                  <strong>${(player.role || "runner").toUpperCase()}</strong>
-                </div>
-              `
-            )
-            .join("")
+        ? players.map((player) => `
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            gap:10px;
+            padding:10px;
+            border-radius:12px;
+            background:rgba(255,255,255,.07);
+            margin-top:8px;
+          ">
+            <span>${player.avatar || "🧍"} ${player.display_name || "Player"}</span>
+            <strong>${(player.role || "runner").toUpperCase()}</strong>
+          </div>
+        `).join("")
         : `<div style="opacity:.75;margin-top:10px;">No players yet.</div>`;
     }
 
@@ -4212,6 +4187,164 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
       applyOnlineSessionConfig(session);
     }
   }
+
+  function closeLobbyScreen() {
+    if (leoidsState.lobbyRefreshIntervalId) {
+      clearInterval(leoidsState.lobbyRefreshIntervalId);
+      leoidsState.lobbyRefreshIntervalId = null;
+    }
+
+    modal.remove();
+  }
+
+  async function openGameMapFromLobby({ startLocation = false } = {}) {
+    closeLobbyScreen();
+
+    leoidsState.onlineEnabled = true;
+
+    enterBattleMap();
+    hideLeoidsMapControls();
+    closeModal?.("leoids-modal");
+
+    await loadAndApplyOnlineSession?.();
+    startOnlinePlayerSync?.();
+    startOnlineSessionSync?.();
+    await loadOnlinePlayers?.();
+
+    if (startLocation) {
+      startGpsOnlineSync();
+      speakText?.("Location sharing started. Game map opened.");
+    } else {
+      speakText?.("Game map opened.");
+    }
+
+    setTimeout(() => {
+      redrawAllMapObjects?.();
+      drawPlayerMarkers?.();
+      showLeoidsBattleHud?.();
+
+      const map = getMapSafe?.();
+      const local = getLocalPlayer?.();
+
+      if (map && local?.position) {
+        map.setView([local.position.lat, local.position.lng], Math.max(map.getZoom(), 17));
+      } else if (map && leoidsState.basePoint) {
+        map.setView([leoidsState.basePoint.lat, leoidsState.basePoint.lng], Math.max(map.getZoom(), 17));
+      }
+    }, 500);
+  }
+
+  await refreshLobbyScreen();
+
+  if (leoidsState.lobbyRefreshIntervalId) {
+    clearInterval(leoidsState.lobbyRefreshIntervalId);
+  }
+
+  leoidsState.lobbyRefreshIntervalId = setInterval(() => {
+    refreshLobbyScreen();
+    drawPlayerMarkers?.();
+  }, 2000);
+
+  startOnlinePlayerSync?.();
+  startOnlineSessionSync?.();
+
+  document.getElementById("btn-leoids-lobby-close")?.addEventListener("click", closeLobbyScreen);
+
+  document.getElementById("btn-leoids-lobby-map")?.addEventListener("click", () => {
+    openGameMapFromLobby({ startLocation: false });
+  });
+
+  document.getElementById("btn-leoids-lobby-gps")?.addEventListener("click", () => {
+    openGameMapFromLobby({ startLocation: true });
+  });
+
+  document.getElementById("btn-leoids-lobby-help")?.addEventListener("click", () => {
+    openLeoidsInstructions?.();
+  });
+
+  document.getElementById("btn-leoids-lobby-start-countdown")?.addEventListener("click", async () => {
+    const session = await supabase.getSession(leoidsState.onlineSessionId);
+
+    if (!isLocalLobbyHost(session)) {
+      alert("Only the host can start the mission.");
+      return;
+    }
+
+    await saveOnlineSessionConfig?.();
+    await startOnlineCountdown(leoidsState.countdownSeconds || 10);
+
+    refreshLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-lobby-host-setup")?.addEventListener("click", async () => {
+    const session = await supabase.getSession(leoidsState.onlineSessionId);
+
+    if (!isLocalLobbyHost(session)) {
+      alert("Only the host can edit mission setup.");
+      return;
+    }
+
+    closeLobbyScreen();
+
+    setTimeout(() => {
+      openSetupPanel?.();
+    }, 120);
+  });
+
+  document.getElementById("btn-leoids-lobby-end-session")?.addEventListener("click", async () => {
+    const session = await supabase.getSession(leoidsState.onlineSessionId);
+
+    if (!isLocalLobbyHost(session)) {
+      alert("Only the host can end this lobby.");
+      return;
+    }
+
+    if (!confirm("End and hide this lobby?")) return;
+
+    if (typeof supabase.endSession === "function") {
+      await supabase.endSession(leoidsState.onlineSessionId);
+    } else if (supabase.client) {
+      await supabase.client
+        .from("leoids_sessions")
+        .update({
+          ended_at: new Date().toISOString(),
+          status: "ended",
+        })
+        .eq("id", leoidsState.onlineSessionId);
+    }
+
+    closeLobbyScreen();
+    speakText?.("Lobby ended.");
+  });
+
+  document.getElementById("btn-leoids-lobby-runner")?.addEventListener("click", async () => {
+    setRole("runner");
+
+    if (supabase.playerId) {
+      await supabase.joinSession({
+        sessionId: leoidsState.onlineSessionId,
+        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        role: "runner",
+      });
+    }
+
+    refreshLobbyScreen();
+  });
+
+  document.getElementById("btn-leoids-lobby-hunter")?.addEventListener("click", async () => {
+    setRole("hunter");
+
+    if (supabase.playerId) {
+      await supabase.joinSession({
+        sessionId: leoidsState.onlineSessionId,
+        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        role: "hunter",
+      });
+    }
+
+    refreshLobbyScreen();
+  });
+}
 
   function closeLobbyScreen() {
     if (leoidsState.lobbyRefreshIntervalId) {
