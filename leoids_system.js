@@ -4762,6 +4762,10 @@ function getLeoidsHudStatusText() {
 
   if (local?.status === "jailed") return "JAILED";
 
+  if (Number(local?.accuracy || 0) > 35) {
+    return "GPS WEAK";
+  }
+
   if (!leoidsState.huntersReleased) {
     return local?.role === "hunter" ? "LOCKED" : "HIDE";
   }
@@ -4797,6 +4801,7 @@ function getLeoidsHudStatusText() {
 
   return local?.role === "hunter" ? "CHASE" : "SURVIVE";
 }
+
 
 
 function showLeoidsBattleHud() {
