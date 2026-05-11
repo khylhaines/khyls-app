@@ -5590,6 +5590,29 @@ function showLeoidsCommandHub() {
     startRound();
   });
 
+
+document.getElementById("btn-leoids-open-setup")
+?.addEventListener("click", () => {
+
+  const ids = [
+    "leoids-boundary-card",
+    "leoids-jail-card",
+    "leoids-round-card"
+  ];
+
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+
+    if (!el) return;
+
+    el.style.display =
+      el.style.display === "none"
+        ? "block"
+        : "none";
+  });
+});
+
+  
   document.getElementById("btn-command-tag")?.addEventListener("click", async () => {
     hideLeoidsCommandHub();
 
