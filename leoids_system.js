@@ -1336,15 +1336,24 @@ function enterBattleMap() {
   leoidsState.mapOpen = true;
 
   const mapEl = $("map");
+
   if (mapEl) {
     mapEl.classList.add("leoids-battle-map");
   }
 
   document.body.classList.add("leoids-mode-active");
 
-  hideBottomSheet?.();
-  hideActionButton?.();
-  closeModal?.("leoids-modal");
+  if (typeof hideBottomSheet === "function") {
+    hideBottomSheet();
+  }
+
+  if (typeof hideActionButton === "function") {
+    hideActionButton(false);
+  }
+
+  if (typeof closeModal === "function") {
+    closeModal("leoids-modal");
+  }
 
   redrawAllMapObjects?.();
   drawPlayerMarkers?.();
@@ -1354,7 +1363,6 @@ function enterBattleMap() {
     updateLeoidsBattleHud?.();
   }, 120);
 }
-
 function exitBattleMap() {
   leoidsState.mapOpen = false;
 
