@@ -4298,18 +4298,22 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
     refreshLobbyScreen();
   });
 
-  document.getElementById("btn-leoids-lobby-host-setup")?.addEventListener("click", async () => {
-    const session = await supabase.getSession(leoidsState.onlineSessionId);
+ document.getElementById("btn-leoids-lobby-host-setup")?.addEventListener("click", async () => {
+  const session = await supabase.getSession(leoidsState.onlineSessionId);
 
-    if (!isLocalLobbyHost(session)) {
-      alert("Only the host can edit game setup.");
-      return;
-    }
+  if (!isLocalLobbyHost(session)) {
+    alert("Only the host can edit mission setup.");
+    return;
+  }
 
-    closeLobbyScreen();
+  closeLobbyScreen();
+
+  closeModal?.("leoids-modal");
+
+  setTimeout(() => {
     openSetupPanel();
-  });
-
+  }, 120);
+});
   document.getElementById("btn-leoids-lobby-end-session")?.addEventListener("click", async () => {
     const session = await supabase.getSession(leoidsState.onlineSessionId);
 
