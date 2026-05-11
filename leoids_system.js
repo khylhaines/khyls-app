@@ -1333,50 +1333,46 @@ function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
   }
 
 function enterBattleMap() {
-  showActionButton?.(false);
+  leoidsState.mapOpen = true;
 
   const mapEl = $("map");
   if (mapEl) {
     mapEl.classList.add("leoids-battle-map");
   }
 
-  const menuBtn = $("leoids-menu-btn");
-  if (menuBtn) {
-    menuBtn.classList.remove("hidden");
-    menuBtn.innerText = "⚡";
-    menuBtn.title = "LEOIDS Command Hub";
+  document.body.classList.add("leoids-mode-active");
 
-    menuBtn.onclick = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      toggleLeoidsCommandHub?.();
-    };
-  }
+  hideBottomSheet?.();
+  hideActionButton?.();
+  closeModal?.("leoids-modal");
 
-  refreshAllPinMarkers?.();
   redrawAllMapObjects?.();
-  showLeoidsBattleHud?.();
-  updatePanel?.();
+  drawPlayerMarkers?.();
+
+  setTimeout(() => {
+    showLeoidsBattleHud?.();
+    updateLeoidsBattleHud?.();
+  }, 120);
 }
 
 function exitBattleMap() {
+  leoidsState.mapOpen = false;
+
   const mapEl = $("map");
   if (mapEl) {
     mapEl.classList.remove("leoids-battle-map");
   }
 
-  const menuBtn = $("leoids-menu-btn");
-  if (menuBtn) {
-    menuBtn.classList.add("hidden");
-    menuBtn.onclick = null;
-  }
+  document.body.classList.remove("leoids-mode-active");
 
-  hideLeoidsMapControls?.();
+  hideLeoidsBattleHud?.();
+  hideLeoidsCommandHub?.();
+
   showActionButton?.(true);
 
-  updatePanel?.();
+  redrawAllMapObjects?.();
 }
-
+  
 function openSetupPanel() {
   hideLeoidsBattleHud?.();
   hideLeoidsCommandHub?.();
