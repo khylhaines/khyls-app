@@ -4342,32 +4342,70 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
     speakText?.("Lobby ended.");
   });
 
-  document.getElementById("btn-leoids-lobby-runner")?.addEventListener("click", async () => {
-    setRole("runner");
+document.getElementById("btn-leoids-lobby-runner")
+  ?.addEventListener("click", async () => {
+    leoidsState.role = "runner";
+
+    const local = getLocalPlayer?.();
+    if (local) {
+      local.role = "runner";
+      local.status = "free";
+      local.jailedAtBase = false;
+    }
 
     if (supabase.playerId) {
       await supabase.joinSession({
         sessionId: leoidsState.onlineSessionId,
-        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        displayName:
+          supabase.playerName ||
+          leoidsState.onlinePlayerName ||
+          "Player",
         role: "runner",
       });
     }
 
-    refreshLobbyScreen();
+    const runnerBtn = document.getElementById("btn-leoids-lobby-runner");
+    const hunterBtn = document.getElementById("btn-leoids-lobby-hunter");
+
+    if (runnerBtn) runnerBtn.innerText = "🟢 RUNNER SELECTED";
+    if (hunterBtn) hunterBtn.innerText = "🔴 HUNTER";
+
+    speakText?.("Runner selected.");
+
+    await refreshLobbyScreen();
   });
 
-  document.getElementById("btn-leoids-lobby-hunter")?.addEventListener("click", async () => {
-    setRole("hunter");
+document.getElementById("btn-leoids-lobby-hunter")
+  ?.addEventListener("click", async () => {
+    leoidsState.role = "hunter";
+
+    const local = getLocalPlayer?.();
+    if (local) {
+      local.role = "hunter";
+      local.status = "free";
+      local.jailedAtBase = false;
+    }
 
     if (supabase.playerId) {
       await supabase.joinSession({
         sessionId: leoidsState.onlineSessionId,
-        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
+        displayName:
+          supabase.playerName ||
+          leoidsState.onlinePlayerName ||
+          "Player",
         role: "hunter",
       });
     }
 
-    refreshLobbyScreen();
+    const runnerBtn = document.getElementById("btn-leoids-lobby-runner");
+    const hunterBtn = document.getElementById("btn-leoids-lobby-hunter");
+
+    if (runnerBtn) runnerBtn.innerText = "🟢 RUNNER";
+    if (hunterBtn) hunterBtn.innerText = "🔴 HUNTER SELECTED";
+
+    speakText?.("Hunter selected.");
+
+    await refreshLobbyScreen();
   });
 }
 
