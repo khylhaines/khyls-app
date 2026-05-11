@@ -4276,20 +4276,41 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
     refreshLobbyScreen();
   });
 
-  document.getElementById("btn-leoids-lobby-host-setup")?.addEventListener("click", async () => {
-    const session = await supabase.getSession(leoidsState.onlineSessionId);
+ document.getElementById("btn-leoids-lobby-host-setup")
+  ?.addEventListener("click", async () => {
+    try {
+      const session = await supabase.getSession(leoidsState.onlineSessionId);
 
-    if (!isLocalLobbyHost(session)) {
-      alert("Only the host can edit mission setup.");
-      return;
+      if (!isLocalLobbyHost(session)) {
+        alert("Only the host can edit mission setup.");
+        return;
+      }
+
+      closeLobbyScreen();
+
+      setTimeout(() => {
+        const setupModal = document.getElementById("leoids-modal");
+
+        if (setupModal) {
+          setupModal.classList.remove("hidden");
+          setupModal.style.display = "block";
+        }
+
+        if (typeof openSetupPanel === "function") {
+          openSetupPanel();
+        } else {
+          showModal?.("leoids-modal");
+          wirePanelButtons?.();
+          refreshBoundaryButtons?.();
+          updatePanel?.();
+        }
+      }, 150);
+    } catch (err) {
+      console.error("Mission setup open failed:", err);
+      alert("Mission setup failed. Check console.");
     }
-
-    closeLobbyScreen();
-
-    setTimeout(() => {
-      openSetupPanel?.();
-    }, 120);
   });
+
 
   document.getElementById("btn-leoids-lobby-end-session")?.addEventListener("click", async () => {
     const session = await supabase.getSession(leoidsState.onlineSessionId);
