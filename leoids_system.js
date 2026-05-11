@@ -780,7 +780,7 @@ async function joinOnlineSession({
     console.log("LEOIDS online player sync stopped.");
   }
 
- async function syncLocalPlayerPosition(position, accuracy = null, heading = null) {
+async function syncLocalPlayerPosition(position, accuracy = null, heading = null) {
   const firebase = window.firebasePlayers;
   const supabase = getSupabaseSafe();
   const local = getLocalPlayer();
@@ -866,18 +866,27 @@ async function joinOnlineSession({
   await firebase.updatePlayer(`${sessionId}_${playerId}`, payload);
   firebase.setupDisconnect(`${sessionId}_${playerId}`);
 
+  drawPlayerMarkers?.();
+
+  const map = getMapSafe?.();
+  if (map && leoidsState.followMe !== false) {
+    map.panTo([point.lat, point.lng], {
+      animate: true,
+      duration: 0.7,
+    });
+  }
+
+  renderPlayers?.();
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
+
   console.log(
-    "FIREBASE GPS SYNC OK",
+    "FIREBASE GPS SYNC OK + FOLLOW",
     payload,
     "Moved:",
     Math.round(movedDistance),
     "m"
   );
-
-  drawPlayerMarkers?.();
-  renderPlayers?.();
-  updatePanel?.();
-  updateLeoidsBattleHud?.();
 
   return true;
 }
