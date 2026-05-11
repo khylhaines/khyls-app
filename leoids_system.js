@@ -5293,6 +5293,25 @@ function wirePanelButtons() {
   setClick("btn-leoids-close-x", closeSetupPanel);
 
   setClick("btn-leoids-browse-games", openOnlineSessionBrowser);
+setClick("btn-leoids-open-setup", () => {
+  const ids = [
+    "leoids-boundary-card",
+    "leoids-jail-card",
+    "leoids-round-card"
+  ];
+
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.style.display =
+      el.style.display === "none"
+        ? "block"
+        : "none";
+  });
+
+  speakText?.("Mission setup opened.");
+});
 
   setClick("btn-leoids-runner", () => setRole("runner"));
   setClick("btn-leoids-hunter", () => setRole("hunter"));
