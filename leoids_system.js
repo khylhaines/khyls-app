@@ -4757,8 +4757,38 @@ function getLeoidsHudStatusText() {
     return local?.role === "hunter" ? "LOCKED" : "HIDE";
   }
 
+  if (local?.role === "hunter" && local.position) {
+    const runners = leoidsState.players.filter(
+      (player) =>
+        player.role === "runner" &&
+        player.status === "free" &&
+        player.id !== local.id &&
+        player.position
+    );
+
+    let closestDistance = Infinity;
+
+    runners.forEach((runner) => {
+      const distance = distanceMeters(local.position, runner.position);
+      if (distance < closestDistance) closestDistance = distance;
+    });
+
+    const tagRadius = Number(leoidsState.tagRadius || DEFAULT_TAG_RADIUS);
+
+    if (closestDistance <= tagRadius) {
+      return "TAG READY";
+    }
+
+    if (closestDistance <= tagRadius * 2) {
+      return `${Math.round(closestDistance)}M`;
+    }
+
+    return "CHASE";
+  }
+
   return local?.role === "hunter" ? "CHASE" : "SURVIVE";
 }
+
 
 function showLeoidsBattleHud() {
   const mapEl = $("map");
