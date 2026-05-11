@@ -5382,19 +5382,54 @@ setClick("btn-leoids-open-setup", () => {
     setClick("btn-leoids-set-base", setBaseHere);
   }
 
-  setClick("btn-leoids-start", async () => {
-    if (!isHost) {
-      alert("Only the host can start the mission.");
-      return;
-    }
+setClick("btn-leoids-start", async () => {
+  if (!isHost) {
+    alert("Only the host can start the mission.");
+    speakText?.("Only the host can start the mission.");
+    return;
+  }
 
-    if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
-      await startOnlineCountdown(leoidsState.countdownSeconds || 60);
-      return;
-    }
+  closeSetupPanel?.();
 
-    startRound();
-  });
+  leoidsState.onlineEnabled = !!leoidsState.onlineSessionId;
+
+  enterBattleMap?.();
+  hideLeoidsMapControls?.();
+
+  loadAndApplyOnlineSession?.();
+  startOnlinePlayerSync?.();
+  startOnlineSessionSync?.();
+  loadOnlinePlayers?.();
+
+  startGpsOnlineSync?.();
+
+  setTimeout(() => {
+    redrawAllMapObjects?.();
+    drawPlayerMarkers?.();
+    showLeoidsBattleHud?.();
+    updatePanel?.();
+
+    const map = getMapSafe?.();
+    const local = getLocalPlayer?.();
+
+    if (map && local?.position) {
+      map.setView(
+        [local.position.lat, local.position.lng],
+        Math.max(map.getZoom(), 17)
+      );
+    }
+  }, 500);
+
+  if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
+    speakText?.("Starting online mission.");
+    await startOnlineCountdown(leoidsState.countdownSeconds || 10);
+    return;
+  }
+
+  speakText?.("Starting local mission.");
+  startRound();
+});
+
 
   setClick("btn-leoids-end", () => {
     if (!isHost) {
