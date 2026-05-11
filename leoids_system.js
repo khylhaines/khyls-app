@@ -5285,6 +5285,7 @@ function showLeoidsCommandHub() {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
   const isRunner = local?.role === "runner";
   const isHunter = local?.role === "hunter";
+  const followOn = leoidsState.followMe !== false;
 
   const hostName =
     window.LEOIDSSupabase?.hostName ||
@@ -5384,6 +5385,28 @@ function showLeoidsCommandHub() {
           🛡️ RESCUE
         </button>
 
+        <button id="btn-command-follow" type="button" style="
+          min-height:48px;
+          border-radius:16px;
+          border:none;
+          background:${followOn ? "#00d4ff" : "#202a3c"};
+          color:${followOn ? "#05070b" : "white"};
+          font-weight:1000;
+        ">
+          📍 Follow: ${followOn ? "ON" : "OFF"}
+        </button>
+
+        <button id="btn-command-map-refresh" type="button" style="
+          min-height:48px;
+          border-radius:16px;
+          border:none;
+          background:#202a3c;
+          color:white;
+          font-weight:1000;
+        ">
+          🗺️ Refresh
+        </button>
+
         <button id="btn-command-leaderboard" type="button" style="
           min-height:48px;
           border-radius:16px;
@@ -5404,17 +5427,6 @@ function showLeoidsCommandHub() {
           font-weight:1000;
         ">
           ❓ Help
-        </button>
-
-        <button id="btn-command-map-refresh" type="button" style="
-          min-height:48px;
-          border-radius:16px;
-          border:none;
-          background:#202a3c;
-          color:white;
-          font-weight:1000;
-        ">
-          🗺️ Refresh
         </button>
 
         <button id="btn-command-host-setup" type="button" style="
@@ -5489,14 +5501,24 @@ function showLeoidsCommandHub() {
     tryReleaseJailedRunners();
   });
 
-  document.getElementById("btn-command-leaderboard")?.addEventListener("click", () => {
-    hideLeoidsCommandHub();
-    openLeoidsLeaderboard();
-  });
+  document.getElementById("btn-command-follow")?.addEventListener("click", () => {
+    leoidsState.followMe = leoidsState.followMe === false ? true : false;
 
-  document.getElementById("btn-command-help")?.addEventListener("click", () => {
+    const stateText = leoidsState.followMe === false ? "off" : "on";
+
+    speakText?.(`Follow me ${stateText}.`);
+
+    const localPlayer = getLocalPlayer?.();
+    const map = getMapSafe?.();
+
+    if (leoidsState.followMe !== false && localPlayer?.position && map) {
+      map.panTo([localPlayer.position.lat, localPlayer.position.lng], {
+        animate: true,
+        duration: 0.5,
+      });
+    }
+
     hideLeoidsCommandHub();
-    openLeoidsInstructions();
   });
 
   document.getElementById("btn-command-map-refresh")?.addEventListener("click", async () => {
@@ -5505,6 +5527,16 @@ function showLeoidsCommandHub() {
     drawPlayerMarkers?.();
     updateLeoidsBattleHud?.();
     speakText?.("Map refreshed.");
+  });
+
+  document.getElementById("btn-command-leaderboard")?.addEventListener("click", () => {
+    hideLeoidsCommandHub();
+    openLeoidsLeaderboard();
+  });
+
+  document.getElementById("btn-command-help")?.addEventListener("click", () => {
+    hideLeoidsCommandHub();
+    openLeoidsInstructions();
   });
 
   document.getElementById("btn-command-host-setup")?.addEventListener("click", () => {
