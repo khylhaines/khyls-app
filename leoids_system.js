@@ -5304,14 +5304,65 @@ setClick("btn-leoids-open-setup", () => {
     const el = document.getElementById(id);
     if (!el) return;
 
-    el.style.display =
-      el.style.display === "none"
-        ? "block"
-        : "none";
+    el.style.display = "block";
   });
+
+  const boundarySize = $("leoids-boundary-size");
+  if (boundarySize) {
+    boundarySize.value = String(leoidsState.boundaryRadius || DEFAULT_BOUNDARY_RADIUS);
+    boundarySize.disabled = false;
+    boundarySize.onchange = (event) => {
+      setBoundaryRadius(Number(event.target.value || DEFAULT_BOUNDARY_RADIUS));
+      speakText?.("Boundary size updated.");
+    };
+  }
+
+  const baseRadius = $("leoids-base-radius");
+  if (baseRadius) {
+    baseRadius.value = String(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
+    baseRadius.disabled = false;
+    baseRadius.onchange = (event) => {
+      setBaseRadius(Number(event.target.value || DEFAULT_BASE_RADIUS));
+      speakText?.("Base radius updated.");
+    };
+  }
+
+  const roundLength = $("leoids-round-length");
+  if (roundLength) {
+    roundLength.value = String(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
+    roundLength.disabled = false;
+    roundLength.onchange = (event) => {
+      setRoundLength(Number(event.target.value || DEFAULT_ROUND_SECONDS));
+      speakText?.("Round time updated.");
+    };
+  }
+
+  const hunterDelay = $("leoids-hunter-delay");
+  if (hunterDelay) {
+    hunterDelay.value = String(leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS);
+    hunterDelay.disabled = false;
+    hunterDelay.onchange = (event) => {
+      setHunterDelay(Number(event.target.value || DEFAULT_HUNTER_DELAY_SECONDS));
+      speakText?.("Hunter delay updated.");
+    };
+  }
+
+  const tagRadius = $("leoids-tag-radius");
+  if (tagRadius) {
+    tagRadius.value = String(leoidsState.tagRadius || DEFAULT_TAG_RADIUS);
+    tagRadius.disabled = false;
+    tagRadius.onchange = (event) => {
+      setTagRadius(Number(event.target.value || DEFAULT_TAG_RADIUS));
+      speakText?.("Tag radius updated.");
+    };
+  }
+
+  updatePanel?.();
+  refreshBoundaryButtons?.();
 
   speakText?.("Mission setup opened.");
 });
+
 
   setClick("btn-leoids-runner", () => setRole("runner"));
   setClick("btn-leoids-hunter", () => setRole("hunter"));
