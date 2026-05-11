@@ -837,11 +837,21 @@ async function syncLocalPlayerPosition(position, accuracy = null, heading = null
   leoidsState.lastGpsPoint = point;
   leoidsState.lastOnlinePositionSyncAt = now;
 
+  const cleanAccuracy = Number.isFinite(Number(accuracy))
+    ? Math.round(Number(accuracy))
+    : null;
+
+  const cleanHeading = Number.isFinite(Number(heading))
+    ? Math.round(Number(heading))
+    : null;
+
   if (local) {
     local.id = playerId;
     local.isLocal = true;
     local.isOnline = true;
     local.position = point;
+    local.accuracy = cleanAccuracy;
+    local.heading = cleanHeading;
   }
 
   const payload = {
@@ -857,8 +867,8 @@ async function syncLocalPlayerPosition(position, accuracy = null, heading = null
     status: local?.status || leoidsState.status || "free",
     lat: point.lat,
     lng: point.lng,
-    accuracy: Number.isFinite(accuracy) ? Math.round(accuracy) : null,
-    heading: Number.isFinite(heading) ? Math.round(heading) : null,
+    accuracy: cleanAccuracy,
+    heading: cleanHeading,
     online: true,
     updatedAt: now,
   };
@@ -881,7 +891,7 @@ async function syncLocalPlayerPosition(position, accuracy = null, heading = null
   updateLeoidsBattleHud?.();
 
   console.log(
-    "FIREBASE GPS SYNC OK + FOLLOW",
+    "FIREBASE GPS SYNC OK + ACCURACY",
     payload,
     "Moved:",
     Math.round(movedDistance),
@@ -890,7 +900,6 @@ async function syncLocalPlayerPosition(position, accuracy = null, heading = null
 
   return true;
 }
-
 
 function stopGpsOnlineSync() {
   if (leoidsState.gpsWatchId !== null && leoidsState.gpsWatchId !== undefined) {
