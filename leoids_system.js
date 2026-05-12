@@ -2706,7 +2706,54 @@ async function syncPlayerToOnline(player) {
   return payload;
 }
 
+function awardLeoidsCombo({
+  player = null,
+  points = 0,
+  coins = 0,
+  combo = 1,
+  theme = "gold",
+  label = "COMBO"
+} = {}) {
 
+  if (!player) return;
+
+  player.score = Number(player.score || 0) + points;
+  player.coins = Number(player.coins || 0) + coins;
+
+  if (
+    player.isLocal ||
+    player.id === leoidsState.onlinePlayerId ||
+    !player.isOnline
+  ) {
+    leoidsState.score =
+      Number(leoidsState.score || 0) + points;
+
+    leoidsState.coins =
+      Number(leoidsState.coins || 0) + coins;
+  }
+
+  showLeoidsScorePopup({
+    text: `+${points}`,
+    theme
+  });
+
+  showLeoidsCinematicOverlay({
+    title: `${combo}x ${label}`,
+    subtitle: `+${points} points • +${coins} coins`,
+    icon: "⚡",
+    theme,
+    duration: 1400,
+  });
+
+  if (navigator.vibrate) {
+    navigator.vibrate([70, 40, 70]);
+  }
+
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
+}
+
+  
 function showLeoidsScorePopup({
   text = "+0",
   theme = "base",
@@ -3145,8 +3192,14 @@ function rescueJailedRunners() {
   const points = rescuedCount * 75;
   const coins = rescuedCount * 15;
 
-  local.score = Number(local.score || 0) + points;
-  local.coins = Number(local.coins || 0) + coins;
+ awardLeoidsCombo({
+  player: local,
+  points,
+  coins,
+  combo: rescuedCount,
+  theme: "runner",
+  label: "RESCUE"
+});
 
   if (local.isLocal || local.id === leoidsState.onlinePlayerId || !local.isOnline) {
     leoidsState.score = Number(leoidsState.score || 0) + points;
