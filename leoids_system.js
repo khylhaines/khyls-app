@@ -4422,6 +4422,22 @@ async function openOnlineSessionBrowser() {
     supabase.init();
   }
 
+  const hiddenKey = "leoidsHiddenLobbyIds";
+
+  const getHiddenLobbyIds = () => {
+    try {
+      return JSON.parse(localStorage.getItem(hiddenKey) || "[]");
+    } catch {
+      return [];
+    }
+  };
+
+  const hideLobbyLocally = (sessionId) => {
+    const hidden = new Set(getHiddenLobbyIds());
+    hidden.add(sessionId);
+    localStorage.setItem(hiddenKey, JSON.stringify([...hidden]));
+  };
+
   const joinSessionSafely = async ({ sessionId, displayName, role }) => {
     if (typeof joinOnlineSession === "function") {
       return await joinOnlineSession({ sessionId, displayName, role });
@@ -4434,9 +4450,167 @@ async function openOnlineSessionBrowser() {
     return await supabase.joinSession({ sessionId, displayName, role });
   };
 
+  function getSessionStatusText(session) {
+    if (session.ended_at) return "ENDED";
+
+    if (session.expires_at) {
+      const expiry = new Date(session.expires_at).getTime();
+      if (Number.isFinite(expiry) && expiry <= Date.now()) return "EXPIRED";
+    }
+
+    if (session.status === "countdown" && session.game_starts_at) {
+      const secondsLeft = Math.max(
+        0,
+        Math.ceil((new Date(session.game_starts_at).getTime() - Date.now()) / 1000)
+      );
+
+      return `COUNTDOWN • ${secondsLeft}s`;
+    }
+
+    if (session.status === "active") return "MISSION ACTIVE";
+
+    return "LOBBY OPEN";
+  }
+
+  function isMine(session) {
+    const myName =
+      leoidsState.onlinePlayerName ||
+      supabase.playerName ||
+      "";
+
+    const hostName = session?.host_name || "";
+
+    return !!myName && !!hostName && myName.trim() === hostName.trim();
+  }
+
+  function openNameRolePicker({ title = "JOIN LOBBY", defaultName = "Kyle", onConfirm }) {
+    const oldPicker = document.getElementById("leoids-name-role-picker");
+    if (oldPicker) oldPicker.remove();
+
+    const picker = document.createElement("div");
+    picker.id = "leoids-name-role-picker";
+    picker.style.position = "fixed";
+    picker.style.inset = "0";
+    picker.style.zIndex = "1000000";
+    picker.style.background = "rgba(0,0,0,.88)";
+    picker.style.display = "flex";
+    picker.style.alignItems = "center";
+    picker.style.justifyContent = "center";
+    picker.style.padding = "18px";
+
+    picker.innerHTML = `
+      <div style="
+        width:min(92vw,420px);
+        border:2px solid rgba(0,212,255,.85);
+        border-radius:26px;
+        background:linear-gradient(180deg,#101827,#05070b);
+        color:white;
+        padding:22px;
+        box-shadow:0 0 36px rgba(0,212,255,.28);
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      ">
+        <h2 style="margin:0;color:#00d4ff;text-align:center;">
+          ${title}
+        </h2>
+
+        <p style="opacity:.85;text-align:center;margin:8px 0 16px;">
+          Enter your player name and choose your starting role.
+        </p>
+
+        <label style="font-size:13px;font-weight:900;color:#ffd54a;">
+          PLAYER NAME
+        </label>
+
+        <input id="leoids-picker-name" value="${defaultName}" style="
+          width:100%;
+          box-sizing:border-box;
+          min-height:46px;
+          margin-top:8px;
+          border-radius:14px;
+          border:1px solid rgba(0,212,255,.55);
+          background:#0b1220;
+          color:white;
+          padding:0 12px;
+          font-size:16px;
+          font-weight:900;
+          outline:none;
+        " />
+
+        <button id="leoids-picker-runner" type="button" style="
+          width:100%;
+          min-height:48px;
+          margin-top:16px;
+          border-radius:16px;
+          border:none;
+          background:#22c55e;
+          color:#05070b;
+          font-weight:1000;
+        ">
+          🟢 JOIN AS RUNNER
+        </button>
+
+        <button id="leoids-picker-hunter" type="button" style="
+          width:100%;
+          min-height:48px;
+          margin-top:10px;
+          border-radius:16px;
+          border:none;
+          background:#ff3b3b;
+          color:white;
+          font-weight:1000;
+        ">
+          🔴 JOIN AS HUNTER
+        </button>
+
+        <button id="leoids-picker-cancel" type="button" style="
+          width:100%;
+          min-height:42px;
+          margin-top:12px;
+          border-radius:16px;
+          border:none;
+          background:#202a3c;
+          color:white;
+          font-weight:900;
+        ">
+          CANCEL
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(picker);
+
+    const submit = async (role) => {
+      const input = document.getElementById("leoids-picker-name");
+      const displayName = (input?.value || "Player").trim() || "Player";
+
+      picker.remove();
+
+      await onConfirm({
+        displayName,
+        role,
+      });
+    };
+
+    document.getElementById("leoids-picker-runner")?.addEventListener("click", () => {
+      submit("runner");
+    });
+
+    document.getElementById("leoids-picker-hunter")?.addEventListener("click", () => {
+      submit("hunter");
+    });
+
+    document.getElementById("leoids-picker-cancel")?.addEventListener("click", () => {
+      picker.remove();
+    });
+  }
+
+  const hiddenIds = getHiddenLobbyIds();
+
   let sessions = await supabase.listPublicSessions();
 
   sessions = (sessions || []).filter((session) => {
+    if (hiddenIds.includes(session.id)) return false;
+
     if (session.ended_at) return false;
 
     if (session.expires_at) {
@@ -4450,23 +4624,13 @@ async function openOnlineSessionBrowser() {
   const old = document.getElementById("leoids-session-browser");
   if (old) old.remove();
 
-  const getCountdownText = (session) => {
-    if (session.status !== "countdown" || !session.game_starts_at) {
-      return session.status || "lobby";
-    }
-
-    const secondsLeft = Math.max(
-      0,
-      Math.ceil((new Date(session.game_starts_at).getTime() - Date.now()) / 1000)
-    );
-
-    return `Starts in ${secondsLeft}s`;
-  };
-
   const rows = sessions.length
     ? sessions
-        .map(
-          (session) => `
+        .map((session) => {
+          const mine = isMine(session);
+          const statusText = getSessionStatusText(session);
+
+          return `
             <div style="
               margin-top:10px;
               padding:14px;
@@ -4488,8 +4652,13 @@ async function openOnlineSessionBrowser() {
                 Players: ${session.player_count || 0}/${session.max_players || 12}
               </div>
 
-              <div style="font-size:13px;opacity:.9;margin-top:3px;">
-                Status: ${getCountdownText(session)}
+              <div style="
+                font-size:13px;
+                margin-top:6px;
+                color:${session.status === "active" ? "#22c55e" : "#ffd54a"};
+                font-weight:1000;
+              ">
+                ${statusText}
               </div>
 
               <button
@@ -4511,7 +4680,7 @@ async function openOnlineSessionBrowser() {
               </button>
 
               <button
-                class="leoids-session-end-btn"
+                class="${mine ? "leoids-session-end-btn" : "leoids-session-hide-btn"}"
                 data-session-id="${session.id}"
                 type="button"
                 style="
@@ -4519,17 +4688,17 @@ async function openOnlineSessionBrowser() {
                   min-height:38px;
                   margin-top:8px;
                   border-radius:14px;
-                  background:#202a3c;
+                  background:${mine ? "#3a1111" : "#202a3c"};
                   color:white;
                   font-weight:900;
-                  border:none;
+                  border:${mine ? "1px solid rgba(255,59,59,.55)" : "none"};
                 "
               >
-                HIDE / END LOBBY
+                ${mine ? "END LOBBY" : "HIDE FROM MY LIST"}
               </button>
             </div>
-          `
-        )
+          `;
+        })
         .join("")
     : `<div style="opacity:.8;margin-top:12px;">No public games found.</div>`;
 
@@ -4555,10 +4724,12 @@ async function openOnlineSessionBrowser() {
       color:white;
       padding:22px;
       box-shadow:0 0 35px rgba(0,212,255,.25);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     ">
       <h2 style="margin:0;color:#00d4ff;">Online LEOIDS Lobbies</h2>
+
       <p style="opacity:.8;margin:8px 0 14px;">
-        Join a live lobby or host a new test game.
+        Join a live lobby or host a new GPS mission.
       </p>
 
       <button id="btn-leoids-refresh-sessions" type="button" style="
@@ -4616,59 +4787,89 @@ async function openOnlineSessionBrowser() {
     openOnlineSessionBrowser();
   });
 
-  document.getElementById("btn-leoids-host-public-session")?.addEventListener("click", async () => {
-    const name = prompt("Lobby name?", "Barrow LEOIDS Game") || "Barrow LEOIDS Game";
-    const hostName = prompt("Your name?", "Kyle") || "Host";
+  document.getElementById("btn-leoids-host-public-session")?.addEventListener("click", () => {
+    openNameRolePicker({
+      title: "HOST NEW LOBBY",
+      defaultName: supabase.playerName || leoidsState.onlinePlayerName || "Kyle",
+      onConfirm: async ({ displayName, role }) => {
+        const lobbyName = `${displayName}'s LEOIDS Game`;
 
-    leoidsState.onlinePlayerName = hostName;
-    leoidsState.isLobbyHost = true;
+        leoidsState.onlinePlayerName = displayName;
+        leoidsState.isLobbyHost = true;
+        leoidsState.role = role;
 
-    supabase.playerName = hostName;
+        supabase.playerName = displayName;
 
-    const session = await createOnlineSession(name);
-    if (!session) return;
+        const session = await createOnlineSession(lobbyName);
+        if (!session) return;
 
-   await joinSessionSafely({
-  sessionId: session.id,
-  displayName: hostName,
-  role: "runner",
-});
+        await joinSessionSafely({
+          sessionId: session.id,
+          displayName,
+          role,
+        });
 
-leoidsState.role = "runner";
+        const local = getLocalPlayer?.();
+        if (local) {
+          local.role = role;
+          local.status = "free";
+          local.jailedAtBase = false;
+        }
 
-const local = getLocalPlayer?.();
-if (local) {
-  local.role = "runner";
-  local.status = "free";
-  local.jailedAtBase = false;
-}
+        leoidsState.isLobbyHost = true;
+        leoidsState.onlineSessionId = session.id;
+        supabase.sessionId = session.id;
 
-    leoidsState.isLobbyHost = true;
-    leoidsState.onlineSessionId = session.id;
-    supabase.sessionId = session.id;
+        modal.remove();
 
-    modal.remove();
-
-    setTimeout(() => {
-      openOnlineLobbyScreen(session.id);
-    }, 150);
+        setTimeout(() => {
+          openOnlineLobbyScreen(session.id);
+        }, 150);
+      },
+    });
   });
 
   modal.querySelectorAll(".leoids-session-join-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       const sessionId = btn.dataset.sessionId;
-      const displayName = prompt("Your name?", "Kyle") || "Player";
 
-      leoidsState.isLobbyHost = false;
+      openNameRolePicker({
+        title: "JOIN LOBBY",
+        defaultName: supabase.playerName || leoidsState.onlinePlayerName || "Kyle",
+        onConfirm: async ({ displayName, role }) => {
+          leoidsState.isLobbyHost = false;
+          leoidsState.onlinePlayerName = displayName;
+          leoidsState.role = role;
 
-      await joinSessionSafely({
-        sessionId,
-        displayName,
-        role: leoidsState.role || "runner",
+          supabase.playerName = displayName;
+
+          await joinSessionSafely({
+            sessionId,
+            displayName,
+            role,
+          });
+
+          const local = getLocalPlayer?.();
+          if (local) {
+            local.role = role;
+            local.status = "free";
+            local.jailedAtBase = false;
+          }
+
+          modal.remove();
+          openOnlineLobbyScreen(sessionId);
+        },
       });
+    });
+  });
+
+  modal.querySelectorAll(".leoids-session-hide-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const sessionId = btn.dataset.sessionId;
+      hideLobbyLocally(sessionId);
 
       modal.remove();
-      openOnlineLobbyScreen(sessionId);
+      openOnlineSessionBrowser();
     });
   });
 
@@ -4676,7 +4877,7 @@ if (local) {
     btn.addEventListener("click", async () => {
       const sessionId = btn.dataset.sessionId;
 
-      if (!confirm("Hide/end this lobby?")) return;
+      if (!confirm("End this lobby for everyone?")) return;
 
       if (typeof supabase.endSession === "function") {
         await supabase.endSession(sessionId);
