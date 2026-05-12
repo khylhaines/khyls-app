@@ -2707,6 +2707,57 @@ async function syncPlayerToOnline(player) {
 }
 
 
+function showLeoidsScorePopup({
+  text = "+0",
+  theme = "base",
+  duration = 1300,
+} = {}) {
+  const colors = {
+    base: "#00d4ff",
+    runner: "#22c55e",
+    hunter: "#ff3b3b",
+    gold: "#ffd54a",
+    danger: "#ffb000",
+  };
+
+  const color = colors[theme] || colors.base;
+
+  const popup = document.createElement("div");
+  popup.className = "leoids-score-popup";
+  popup.style.position = "fixed";
+  popup.style.left = "50%";
+  popup.style.top = "42%";
+  popup.style.transform = "translate(-50%, -50%) scale(.85)";
+  popup.style.zIndex = "999999";
+  popup.style.pointerEvents = "none";
+  popup.style.color = color;
+  popup.style.fontSize = "42px";
+  popup.style.fontWeight = "1000";
+  popup.style.textShadow = `0 0 20px ${color}`;
+  popup.style.fontFamily = "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+  popup.textContent = text;
+
+  document.body.appendChild(popup);
+
+  popup.animate(
+    [
+      { opacity: 0, transform: "translate(-50%, -35%) scale(.85)" },
+      { opacity: 1, transform: "translate(-50%, -50%) scale(1.08)" },
+      { opacity: 0, transform: "translate(-50%, -75%) scale(1)" },
+    ],
+    {
+      duration,
+      easing: "ease-out",
+      fill: "forwards",
+    }
+  );
+
+  setTimeout(() => {
+    popup.remove();
+  }, duration + 80);
+}
+
+  
   
 async function sendRunnerToJail(runner, taggedBy = null) {
   if (!runner || runner.role !== "runner") return false;
@@ -2728,6 +2779,21 @@ async function sendRunnerToJail(runner, taggedBy = null) {
     taggedBy.score = Number(taggedBy.score || 0) + 50;
     taggedBy.coins = Number(taggedBy.coins || 0) + 10;
 
+showLeoidsScorePopup({
+  text: "+50",
+  theme: "hunter"
+});
+
+showLeoidsCinematicOverlay({
+  title: "RUNNER TAGGED",
+  subtitle: `${runner.name} captured by ${hunterName}`,
+  icon: "🔒",
+  theme: "hunter",
+  duration: 1400,
+});
+
+playLeoidsSound?.("player_tagged", 1);
+    
     if (taggedBy.isLocal || taggedBy.id === leoidsState.onlinePlayerId || !taggedBy.isOnline) {
       leoidsState.score = Number(leoidsState.score || 0) + 50;
       leoidsState.coins = Number(leoidsState.coins || 0) + 10;
