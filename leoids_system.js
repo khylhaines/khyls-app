@@ -3256,6 +3256,133 @@ function unlockLeoidsAudio() {
 
   console.log("LEOIDS audio unlocked.");
 }
+
+function showLeoidsCinematicOverlay({
+  title = "LEOIDS",
+  subtitle = "",
+  icon = "⚡",
+  theme = "base",
+  duration = 1800,
+} = {}) {
+  const old = document.getElementById("leoids-cinematic-overlay");
+  if (old) old.remove();
+
+  const colors = {
+    base: "#00d4ff",
+    hunter: "#ff3b3b",
+    runner: "#22c55e",
+    danger: "#ff3b3b",
+    gold: "#ffd54a",
+  };
+
+  const color = colors[theme] || colors.base;
+
+  const overlay = document.createElement("div");
+  overlay.id = "leoids-cinematic-overlay";
+  overlay.style.position = "fixed";
+  overlay.style.inset = "0";
+  overlay.style.zIndex = "999999";
+  overlay.style.pointerEvents = "none";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.background = "rgba(0,0,0,.42)";
+  overlay.style.backdropFilter = "blur(2px)";
+  overlay.style.color = "white";
+  overlay.style.fontFamily = "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+
+  overlay.innerHTML = `
+    <div style="
+      width:min(92vw,560px);
+      text-align:center;
+      padding:28px 22px;
+      border-radius:30px;
+      border:2px solid ${color};
+      background:linear-gradient(180deg,rgba(15,23,42,.96),rgba(3,7,18,.96));
+      box-shadow:0 0 42px ${color}88;
+      transform:scale(.86);
+      opacity:0;
+    ">
+      <div style="
+        font-size:58px;
+        line-height:1;
+        margin-bottom:12px;
+        text-shadow:0 0 24px ${color};
+      ">
+        ${icon}
+      </div>
+
+      <div style="
+        color:${color};
+        font-size:30px;
+        font-weight:1000;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        text-shadow:0 0 18px ${color};
+      ">
+        ${title}
+      </div>
+
+      <div style="
+        margin-top:10px;
+        font-size:16px;
+        line-height:1.45;
+        opacity:.92;
+        white-space:pre-line;
+      ">
+        ${subtitle}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const card = overlay.firstElementChild;
+
+  card.animate(
+    [
+      { transform: "scale(.86)", opacity: 0 },
+      { transform: "scale(1.04)", opacity: 1 },
+      { transform: "scale(1)", opacity: 1 },
+    ],
+    {
+      duration: 360,
+      easing: "ease-out",
+      fill: "forwards",
+    }
+  );
+
+  setTimeout(() => {
+    card.animate(
+      [
+        { transform: "scale(1)", opacity: 1 },
+        { transform: "scale(1.08)", opacity: 0 },
+      ],
+      {
+        duration: 320,
+        easing: "ease-in",
+        fill: "forwards",
+      }
+    );
+
+    overlay.animate(
+      [
+        { opacity: 1 },
+        { opacity: 0 },
+      ],
+      {
+        duration: 320,
+        easing: "ease-in",
+        fill: "forwards",
+      }
+    );
+
+    setTimeout(() => {
+      overlay.remove();
+    }, 340);
+  }, duration);
+}
+
   
   function showLeoidsEvent(title, message, emoji = "⚡", theme = "base") {
   const old = document.getElementById("leoids-event-banner");
@@ -6448,7 +6575,7 @@ return {
   clearBoundaryFull,
   loadLeoidsSounds,
   playLeoidsSound,
-
+  showLeoidsCinematicOverlay,
   addAIPlayer,
   resetLocalPlayers,
   tagNearestRunner,
