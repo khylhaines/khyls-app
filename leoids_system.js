@@ -2757,6 +2757,7 @@ function showLeoidsScorePopup({
   }, duration + 80);
 }
 
+window.showLeoidsScorePopup = showLeoidsScorePopup;
   
   
 async function sendRunnerToJail(runner, taggedBy = null) {
