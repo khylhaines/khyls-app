@@ -5780,7 +5780,7 @@ function wirePanelButtons() {
 
   fn();
 };
-
+};
   const hideSetupButton = (id) => {
     const el = $(id);
     if (!el) return;
