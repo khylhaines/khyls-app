@@ -2708,7 +2708,84 @@ async function sendRunnerToJail(runner, taggedBy = null) {
 }
 
 
- async function tagSpecificRunner(runner) {
+async function sendRunnerToJail(runner, taggedBy = null) {
+  if (!runner || runner.role !== "runner") return false;
+  if (runner.status === "jailed") return false;
+
+  runner.status = "jailed";
+  runner.jailedAtBase = false;
+
+  if (leoidsState.basePoint) {
+    runner.position = randomNearbyPoint(leoidsState.basePoint, 5);
+    runner.jailedAtBase = true;
+  }
+
+  playLeoidsSound?.("player_tagged", 1);
+
+  const hunterName = taggedBy?.name || "Hunter";
+
+  if (taggedBy) {
+    taggedBy.score = Number(taggedBy.score || 0) + 50;
+    taggedBy.coins = Number(taggedBy.coins || 0) + 10;
+
+    if (taggedBy.isLocal || taggedBy.id === leoidsState.onlinePlayerId || !taggedBy.isOnline) {
+      leoidsState.score = Number(leoidsState.score || 0) + 50;
+      leoidsState.coins = Number(leoidsState.coins || 0) + 10;
+    }
+  }
+
+  const firebase = window.firebasePlayers;
+  const supabase = getSupabaseSafe();
+  const sessionId = leoidsState.onlineSessionId || supabase?.sessionId;
+
+  if (firebase && sessionId && runner.id) {
+    await firebase.updatePlayer(`${sessionId}_${runner.id}`, {
+      id: runner.id,
+      sessionId,
+      name: runner.name || "Runner",
+      avatar: runner.avatar || "🧍",
+      role: "runner",
+      status: "jailed",
+      lat: runner.position?.lat ?? null,
+      lng: runner.position?.lng ?? null,
+      online: true,
+      updatedAt: Date.now(),
+    });
+
+    console.log("FIREBASE TAG SYNC OK", runner.name);
+  }
+
+  await syncPlayerToOnline?.(runner);
+
+  if (taggedBy) {
+    await syncPlayerToOnline?.(taggedBy);
+  }
+
+  drawPlayerMarkers?.();
+  renderPlayers?.();
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
+
+  showLeoidsEvent(
+    "RUNNER JAILED",
+    `${runner.name} was tagged by ${hunterName}.\nGo to jail/base.`,
+    "🔒",
+    "hunter"
+  );
+
+  if (navigator.vibrate) {
+    navigator.vibrate([180, 90, 180]);
+  }
+
+  speakText?.(`${runner.name} tagged. Runner sent to jail.`);
+
+  checkHunterWin?.();
+
+  return true;
+}
+
+
+async function tagSpecificRunner(runner) {
   const local = getLocalPlayer();
 
   if (!local || !runner) return false;
@@ -2765,7 +2842,11 @@ async function sendRunnerToJail(runner, taggedBy = null) {
     return false;
   }
 
- async function syncPlayerToOnline(player) {
+  return await sendRunnerToJail(runner, local);
+}
+
+
+async function syncPlayerToOnline(player) {
   const supabase = getSupabaseSafe();
 
   if (!supabase?.client || !player?.id) return null;
@@ -2786,18 +2867,15 @@ async function sendRunnerToJail(runner, taggedBy = null) {
     .eq("id", player.id);
 
   if (error) {
-    console.warn("Could not sync tagged player:", error, payload);
+    console.warn("Could not sync player online:", error, payload);
     return null;
   }
 
   return payload;
 }
 
-   
-  return await sendRunnerToJail(runner, local);
-}
 
-  async function tagNearestRunner() {
+async function tagNearestRunner() {
   const local = getLocalPlayer();
 
   if (!local) {
@@ -2902,120 +2980,6 @@ async function sendRunnerToJail(runner, taggedBy = null) {
 
   return await sendRunnerToJail(closestRunner, local);
 }
-
-
-function rescueJailedRunners() {
-  const local = getLocalPlayer();
-
-  if (!local) {
-    speakText?.("No local player found.");
-    return;
-  }
-
-  if (local.role !== "runner") {
-    showLeoidsEvent("RUNNERS ONLY", "Only runners can rescue jailed players.", "🟢", "runner");
-    speakText?.("Only runners can rescue jailed players.");
-    return;
-  }
-
-  if (local.status === "jailed") {
-    showLeoidsEvent("YOU ARE JAILED", "You cannot rescue while jailed.\nWait for another runner.", "🔒", "danger");
-    speakText?.("You are jailed. Wait for another runner to rescue you.");
-    return;
-  }
-
-  if (!leoidsState.basePoint && window.__leoidsBasePoint) {
-    leoidsState.basePoint = window.__leoidsBasePoint;
-  }
-
-  if (!leoidsState.basePoint) {
-    showLeoidsEvent("NO JAIL BASE", "Set the jail/base before rescuing.", "🛡️", "base");
-    speakText?.("Set the jail base first.");
-    return;
-  }
-
-  if (!local.position) {
-    showLeoidsEvent("LOCATION NEEDED", "Your position is not known yet.", "📍", "base");
-    speakText?.("Your location is not known yet.");
-    return;
-  }
-
-  const now = Date.now();
-
-  if (now - Number(leoidsState.lastRescueAt || 0) < 3000) {
-    return;
-  }
-
-  const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
-  const baseRadius = Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
-
-  if (distanceToBase > baseRadius) {
-    showLeoidsEvent(
-      "TOO FAR FROM BASE",
-      `Get inside the rescue zone.\nDistance: ${Math.round(distanceToBase)}m / ${baseRadius}m`,
-      "📍",
-      "base"
-    );
-
-    speakText?.("You are not close enough to the jail base.");
-    return;
-  }
-
-  const jailedRunners = leoidsState.players.filter(
-    (player) => player.role === "runner" && player.status === "jailed"
-  );
-
-  if (!jailedRunners.length) {
-    showLeoidsEvent("NO ONE TO RESCUE", "There are no jailed runners right now.", "🛡️", "base");
-    speakText?.("No runners need rescuing.");
-    return;
-  }
-
-  jailedRunners.forEach((runner) => {
-    runner.status = "free";
-    runner.jailedAtBase = false;
-    runner.position = randomNearbyPoint(leoidsState.basePoint, 18);
-  });
-
-  playLeoidsSound?.("jail_rescue", 1);
-
-  const rescuedCount = jailedRunners.length;
-  const points = rescuedCount * 75;
-  const coins = rescuedCount * 15;
-
-  local.score = Number(local.score || 0) + points;
-  local.coins = Number(local.coins || 0) + coins;
-
-  if (local.isLocal || local.id === leoidsState.onlinePlayerId || !local.isOnline) {
-    leoidsState.score = Number(leoidsState.score || 0) + points;
-    leoidsState.coins = Number(leoidsState.coins || 0) + coins;
-  }
-
-  leoidsState.lastRescueAt = now;
-
-  drawPlayerMarkers?.();
-  renderPlayers?.();
-  updatePanel?.();
-  updateLeoidsBattleHud?.();
-
-  showLeoidsEvent(
-    "RESCUE COMPLETE",
-    `${rescuedCount} runner${rescuedCount === 1 ? "" : "s"} rescued.\n+${points} points`,
-    "🟢",
-    "runner"
-  );
-
-  if (navigator.vibrate) {
-    navigator.vibrate([80, 60, 80, 60, 220]);
-  }
-
-  speakText?.(
-    rescuedCount === 1
-      ? "Rescue complete. One runner released."
-      : `Rescue complete. ${rescuedCount} runners released.`
-  );
-}
-
 
   
   function runAITagChecks() {
