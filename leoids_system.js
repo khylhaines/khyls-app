@@ -4516,6 +4516,135 @@ function tickRound() {
   updateLeoidsBattleHud?.();
 }
 
+function showLeoidsMatchEndScreen({
+  title = "ROUND COMPLETE",
+  message = "Mission ended.",
+  icon = "🏆",
+  theme = "base",
+} = {}) {
+  const old = document.getElementById("leoids-match-end-screen");
+  if (old) old.remove();
+
+  const colors = {
+    base: "#00d4ff",
+    runner: "#22c55e",
+    hunter: "#ff3b3b",
+    gold: "#ffd54a",
+  };
+
+  const color = colors[theme] || colors.base;
+
+  const sortedPlayers = [...leoidsState.players].sort(
+    (a, b) => Number(b.score || 0) - Number(a.score || 0)
+  );
+
+  const rows = sortedPlayers.map((player, index) => `
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px;
+      border-radius:14px;
+      background:rgba(255,255,255,.07);
+      margin-top:8px;
+    ">
+      <span>${index + 1}. ${getPlayerIcon?.(player) || "🧍"} ${player.name || "Player"}</span>
+      <strong>${Number(player.score || 0)} pts</strong>
+    </div>
+  `).join("");
+
+  const modal = document.createElement("div");
+  modal.id = "leoids-match-end-screen";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.zIndex = "999999";
+  modal.style.background = "rgba(0,0,0,.9)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "18px";
+
+  modal.innerHTML = `
+    <div style="
+      width:min(94vw,560px);
+      max-height:88vh;
+      overflow:auto;
+      border:2px solid ${color};
+      border-radius:30px;
+      background:linear-gradient(180deg,#101827,#05070b);
+      color:white;
+      padding:22px;
+      box-shadow:0 0 45px ${color}77;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      text-align:center;
+    ">
+      <div style="font-size:64px;line-height:1;">${icon}</div>
+
+      <h2 style="
+        margin:12px 0 0;
+        color:${color};
+        font-size:30px;
+        letter-spacing:.08em;
+      ">
+        ${title}
+      </h2>
+
+      <p style="opacity:.9;font-size:16px;line-height:1.45;">
+        ${message}
+      </p>
+
+      <div style="
+        margin-top:16px;
+        text-align:left;
+      ">
+        <h3 style="color:${color};margin:0 0 8px;">Leaderboard</h3>
+        ${rows || `<div style="opacity:.75;">No players found.</div>`}
+      </div>
+
+      <button id="btn-leoids-match-end-lobby" type="button" style="
+        width:100%;
+        min-height:48px;
+        border-radius:16px;
+        border:none;
+        background:${color};
+        color:#05070b;
+        font-weight:1000;
+        margin-top:18px;
+      ">
+        BACK TO LOBBY
+      </button>
+
+      <button id="btn-leoids-match-end-close" type="button" style="
+        width:100%;
+        min-height:44px;
+        border-radius:16px;
+        border:none;
+        background:#202a3c;
+        color:white;
+        font-weight:900;
+        margin-top:10px;
+      ">
+        CLOSE
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById("btn-leoids-match-end-close")?.addEventListener("click", () => {
+    modal.remove();
+  });
+
+  document.getElementById("btn-leoids-match-end-lobby")?.addEventListener("click", () => {
+    modal.remove();
+
+    if (leoidsState.onlineSessionId) {
+      openOnlineLobbyScreen?.(leoidsState.onlineSessionId);
+    } else {
+      openSetupPanel?.();
+    }
+  });
+}
 
 
  function endRound(reason = "manual") {
@@ -4602,6 +4731,16 @@ showLeoidsCinematicOverlay({
 });
    
   showLeoidsEvent(
+
+setTimeout(() => {
+  showLeoidsMatchEndScreen({
+    title: resultTitle,
+    message: resultText,
+    icon: resultIcon,
+    theme: resultTheme,
+  });
+}, 900);
+    
     resultTitle,
     resultText,
     resultIcon,
