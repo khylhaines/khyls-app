@@ -220,6 +220,14 @@ function checkBoundaryRules() {
 
         playLeoidsSound?.("boundary_warning", 1);
 
+       showLeoidsCinematicOverlay({
+        title: "OUT OF BOUNDS",
+        subtitle: `${player.name} left the game area\n-25 points`,
+        icon: "⚠️",
+        theme: "danger",
+        duration: 2200
+         });
+        
         showLeoidsEvent(
           "OUT OF BOUNDS",
           `${player.name} left the game area.\n-25 points`,
@@ -270,6 +278,16 @@ function checkBoundaryRules() {
 
         playLeoidsSound?.("boundary_warning", 0.7);
 
+
+       showLeoidsCinematicOverlay({
+       title: "BOUNDARY WARNING",
+       subtitle: "Move back inside the play zone.",
+        icon: "🟡",
+       theme: "gold",
+       duration: 1800
+      });
+        
+        
         showLeoidsEvent(
           "BOUNDARY WARNING",
           `${player.name} is close to the edge.\nMove back inside the play zone.`,
