@@ -1086,7 +1086,21 @@ function openLeoidsMissionSetupScreen({ returnToLobby = true } = {}) {
   $("setup-tag-radius").value = String(leoidsState.tagRadius || DEFAULT_TAG_RADIUS);
 
   $("setup-boundary-circle").onclick = () => setBoundaryMode("circle");
-  $("setup-boundary-street").onclick = () => setBoundaryMode("polygon");
+ $("setup-boundary-street").onclick = () => {
+  setBoundaryMode("polygon");
+
+  modal.remove();
+
+  leoidsState.returnToMissionSetupAfterMap = true;
+  leoidsState.mapMode = "boundary";
+
+  enterBattleMap?.();
+  hideActionButton?.();
+  showLeoidsMapControls?.("boundary");
+  enableMapPointAdding?.();
+
+  speakText?.("Tap the map to add street boundary points.");
+};
 
   $("setup-boundary-size").onchange = (e) => setBoundaryRadius(Number(e.target.value));
   $("setup-base-radius").onchange = (e) => setBaseRadius(Number(e.target.value));
@@ -1096,10 +1110,18 @@ function openLeoidsMissionSetupScreen({ returnToLobby = true } = {}) {
 
   $("setup-set-circle").onclick = () => setCircleBoundaryHere();
 
-  $("setup-set-base").onclick = () => {
-    modal.remove();
-    setBaseHere();
-  };
+ $("setup-set-base").onclick = () => {
+  modal.remove();
+
+  leoidsState.returnToMissionSetupAfterMap = true;
+  leoidsState.mapMode = "base";
+
+  enterBattleMap?.();
+  hideActionButton?.();
+  setBaseHere?.();
+
+  speakText?.("Set the jail base on the map.");
+};
 
   $("setup-save").onclick = async () => {
     await saveOnlineSessionConfig?.();
@@ -1820,110 +1842,102 @@ function setBaseRadius(radius = DEFAULT_BASE_RADIUS) {
     speakText?.("Last boundary point removed.");
   }
 
- async function confirmBoundaryFromMap() {
-  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+function confirmBoundaryFromMap() {
+  if (leoidsState.boundaryMode === "polygon") {
+    if (
+      !Array.isArray(leoidsState.boundaryPoints) ||
+      leoidsState.boundaryPoints.length < 3
+    ) {
+      alert("Add at least 3 boundary points.");
+      return;
+    }
 
-  if (!isHost) {
-    alert("Only the host can confirm the boundary.");
-    speakText?.("Only the host can confirm the boundary.");
-    return;
+    clearPolygonBoundary?.();
+    drawPolygonBoundary?.(leoidsState.boundaryPoints);
+
+  } else {
+    if (!leoidsState.boundaryCenter) {
+      alert("Set a circle center first.");
+      return;
+    }
+
+    drawCircleBoundary?.(
+      leoidsState.boundaryCenter,
+      Number(
+        leoidsState.boundaryRadius ||
+        DEFAULT_BOUNDARY_RADIUS
+      )
+    );
   }
 
-  if (!hasValidBoundary()) {
-    alert("Street boundary needs at least 3 points.");
-    speakText?.("Street boundary needs at least three points.");
-    showLeoidsMapControls("boundary");
-    return;
-  }
+  saveOnlineSessionConfig?.();
 
-  leoidsState.mapMode = "none";
-  leoidsState.pendingBasePoint = null;
-
-  disableMapPointAdding?.();
-  hideLeoidsMapControls?.();
-  showActionButton?.(false);
-
-  seedPlayerPositions();
-  drawPolygonBoundary();
-  drawPlayerMarkers();
-
-  await saveOnlineSessionConfig?.();
-
-  openSetupPanel?.();
-
-  showLeoidsEvent(
-    "BOUNDARY READY",
-    "Street boundary confirmed.",
-    "🟡",
-    "base"
+  showLeoidsEvent?.(
+    "BOUNDARY CONFIRMED",
+    "Mission boundary updated.",
+    "🗺️",
+    "boundary"
   );
 
-  speakText?.("Street boundary confirmed.");
+  speakText?.("Boundary confirmed.");
+
+  leoidsState.mapMode = null;
+
+  hideLeoidsMapControls?.();
+
+  if (leoidsState.returnToMissionSetupAfterMap) {
+    leoidsState.returnToMissionSetupAfterMap = false;
+
+    setTimeout(() => {
+      openLeoidsMissionSetupScreen?.({
+        returnToLobby: true,
+      });
+    }, 250);
+  }
 }
 
-async function confirmBaseFromMap() {
-  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
-  if (!isHost) {
-    alert("Only the host can confirm the jail base.");
-    speakText?.("Only the host can confirm the jail base.");
+
+function confirmBaseFromMap() {
+  if (!leoidsState.basePoint) {
+    alert("Set a jail base first.");
     return;
   }
 
-  const map = getMapSafe();
+  clearBasePoint?.();
 
-  let point =
-    leoidsState.pendingBasePoint ||
-    leoidsState.basePoint ||
-    window.__leoidsBasePoint ||
-    null;
+  drawBasePoint?.(
+    leoidsState.basePoint,
+    Number(
+      leoidsState.baseRadius ||
+      DEFAULT_BASE_RADIUS
+    )
+  );
 
-  if (!point && map) {
-    const center = map.getCenter();
-    point = {
-      lat: Number(center.lat),
-      lng: Number(center.lng),
-    };
-  }
+  saveOnlineSessionConfig?.();
 
-  if (!point) {
-    alert("Base could not be set. Tap the map again.");
-    speakText?.("Base could not be set. Tap the map again.");
-    showLeoidsMapControls("base");
-    return;
-  }
-
-  leoidsState.basePoint = {
-    lat: Number(point.lat),
-    lng: Number(point.lng),
-  };
-
-  leoidsState.pendingBasePoint = null;
-  leoidsState.mapMode = "none";
-  window.__leoidsBasePoint = leoidsState.basePoint;
-
-  drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
-
-  disableMapPointAdding?.();
-  hideLeoidsMapControls?.();
-  showActionButton?.(false);
-
-  await saveOnlineSessionConfig?.();
-
-  updatePanel?.();
-  renderPlayers?.();
-  drawPlayerMarkers?.();
-
-  showLeoidsEvent(
-    "JAIL BASE READY",
-    `Rescue zone active.\nRadius: ${leoidsState.baseRadius}m`,
-    "🛡️",
+  showLeoidsEvent?.(
+    "JAIL BASE CONFIRMED",
+    "Runner jail/base updated.",
+    "🏛️",
     "base"
   );
 
-  openSetupPanel?.();
-
   speakText?.("Jail base confirmed.");
+
+  leoidsState.mapMode = null;
+
+  hideLeoidsMapControls?.();
+
+  if (leoidsState.returnToMissionSetupAfterMap) {
+    leoidsState.returnToMissionSetupAfterMap = false;
+
+    setTimeout(() => {
+      openLeoidsMissionSetupScreen?.({
+        returnToLobby: true,
+      });
+    }, 250);
+  }
 }
 
 
@@ -3424,8 +3438,15 @@ function buildOnlineSessionConfig() {
 
     base_lat: leoidsState.basePoint ? Number(leoidsState.basePoint.lat) : null,
     base_lng: leoidsState.basePoint ? Number(leoidsState.basePoint.lng) : null,
+
+    round_time: Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS),
+    hunter_delay: Number(leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS),
+    base_radius: Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS),
+    tag_radius: Number(leoidsState.tagRadius || DEFAULT_TAG_RADIUS),
+    countdown_seconds: Number(leoidsState.countdownSeconds || 10),
   };
 }
+
 
 
 async function saveOnlineSessionConfig() {
