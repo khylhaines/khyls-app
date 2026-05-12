@@ -5771,12 +5771,15 @@ function wirePanelButtons() {
     const el = $(id);
     if (!el) return;
 
-    el.onclick = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      fn();
-    };
-  };
+   el.onclick = (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  unlockLeoidsAudio?.();
+  playLeoidsSound?.("button_click", 0.8);
+
+  fn();
+};
 
   const hideSetupButton = (id) => {
     const el = $(id);
