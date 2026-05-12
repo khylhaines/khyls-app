@@ -3179,7 +3179,7 @@ function testAllLeoidsSounds() {
   });
 }
 
-
+window.testAllLeoidsSounds = testAllLeoidsSounds;
   
 const leoidsSounds = {};
 
