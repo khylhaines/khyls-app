@@ -2784,7 +2784,6 @@ async function sendRunnerToJail(runner, taggedBy = null) {
   return true;
 }
 
-
 async function tagSpecificRunner(runner) {
   const local = getLocalPlayer();
 
@@ -2844,7 +2843,6 @@ async function tagSpecificRunner(runner) {
 
   return await sendRunnerToJail(runner, local);
 }
-
 
 async function syncPlayerToOnline(player) {
   const supabase = getSupabaseSafe();
@@ -2981,6 +2979,169 @@ async function tagNearestRunner() {
   return await sendRunnerToJail(closestRunner, local);
 }
 
+function rescueJailedRunners() {
+  const local = getLocalPlayer();
+
+  if (!local) {
+    speakText?.("No local player found.");
+    return;
+  }
+
+  if (local.role !== "runner") {
+    showLeoidsEvent(
+      "RUNNERS ONLY",
+      "Only runners can rescue jailed players.",
+      "🟢",
+      "runner"
+    );
+
+    speakText?.("Only runners can rescue jailed players.");
+    return;
+  }
+
+  if (local.status === "jailed") {
+    showLeoidsEvent(
+      "YOU ARE JAILED",
+      "You cannot rescue while jailed.\nWait for another runner.",
+      "🔒",
+      "danger"
+    );
+
+    speakText?.("You are jailed. Wait for another runner to rescue you.");
+    return;
+  }
+
+  if (!leoidsState.basePoint && window.__leoidsBasePoint) {
+    leoidsState.basePoint = window.__leoidsBasePoint;
+  }
+
+  if (!leoidsState.basePoint) {
+    showLeoidsEvent(
+      "NO JAIL BASE",
+      "Set the jail/base before rescuing.",
+      "🛡️",
+      "base"
+    );
+
+    speakText?.("Set the jail base first.");
+    return;
+  }
+
+  if (!local.position) {
+    showLeoidsEvent(
+      "LOCATION NEEDED",
+      "Your position is not known yet.",
+      "📍",
+      "base"
+    );
+
+    speakText?.("Your location is not known yet.");
+    return;
+  }
+
+  const now = Date.now();
+
+  if (now - Number(leoidsState.lastRescueAt || 0) < 3000) {
+    return;
+  }
+
+  const distanceToBase = distanceMeters(
+    local.position,
+    leoidsState.basePoint
+  );
+
+  const baseRadius = Number(
+    leoidsState.baseRadius || DEFAULT_BASE_RADIUS
+  );
+
+  if (distanceToBase > baseRadius) {
+    showLeoidsEvent(
+      "TOO FAR FROM BASE",
+      `Get inside the rescue zone.\nDistance: ${Math.round(distanceToBase)}m / ${baseRadius}m`,
+      "📍",
+      "base"
+    );
+
+    speakText?.("You are not close enough to the jail base.");
+    return;
+  }
+
+  const jailedRunners = leoidsState.players.filter(
+    (player) =>
+      player.role === "runner" &&
+      player.status === "jailed"
+  );
+
+  if (!jailedRunners.length) {
+    showLeoidsEvent(
+      "NO ONE TO RESCUE",
+      "There are no jailed runners right now.",
+      "🛡️",
+      "base"
+    );
+
+    speakText?.("No runners need rescuing.");
+    return;
+  }
+
+  jailedRunners.forEach((runner) => {
+    runner.status = "free";
+    runner.jailedAtBase = false;
+
+    runner.position = randomNearbyPoint(
+      leoidsState.basePoint,
+      18
+    );
+  });
+
+  playLeoidsSound?.("jail_rescue", 1);
+
+  const rescuedCount = jailedRunners.length;
+
+  const points = rescuedCount * 75;
+  const coins = rescuedCount * 15;
+
+  local.score = Number(local.score || 0) + points;
+  local.coins = Number(local.coins || 0) + coins;
+
+  if (
+    local.isLocal ||
+    local.id === leoidsState.onlinePlayerId ||
+    !local.isOnline
+  ) {
+    leoidsState.score =
+      Number(leoidsState.score || 0) + points;
+
+    leoidsState.coins =
+      Number(leoidsState.coins || 0) + coins;
+  }
+
+  leoidsState.lastRescueAt = now;
+
+  drawPlayerMarkers?.();
+  renderPlayers?.();
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
+
+  showLeoidsEvent(
+    "RESCUE COMPLETE",
+    `${rescuedCount} runner${rescuedCount === 1 ? "" : "s"} rescued.\n+${points} points`,
+    "🟢",
+    "runner"
+  );
+
+  if (navigator.vibrate) {
+    navigator.vibrate([80, 60, 80, 60, 220]);
+  }
+
+  speakText?.(
+    rescuedCount === 1
+      ? "Rescue complete. One runner released."
+      : `Rescue complete. ${rescuedCount} runners released.`
+  );
+}
+
+  
   
   function runAITagChecks() {
   if (!leoidsState.active) return;
