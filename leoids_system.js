@@ -3139,7 +3139,50 @@ function rescueJailedRunners() {
     return true;
   }
 
+
+function testAllLeoidsSounds() {
+
+  const sounds = [
+    "mission_start",
+    "countdown_tick",
+    "countdown_final",
+    "hunter_released",
+    "player_tagged",
+    "jail_rescue",
+    "boundary_warning",
+    "button_click",
+    "mission_complete",
+    "victory",
+    "defeat"
+  ];
+
+  let delay = 0;
+
+  sounds.forEach((name) => {
+
+    setTimeout(() => {
+
+      console.log("TESTING SOUND:", name);
+
+      showLeoidsEvent?.(
+        "SOUND TEST",
+        name,
+        "🔊",
+        "base"
+      );
+
+      playLeoidsSound?.(name, 1);
+
+    }, delay);
+
+    delay += 1800;
+  });
+}
+
+
+  
 const leoidsSounds = {};
+
 
 function loadLeoidsSounds() {
   leoidsSounds.mission_start = new Audio("sounds/mission_start.mp3");
