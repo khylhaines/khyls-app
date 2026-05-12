@@ -189,20 +189,36 @@ function checkBoundaryRules() {
     if (!player.position) return;
     if (player.status === "jailed") return;
 
-    player.lastBoundaryWarningAt = player.lastBoundaryWarningAt || 0;
-    player.lastBoundaryPenaltyAt = player.lastBoundaryPenaltyAt || 0;
+    player.lastBoundaryWarningAt =
+      player.lastBoundaryWarningAt || 0;
+
+    player.lastBoundaryPenaltyAt =
+      player.lastBoundaryPenaltyAt || 0;
 
     const inside = isPointInsideBoundary(player.position);
 
     if (!inside) {
+
       if (now - player.lastBoundaryPenaltyAt > 9000) {
+
         player.lastBoundaryPenaltyAt = now;
 
-        player.score = Math.max(0, Number(player.score || 0) - 25);
+        player.score = Math.max(
+          0,
+          Number(player.score || 0) - 25
+        );
 
-        if (player.isLocal || !player.isOnline) {
-          leoidsState.score = Math.max(0, Number(leoidsState.score || 0) - 25);
+        if (
+          player.isLocal ||
+          !player.isOnline
+        ) {
+          leoidsState.score = Math.max(
+            0,
+            Number(leoidsState.score || 0) - 25
+          );
         }
+
+        playLeoidsSound?.("boundary_warning", 1);
 
         showLeoidsEvent(
           "OUT OF BOUNDS",
@@ -211,21 +227,48 @@ function checkBoundaryRules() {
           "danger"
         );
 
-        if (navigator.vibrate && (player.isLocal || player.id === getLocalPlayer()?.id)) {
+        if (
+          navigator.vibrate &&
+          (
+            player.isLocal ||
+            player.id === getLocalPlayer()?.id
+          )
+        ) {
           navigator.vibrate([120, 80, 120]);
         }
 
-        speakText?.(`${player.name} is out of bounds. Twenty five points deducted.`);
+        document.body.animate(
+          [
+            { background: "rgba(255,0,0,.28)" },
+            { background: "transparent" }
+          ],
+          {
+            duration: 700,
+            easing: "ease-out"
+          }
+        );
+
+        speakText?.(
+          `${player.name} is out of bounds. Twenty five points deducted.`
+        );
       }
 
       return;
     }
 
     if (leoidsState.boundaryMode === "circle") {
-      const edgeDistance = getDistanceToCircleEdge(player.position);
 
-      if (edgeDistance <= 25 && now - player.lastBoundaryWarningAt > 12000) {
+      const edgeDistance =
+        getDistanceToCircleEdge(player.position);
+
+      if (
+        edgeDistance <= 25 &&
+        now - player.lastBoundaryWarningAt > 12000
+      ) {
+
         player.lastBoundaryWarningAt = now;
+
+        playLeoidsSound?.("boundary_warning", 0.7);
 
         showLeoidsEvent(
           "BOUNDARY WARNING",
@@ -234,17 +277,25 @@ function checkBoundaryRules() {
           "base"
         );
 
-        if (navigator.vibrate && (player.isLocal || player.id === getLocalPlayer()?.id)) {
+        if (
+          navigator.vibrate &&
+          (
+            player.isLocal ||
+            player.id === getLocalPlayer()?.id
+          )
+        ) {
           navigator.vibrate(90);
         }
 
-        speakText?.(`${player.name}, warning. You are close to the boundary.`);
+        speakText?.(
+          `${player.name}, warning. You are close to the boundary.`
+        );
       }
     }
   });
 
-  renderPlayers();
-  updatePanel();
+  renderPlayers?.();
+  updatePanel?.();
   updateLeoidsBattleHud?.();
 }
 
@@ -2651,75 +2702,6 @@ async function sendRunnerToJail(runner, taggedBy = null) {
     runner.jailedAtBase = true;
   }
 
-  const hunterName = taggedBy?.name || "Hunter";
-
-  if (taggedBy) {
-    taggedBy.score = Number(taggedBy.score || 0) + 50;
-    taggedBy.coins = Number(taggedBy.coins || 0) + 10;
-
-    if (taggedBy.isLocal || taggedBy.id === leoidsState.onlinePlayerId || !taggedBy.isOnline) {
-      leoidsState.score = Number(leoidsState.score || 0) + 50;
-      leoidsState.coins = Number(leoidsState.coins || 0) + 10;
-    }
-  }
-
-  const firebase = window.firebasePlayers;
-  const supabase = getSupabaseSafe();
-  const sessionId = leoidsState.onlineSessionId || supabase?.sessionId;
-
-  if (firebase && sessionId && runner.id) {
-    await firebase.updatePlayer(`${sessionId}_${runner.id}`, {
-      id: runner.id,
-      sessionId,
-      name: runner.name || "Runner",
-      avatar: runner.avatar || "🧍",
-      role: "runner",
-      status: "jailed",
-      lat: runner.position?.lat ?? null,
-      lng: runner.position?.lng ?? null,
-      online: true,
-      updatedAt: Date.now(),
-    });
-
-    console.log("FIREBASE TAG SYNC OK", runner.name);
-  }
-
-  drawPlayerMarkers?.();
-  renderPlayers?.();
-  updatePanel?.();
-  updateLeoidsBattleHud?.();
-
-  showLeoidsEvent(
-    "RUNNER JAILED",
-    `${runner.name} was tagged by ${hunterName}.\nGo to jail/base.`,
-    "🔒",
-    "hunter"
-  );
-
-  if (navigator.vibrate) {
-    navigator.vibrate([180, 90, 180]);
-  }
-
-  speakText?.(`${runner.name} tagged. Runner sent to jail.`);
-
-  checkHunterWin?.();
-
-  return true;
-}
-
-
-async function sendRunnerToJail(runner, taggedBy = null) {
-  if (!runner || runner.role !== "runner") return false;
-  if (runner.status === "jailed") return false;
-
-  runner.status = "jailed";
-  runner.jailedAtBase = false;
-
-  if (leoidsState.basePoint) {
-    runner.position = randomNearbyPoint(leoidsState.basePoint, 5);
-    runner.jailedAtBase = true;
-  }
-
   playLeoidsSound?.("player_tagged", 1);
 
   const hunterName = taggedBy?.name || "Hunter";
@@ -2777,12 +2759,18 @@ async function sendRunnerToJail(runner, taggedBy = null) {
     navigator.vibrate([180, 90, 180]);
   }
 
+  document.body.animate(
+    [{ filter: "brightness(1.8)" }, { filter: "brightness(1)" }],
+    { duration: 450, easing: "ease-out" }
+  );
+
   speakText?.(`${runner.name} tagged. Runner sent to jail.`);
 
   checkHunterWin?.();
 
   return true;
 }
+
 
 async function tagSpecificRunner(runner) {
   const local = getLocalPlayer();
@@ -2988,25 +2976,13 @@ function rescueJailedRunners() {
   }
 
   if (local.role !== "runner") {
-    showLeoidsEvent(
-      "RUNNERS ONLY",
-      "Only runners can rescue jailed players.",
-      "🟢",
-      "runner"
-    );
-
+    showLeoidsEvent("RUNNERS ONLY", "Only runners can rescue jailed players.", "🟢", "runner");
     speakText?.("Only runners can rescue jailed players.");
     return;
   }
 
   if (local.status === "jailed") {
-    showLeoidsEvent(
-      "YOU ARE JAILED",
-      "You cannot rescue while jailed.\nWait for another runner.",
-      "🔒",
-      "danger"
-    );
-
+    showLeoidsEvent("YOU ARE JAILED", "You cannot rescue while jailed.\nWait for another runner.", "🔒", "danger");
     speakText?.("You are jailed. Wait for another runner to rescue you.");
     return;
   }
@@ -3016,43 +2992,23 @@ function rescueJailedRunners() {
   }
 
   if (!leoidsState.basePoint) {
-    showLeoidsEvent(
-      "NO JAIL BASE",
-      "Set the jail/base before rescuing.",
-      "🛡️",
-      "base"
-    );
-
+    showLeoidsEvent("NO JAIL BASE", "Set the jail/base before rescuing.", "🛡️", "base");
     speakText?.("Set the jail base first.");
     return;
   }
 
   if (!local.position) {
-    showLeoidsEvent(
-      "LOCATION NEEDED",
-      "Your position is not known yet.",
-      "📍",
-      "base"
-    );
-
+    showLeoidsEvent("LOCATION NEEDED", "Your position is not known yet.", "📍", "base");
     speakText?.("Your location is not known yet.");
     return;
   }
 
   const now = Date.now();
 
-  if (now - Number(leoidsState.lastRescueAt || 0) < 3000) {
-    return;
-  }
+  if (now - Number(leoidsState.lastRescueAt || 0) < 3000) return;
 
-  const distanceToBase = distanceMeters(
-    local.position,
-    leoidsState.basePoint
-  );
-
-  const baseRadius = Number(
-    leoidsState.baseRadius || DEFAULT_BASE_RADIUS
-  );
+  const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
+  const baseRadius = Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
 
   if (distanceToBase > baseRadius) {
     showLeoidsEvent(
@@ -3067,19 +3023,11 @@ function rescueJailedRunners() {
   }
 
   const jailedRunners = leoidsState.players.filter(
-    (player) =>
-      player.role === "runner" &&
-      player.status === "jailed"
+    (player) => player.role === "runner" && player.status === "jailed"
   );
 
   if (!jailedRunners.length) {
-    showLeoidsEvent(
-      "NO ONE TO RESCUE",
-      "There are no jailed runners right now.",
-      "🛡️",
-      "base"
-    );
-
+    showLeoidsEvent("NO ONE TO RESCUE", "There are no jailed runners right now.", "🛡️", "base");
     speakText?.("No runners need rescuing.");
     return;
   }
@@ -3087,33 +3035,30 @@ function rescueJailedRunners() {
   jailedRunners.forEach((runner) => {
     runner.status = "free";
     runner.jailedAtBase = false;
-
-    runner.position = randomNearbyPoint(
-      leoidsState.basePoint,
-      18
-    );
+    runner.position = randomNearbyPoint(leoidsState.basePoint, 18);
   });
 
   playLeoidsSound?.("jail_rescue", 1);
 
-  const rescuedCount = jailedRunners.length;
+  if (navigator.vibrate) {
+    navigator.vibrate([80, 60, 80, 60, 220]);
+  }
 
+  document.body.animate(
+    [{ filter: "brightness(1.7)" }, { filter: "brightness(1)" }],
+    { duration: 550, easing: "ease-out" }
+  );
+
+  const rescuedCount = jailedRunners.length;
   const points = rescuedCount * 75;
   const coins = rescuedCount * 15;
 
   local.score = Number(local.score || 0) + points;
   local.coins = Number(local.coins || 0) + coins;
 
-  if (
-    local.isLocal ||
-    local.id === leoidsState.onlinePlayerId ||
-    !local.isOnline
-  ) {
-    leoidsState.score =
-      Number(leoidsState.score || 0) + points;
-
-    leoidsState.coins =
-      Number(leoidsState.coins || 0) + coins;
+  if (local.isLocal || local.id === leoidsState.onlinePlayerId || !local.isOnline) {
+    leoidsState.score = Number(leoidsState.score || 0) + points;
+    leoidsState.coins = Number(leoidsState.coins || 0) + coins;
   }
 
   leoidsState.lastRescueAt = now;
@@ -3129,10 +3074,6 @@ function rescueJailedRunners() {
     "🟢",
     "runner"
   );
-
-  if (navigator.vibrate) {
-    navigator.vibrate([80, 60, 80, 60, 220]);
-  }
 
   speakText?.(
     rescuedCount === 1
@@ -3814,14 +3755,22 @@ function startRoundFromOnlineSession(session = null) {
   leoidsState.score = 0;
   leoidsState.coins = 0;
 
-  playLeoidsSound?.("mission_start");
+  playLeoidsSound?.("mission_start", 1);
+
+  if (navigator.vibrate) {
+    navigator.vibrate([180, 100, 220]);
+  }
 
   leoidsState.timeLeft = Number(
-    leoidsState.roundTime || session?.round_time || DEFAULT_ROUND_SECONDS
+    leoidsState.roundTime ||
+    session?.round_time ||
+    DEFAULT_ROUND_SECONDS
   );
 
   leoidsState.hunterDelayLeft = Number(
-    leoidsState.hunterDelay || session?.hunter_delay || DEFAULT_HUNTER_DELAY_SECONDS
+    leoidsState.hunterDelay ||
+    session?.hunter_delay ||
+    DEFAULT_HUNTER_DELAY_SECONDS
   );
 
   leoidsState.huntersReleased = false;
@@ -3837,10 +3786,14 @@ function startRoundFromOnlineSession(session = null) {
 
   closeModal?.("leoids-modal");
 
-  const lobby = document.getElementById("leoids-online-lobby-screen");
+  const lobby = document.getElementById(
+    "leoids-online-lobby-screen"
+  );
+
   if (lobby) lobby.remove();
 
   enterBattleMap?.();
+
   hideLeoidsMapControls?.();
 
   redrawAllMapObjects?.();
@@ -3856,10 +3809,27 @@ function startRoundFromOnlineSession(session = null) {
     "base"
   );
 
-  speakText?.("Online LEOIDS mission started.");
+  speakText?.(
+    "Mission started. Runners hide. Hunters wait for release."
+  );
 
-  leoidsState.intervalId = setInterval(tickRound, 1000);
+  document.body.animate(
+    [
+      { filter: "brightness(2)" },
+      { filter: "brightness(1)" }
+    ],
+    {
+      duration: 700,
+      easing: "ease-out"
+    }
+  );
+
+  leoidsState.intervalId = setInterval(
+    tickRound,
+    1000
+  );
 }
+
 
 async function startOnlineCountdown(seconds = 60) {
   const supabase = getSupabaseSafe();
@@ -4045,17 +4015,10 @@ function tickRound() {
   leoidsState.timeLeft = Math.max(0, leoidsState.timeLeft - 1);
 
   if (!leoidsState.huntersReleased) {
-    leoidsState.hunterDelayLeft = Math.max(
-      0,
-      leoidsState.hunterDelayLeft - 1
-    );
+    leoidsState.hunterDelayLeft = Math.max(0, leoidsState.hunterDelayLeft - 1);
 
     const releaseSoon =
       leoidsState.hunterDelayLeft > 0 && leoidsState.hunterDelayLeft <= 10;
-
-    if (releaseSoon && !leoidsState.lastHunterCountdownSecond) {
-      leoidsState.lastHunterCountdownSecond = leoidsState.hunterDelayLeft;
-    }
 
     if (
       releaseSoon &&
@@ -4068,7 +4031,7 @@ function tickRound() {
         leoidsState.hunterDelayLeft === 5 ||
         leoidsState.hunterDelayLeft <= 3
       ) {
-        playLeoidsSound?.("countdown_final");
+        playLeoidsSound?.("countdown_final", 0.9);
 
         showLeoidsEvent(
           "HUNTERS RELEASE SOON",
@@ -4078,6 +4041,8 @@ function tickRound() {
         );
 
         speakText?.(`${leoidsState.hunterDelayLeft}`);
+      } else {
+        playLeoidsSound?.("countdown_tick", 0.45);
       }
     }
 
@@ -4085,27 +4050,24 @@ function tickRound() {
       leoidsState.huntersReleased = true;
       leoidsState.lastHunterCountdownSecond = null;
 
-      playLeoidsSound?.("hunter_released");
+      playLeoidsSound?.("hunter_released", 1);
+
+      if (navigator.vibrate) {
+        navigator.vibrate([250, 100, 250]);
+      }
+
+      document.body.animate(
+        [{ filter: "brightness(2)" }, { filter: "brightness(1)" }],
+        { duration: 700, easing: "ease-out" }
+      );
 
       const local = getLocalPlayer();
 
       if (local?.role === "hunter") {
-        showLeoidsEvent(
-          "HUNTERS RELEASED",
-          "Go. Catch the runners.",
-          "🔴",
-          "hunter"
-        );
-
+        showLeoidsEvent("HUNTERS RELEASED", "Go. Catch the runners.", "🔴", "hunter");
         speakText?.("Hunters released. Go and catch the runners.");
       } else {
-        showLeoidsEvent(
-          "HUNTERS RELEASED",
-          "Run. Hide. Rescue your team.",
-          "🏃",
-          "runner"
-        );
-
+        showLeoidsEvent("HUNTERS RELEASED", "Run. Hide. Rescue your team.", "🏃", "runner");
         speakText?.("Hunters released. Runners, keep moving.");
       }
     }
@@ -4138,21 +4100,27 @@ function tickRound() {
   checkBoundaryRules();
 
   if (leoidsState.timeLeft <= 0) {
-    playLeoidsSound?.("mission_complete");
+    playLeoidsSound?.("mission_complete", 1);
     endRound("timer");
     return;
   }
 
-  updatePanel();
+  updatePanel?.();
   updateLeoidsBattleHud?.();
 }
 
 
-  function endRound(reason = "manual") {
+
+ function endRound(reason = "manual") {
+
   leoidsState.active = false;
 
+  clearInterval?.(leoidsState.intervalId);
+
   const runnersFree = leoidsState.players.filter(
-    (p) => p.role === "runner" && p.status === "free"
+    (p) =>
+      p.role === "runner" &&
+      p.status === "free"
   ).length;
 
   const hunters = leoidsState.players.filter(
@@ -4160,25 +4128,79 @@ function tickRound() {
   ).length;
 
   let resultText = "Round ended.";
+  let resultTitle = "ROUND COMPLETE";
+  let resultIcon = "🏆";
+  let resultTheme = "base";
 
   if (reason === "timer") {
-    resultText =
-      runnersFree > 0
-        ? "Runners survived."
-        : "Hunters caught everyone.";
+
+    if (runnersFree > 0) {
+
+      resultTitle = "RUNNERS WIN";
+      resultText =
+        `${runnersFree} runner${runnersFree === 1 ? "" : "s"} survived.`;
+
+      resultIcon = "🟢";
+      resultTheme = "runner";
+
+      playLeoidsSound?.("victory", 1);
+
+    } else {
+
+      resultTitle = "HUNTERS WIN";
+      resultText = "Hunters caught everyone.";
+
+      resultIcon = "🔴";
+      resultTheme = "hunter";
+
+      playLeoidsSound?.("defeat", 1);
+    }
+
+  } else if (reason === "hunters") {
+
+    resultTitle = "HUNTERS WIN";
+    resultText = "All runners were jailed.";
+
+    resultIcon = "🔴";
+    resultTheme = "hunter";
+
+    playLeoidsSound?.("defeat", 1);
+
+  } else {
+
+    playLeoidsSound?.("mission_complete", 1);
   }
 
+  if (navigator.vibrate) {
+    navigator.vibrate([220, 120, 220, 120, 300]);
+  }
+
+  document.body.animate(
+    [
+      { filter: "brightness(2)" },
+      { filter: "brightness(1)" }
+    ],
+    {
+      duration: 1000,
+      easing: "ease-out"
+    }
+  );
+
   showLeoidsEvent(
-    "ROUND COMPLETE",
+    resultTitle,
     resultText,
-    "🏆",
-    "base"
+    resultIcon,
+    resultTheme
   );
 
   speakText?.(resultText);
 
-  updatePanel();
+  updatePanel?.();
   updateLeoidsBattleHud?.();
+
+  setTimeout(() => {
+    openLeoidsLeaderboard?.();
+  }, 2200);
 }
 
   
