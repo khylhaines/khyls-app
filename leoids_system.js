@@ -3243,6 +3243,10 @@ function playLeoidsSound(name, volume = 1) {
   }
 }
 
+window.playLeoidsSound = playLeoidsSound;
+window.loadLeoidsSounds = loadLeoidsSounds;
+window.unlockLeoidsAudio = unlockLeoidsAudio;
+
 
 let leoidsAudioUnlocked = false;
 
