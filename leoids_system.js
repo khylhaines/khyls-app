@@ -5762,6 +5762,7 @@ function wirePanelButtons() {
   };
 
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+  loadLeoidsSounds?.();
 
   hideSetupButton("btn-leoids-quick-start");
   hideSetupButton("btn-leoids-add-ai-runner");
@@ -6345,6 +6346,8 @@ return {
   hideLeoidsMapControls,
 
   clearBoundaryFull,
+  loadLeoidsSounds,
+  playLeoidsSound,
 
   addAIPlayer,
   resetLocalPlayers,
