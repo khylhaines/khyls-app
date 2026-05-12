@@ -3152,6 +3152,195 @@ showLeoidsCinematicOverlay({
   checkHunterWin?.();
 }
 
+function updateLeoidsBattleHud() {
+  let hud = document.getElementById("leoids-battle-hud");
+
+  if (!hud) {
+    hud = document.createElement("div");
+    hud.id = "leoids-battle-hud";
+    hud.style.position = "fixed";
+    hud.style.top = "12px";
+    hud.style.left = "50%";
+    hud.style.transform = "translateX(-50%)";
+    hud.style.zIndex = "999999";
+    hud.style.minWidth = "260px";
+    hud.style.maxWidth = "94vw";
+    hud.style.pointerEvents = "none";
+    document.body.appendChild(hud);
+  }
+
+  const local = getLocalPlayer();
+
+  if (!leoidsState.active || !local) {
+    hud.style.display = "none";
+    return;
+  }
+
+  hud.style.display = "block";
+
+  const roleColor =
+    local.role === "hunter"
+      ? "#ff3b3b"
+      : local.status === "jailed"
+      ? "#9ca3af"
+      : "#22c55e";
+
+  const roleLabel =
+    local.role === "hunter"
+      ? "HUNTER"
+      : local.status === "jailed"
+      ? "JAILED"
+      : "RUNNER";
+
+  const statusText = getLeoidsHudStatusText();
+
+  const timeText = formatTime?.(leoidsState.timeLeft || 0) || "00:00";
+  const hunterDelayText = formatTime?.(leoidsState.hunterDelayLeft || 0) || "00:00";
+
+  const hunterWarning =
+    !leoidsState.huntersReleased &&
+    Number(leoidsState.hunterDelayLeft || 0) <= 10;
+
+  const hunterReleased = !!leoidsState.huntersReleased;
+
+  const pulseStyle = hunterWarning
+    ? "animation:leoidsHudPulse .75s infinite;"
+    : "";
+
+  const hunterText = hunterReleased
+    ? "RELEASED"
+    : hunterDelayText;
+
+  let nearestDistance = Infinity;
+  let nearestLabel = "NONE";
+
+  leoidsState.players.forEach((player) => {
+    if (!player.position || !local.position || player.id === local.id) return;
+
+    if (local.role === "hunter" && player.role !== "runner") return;
+    if (local.role === "runner" && player.role !== "hunter") return;
+
+    const distance = distanceMeters(local.position, player.position);
+
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestLabel = player.name || player.role || "PLAYER";
+    }
+  });
+
+  const nearestText =
+    Number.isFinite(nearestDistance)
+      ? `${Math.round(nearestDistance)}m`
+      : "--";
+
+  const accuracy =
+    Number.isFinite(local.accuracy)
+      ? `${Math.round(local.accuracy)}m`
+      : "--";
+
+  if (!document.getElementById("leoids-hud-animation-style")) {
+    const style = document.createElement("style");
+    style.id = "leoids-hud-animation-style";
+    style.textContent = `
+      @keyframes leoidsHudPulse {
+        0% { transform:scale(1); box-shadow:0 0 18px rgba(255,59,59,.35); }
+        50% { transform:scale(1.04); box-shadow:0 0 34px rgba(255,59,59,.75); }
+        100% { transform:scale(1); box-shadow:0 0 18px rgba(255,59,59,.35); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  hud.innerHTML = `
+    <div style="
+      background:rgba(5,10,18,.94);
+      border:2px solid ${roleColor};
+      border-radius:22px;
+      padding:12px 14px;
+      box-shadow:0 0 24px ${roleColor}55;
+      backdrop-filter:blur(10px);
+      color:white;
+      font-family:system-ui,-apple-system,sans-serif;
+    ">
+      <div style="
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        gap:10px;
+        text-align:center;
+      ">
+        <div>
+          <div style="font-size:10px;opacity:.65;letter-spacing:1px;">ROLE</div>
+          <div style="font-size:17px;font-weight:1000;color:${roleColor};">
+            ${roleLabel}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;opacity:.65;letter-spacing:1px;">TIME</div>
+          <div style="font-size:19px;font-weight:1000;color:#ffd54a;">
+            ${timeText}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;opacity:.65;letter-spacing:1px;">STATUS</div>
+          <div style="font-size:17px;font-weight:1000;">
+            ${statusText}
+          </div>
+        </div>
+      </div>
+
+      <div style="
+        margin-top:10px;
+        padding:10px;
+        border-radius:16px;
+        background:${hunterReleased ? "rgba(255,59,59,.18)" : "rgba(255,213,74,.12)"};
+        border:1px solid ${hunterReleased ? "rgba(255,59,59,.55)" : "rgba(255,213,74,.45)"};
+        text-align:center;
+        ${pulseStyle}
+      ">
+        <div style="font-size:10px;opacity:.7;letter-spacing:1px;">
+          HUNTER RELEASE
+        </div>
+        <div style="
+          font-size:24px;
+          font-weight:1000;
+          color:${hunterReleased ? "#ff3b3b" : hunterWarning ? "#ff3b3b" : "#ffd54a"};
+        ">
+          ${hunterText}
+        </div>
+      </div>
+
+      <div style="
+        margin-top:10px;
+        border-top:1px solid rgba(255,255,255,.12);
+        padding-top:10px;
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        gap:10px;
+        text-align:center;
+      ">
+        <div>
+          <div style="font-size:10px;opacity:.65;">NEAREST</div>
+          <div style="font-size:14px;font-weight:900;">${nearestLabel}</div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;opacity:.65;">DISTANCE</div>
+          <div style="font-size:18px;font-weight:1000;color:${roleColor};">${nearestText}</div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;opacity:.65;">GPS</div>
+          <div style="font-size:16px;font-weight:900;">${accuracy}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
+  
   function checkHunterWin() {
     const runners = leoidsState.players.filter((p) => p.role === "runner");
     const allJailed =
