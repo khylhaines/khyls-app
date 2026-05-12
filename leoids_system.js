@@ -2748,6 +2748,13 @@ async function sendRunnerToJail(runner, taggedBy = null) {
   updatePanel?.();
   updateLeoidsBattleHud?.();
 
+showLeoidsCinematicOverlay({
+  title: "RUNNER JAILED",
+  subtitle: `${runner.name} was captured`,
+  icon: "🔒",
+  theme: "hunter"
+});
+  
   showLeoidsEvent(
     "RUNNER JAILED",
     `${runner.name} was tagged by ${hunterName}.\nGo to jail/base.`,
@@ -3068,6 +3075,13 @@ function rescueJailedRunners() {
   updatePanel?.();
   updateLeoidsBattleHud?.();
 
+showLeoidsCinematicOverlay({
+  title: "RESCUE COMPLETE",
+  subtitle: `${rescuedCount} runner${rescuedCount === 1 ? "" : "s"} rescued`,
+  icon: "🟢",
+  theme: "runner"
+});
+  
   showLeoidsEvent(
     "RESCUE COMPLETE",
     `${rescuedCount} runner${rescuedCount === 1 ? "" : "s"} rescued.\n+${points} points`,
@@ -3974,6 +3988,13 @@ function startRoundFromOnlineSession(session = null) {
   updatePanel?.();
   showLeoidsBattleHud?.();
 
+showLeoidsCinematicOverlay({
+  title: "MISSION STARTED",
+  subtitle: "Runners hide.\nHunters wait for release.",
+  icon: "🚀",
+  theme: "base"
+});
+  
   showLeoidsEvent(
     "MISSION STARTED",
     "Runners hide.\nHunters wait for release.",
@@ -4205,6 +4226,13 @@ function tickRound() {
       ) {
         playLeoidsSound?.("countdown_final", 0.9);
 
+       showLeoidsCinematicOverlay({
+        title: "HUNTERS RELEASED",
+       subtitle: "The hunt has begun.",
+        icon: "🔴",
+        theme: "hunter"
+       });
+        
         showLeoidsEvent(
           "HUNTERS RELEASE SOON",
           `${leoidsState.hunterDelayLeft} seconds`,
@@ -4358,6 +4386,14 @@ function tickRound() {
     }
   );
 
+showLeoidsCinematicOverlay({
+  title: "ROUND COMPLETE",
+  subtitle: resultText,
+  icon: "🏆",
+  theme: "gold",
+  duration: 2600
+});
+   
   showLeoidsEvent(
     resultTitle,
     resultText,
