@@ -4735,6 +4735,13 @@ function boot() {
     renderEverything();
     wireButtons();
 
+document.addEventListener("click", (event) => {
+  if (!event.target.closest("button")) return;
+
+  unlockLeoidsAudio?.();
+  playLeoidsSound?.("button_click", 0.55);
+});
+    
     showWelcomeMessage();
 
     initMap();
