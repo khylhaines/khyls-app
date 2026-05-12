@@ -5859,7 +5859,7 @@ function hideLeoidsBattleHud() {
 }
 
 
-testAllLeoidsSounds()
+
 
 async function quickStartLeoidsGame() {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
