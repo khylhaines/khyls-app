@@ -2904,7 +2904,7 @@ async function sendRunnerToJail(runner, taggedBy = null) {
 }
 
 
- function rescueJailedRunners() {
+function rescueJailedRunners() {
   const local = getLocalPlayer();
 
   if (!local) {
@@ -2913,25 +2913,13 @@ async function sendRunnerToJail(runner, taggedBy = null) {
   }
 
   if (local.role !== "runner") {
-    showLeoidsEvent(
-      "RUNNERS ONLY",
-      "Only runners can rescue jailed players.",
-      "🟢",
-      "runner"
-    );
-
+    showLeoidsEvent("RUNNERS ONLY", "Only runners can rescue jailed players.", "🟢", "runner");
     speakText?.("Only runners can rescue jailed players.");
     return;
   }
 
   if (local.status === "jailed") {
-    showLeoidsEvent(
-      "YOU ARE JAILED",
-      "You cannot rescue while jailed.\nWait for another runner.",
-      "🔒",
-      "danger"
-    );
-
+    showLeoidsEvent("YOU ARE JAILED", "You cannot rescue while jailed.\nWait for another runner.", "🔒", "danger");
     speakText?.("You are jailed. Wait for another runner to rescue you.");
     return;
   }
@@ -2941,25 +2929,13 @@ async function sendRunnerToJail(runner, taggedBy = null) {
   }
 
   if (!leoidsState.basePoint) {
-    showLeoidsEvent(
-      "NO JAIL BASE",
-      "Set the jail/base before rescuing.",
-      "🛡️",
-      "base"
-    );
-
+    showLeoidsEvent("NO JAIL BASE", "Set the jail/base before rescuing.", "🛡️", "base");
     speakText?.("Set the jail base first.");
     return;
   }
 
   if (!local.position) {
-    showLeoidsEvent(
-      "LOCATION NEEDED",
-      "Your position is not known yet.",
-      "📍",
-      "base"
-    );
-
+    showLeoidsEvent("LOCATION NEEDED", "Your position is not known yet.", "📍", "base");
     speakText?.("Your location is not known yet.");
     return;
   }
@@ -2986,19 +2962,11 @@ async function sendRunnerToJail(runner, taggedBy = null) {
   }
 
   const jailedRunners = leoidsState.players.filter(
-    (player) =>
-      player.role === "runner" &&
-      player.status === "jailed"
+    (player) => player.role === "runner" && player.status === "jailed"
   );
 
   if (!jailedRunners.length) {
-    showLeoidsEvent(
-      "NO ONE TO RESCUE",
-      "There are no jailed runners right now.",
-      "🛡️",
-      "base"
-    );
-
+    showLeoidsEvent("NO ONE TO RESCUE", "There are no jailed runners right now.", "🛡️", "base");
     speakText?.("No runners need rescuing.");
     return;
   }
@@ -3008,6 +2976,8 @@ async function sendRunnerToJail(runner, taggedBy = null) {
     runner.jailedAtBase = false;
     runner.position = randomNearbyPoint(leoidsState.basePoint, 18);
   });
+
+  playLeoidsSound?.("jail_rescue", 1);
 
   const rescuedCount = jailedRunners.length;
   const points = rescuedCount * 75;
@@ -3023,9 +2993,9 @@ async function sendRunnerToJail(runner, taggedBy = null) {
 
   leoidsState.lastRescueAt = now;
 
-  drawPlayerMarkers();
-  renderPlayers();
-  updatePanel();
+  drawPlayerMarkers?.();
+  renderPlayers?.();
+  updatePanel?.();
   updateLeoidsBattleHud?.();
 
   showLeoidsEvent(
@@ -3045,6 +3015,7 @@ async function sendRunnerToJail(runner, taggedBy = null) {
       : `Rescue complete. ${rescuedCount} runners released.`
   );
 }
+
 
   
   function runAITagChecks() {
