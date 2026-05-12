@@ -4731,6 +4731,11 @@ showLeoidsCinematicOverlay({
 });
    
   showLeoidsEvent(
+    resultTitle,
+    resultText,
+    resultIcon,
+    resultTheme
+  );
 
 setTimeout(() => {
   showLeoidsMatchEndScreen({
@@ -4740,13 +4745,7 @@ setTimeout(() => {
     theme: resultTheme,
   });
 }, 900);
-    
-    resultTitle,
-    resultText,
-    resultIcon,
-    resultTheme
-  );
-
+   
   speakText?.(resultText);
 
   updatePanel?.();
