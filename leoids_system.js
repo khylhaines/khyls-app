@@ -967,7 +967,157 @@ function startGpsOnlineSync() {
   return true;
 }
 
+function openLeoidsMissionSetupScreen({ returnToLobby = true } = {}) {
+  const old = document.getElementById("leoids-mission-setup-screen");
+  if (old) old.remove();
 
+  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
+
+  if (!isHost) {
+    alert("Only the host can edit mission setup.");
+    return;
+  }
+
+  const modal = document.createElement("div");
+  modal.id = "leoids-mission-setup-screen";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.zIndex = "999999";
+  modal.style.background = "rgba(0,0,0,.9)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "18px";
+
+  modal.innerHTML = `
+    <div style="
+      width:min(94vw,560px);
+      max-height:88vh;
+      overflow:auto;
+      border:2px solid rgba(0,212,255,.85);
+      border-radius:28px;
+      background:linear-gradient(180deg,#101827,#05070b);
+      color:white;
+      padding:22px;
+      box-shadow:0 0 38px rgba(0,212,255,.25);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    ">
+      <h2 style="margin:0;color:#00d4ff;text-align:center;">MISSION SETUP</h2>
+
+      <div style="margin-top:14px;padding:12px;border-radius:16px;background:rgba(255,255,255,.06);">
+        <h3 style="margin:0 0 8px;color:#ffd54a;">Boundary</h3>
+
+        <button id="setup-boundary-circle" type="button" style="width:100%;min-height:44px;border-radius:14px;background:#00d4ff;color:#05070b;font-weight:1000;border:none;">
+          CIRCLE BOUNDARY
+        </button>
+
+        <button id="setup-boundary-street" type="button" style="width:100%;min-height:44px;border-radius:14px;background:#202a3c;color:white;font-weight:900;margin-top:8px;border:none;">
+          STREET BOUNDARY
+        </button>
+
+        <select id="setup-boundary-size" style="width:100%;min-height:44px;margin-top:10px;border-radius:12px;">
+          <option value="100">100m - small</option>
+          <option value="200">200m - normal</option>
+          <option value="350">350m - large</option>
+          <option value="500">500m - huge</option>
+        </select>
+
+        <button id="setup-set-circle" type="button" style="width:100%;min-height:44px;border-radius:14px;background:#22c55e;color:#05070b;font-weight:1000;margin-top:10px;border:none;">
+          SET CIRCLE HERE
+        </button>
+      </div>
+
+      <div style="margin-top:12px;padding:12px;border-radius:16px;background:rgba(255,255,255,.06);">
+        <h3 style="margin:0 0 8px;color:#ffd54a;">Jail / Base</h3>
+
+        <button id="setup-set-base" type="button" style="width:100%;min-height:44px;border-radius:14px;background:#22c55e;color:#05070b;font-weight:1000;border:none;">
+          SET JAIL / BASE
+        </button>
+
+        <select id="setup-base-radius" style="width:100%;min-height:44px;margin-top:10px;border-radius:12px;">
+          <option value="10">10m tight</option>
+          <option value="15">15m normal</option>
+          <option value="25">25m easy</option>
+        </select>
+      </div>
+
+      <div style="margin-top:12px;padding:12px;border-radius:16px;background:rgba(255,255,255,.06);">
+        <h3 style="margin:0 0 8px;color:#ffd54a;">Round Rules</h3>
+
+        <select id="setup-round-length" style="width:100%;min-height:44px;border-radius:12px;">
+          <option value="600">10 minutes</option>
+          <option value="900">15 minutes</option>
+          <option value="1200">20 minutes</option>
+          <option value="1800">30 minutes</option>
+        </select>
+
+        <select id="setup-hunter-delay" style="width:100%;min-height:44px;margin-top:10px;border-radius:12px;">
+          <option value="30">Hunter delay: 30 seconds</option>
+          <option value="60">Hunter delay: 1 minute</option>
+          <option value="120">Hunter delay: 2 minutes</option>
+          <option value="180">Hunter delay: 3 minutes</option>
+          <option value="300">Hunter delay: 5 minutes</option>
+        </select>
+
+        <select id="setup-tag-radius" style="width:100%;min-height:44px;margin-top:10px;border-radius:12px;">
+          <option value="5">Tag radius: 5m hard</option>
+          <option value="10">Tag radius: 10m normal</option>
+          <option value="15">Tag radius: 15m easy</option>
+          <option value="30">Tag radius: 30m test</option>
+        </select>
+      </div>
+
+      <button id="setup-save" type="button" style="width:100%;min-height:50px;border-radius:16px;background:#ffd54a;color:#05070b;font-weight:1000;margin-top:16px;border:none;">
+        SAVE SETUP
+      </button>
+
+      <button id="setup-back" type="button" style="width:100%;min-height:44px;border-radius:16px;background:#202a3c;color:white;font-weight:900;margin-top:10px;border:none;">
+        BACK TO LOBBY
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  $("setup-boundary-size").value = String(leoidsState.boundaryRadius || DEFAULT_BOUNDARY_RADIUS);
+  $("setup-base-radius").value = String(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
+  $("setup-round-length").value = String(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
+  $("setup-hunter-delay").value = String(leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS);
+  $("setup-tag-radius").value = String(leoidsState.tagRadius || DEFAULT_TAG_RADIUS);
+
+  $("setup-boundary-circle").onclick = () => setBoundaryMode("circle");
+  $("setup-boundary-street").onclick = () => setBoundaryMode("polygon");
+
+  $("setup-boundary-size").onchange = (e) => setBoundaryRadius(Number(e.target.value));
+  $("setup-base-radius").onchange = (e) => setBaseRadius(Number(e.target.value));
+  $("setup-round-length").onchange = (e) => setRoundLength(Number(e.target.value));
+  $("setup-hunter-delay").onchange = (e) => setHunterDelay(Number(e.target.value));
+  $("setup-tag-radius").onchange = (e) => setTagRadius(Number(e.target.value));
+
+  $("setup-set-circle").onclick = () => setCircleBoundaryHere();
+
+  $("setup-set-base").onclick = () => {
+    modal.remove();
+    setBaseHere();
+  };
+
+  $("setup-save").onclick = async () => {
+    await saveOnlineSessionConfig?.();
+    updatePanel?.();
+    speakText?.("Mission setup saved.");
+    alert("Mission setup saved.");
+  };
+
+  $("setup-back").onclick = () => {
+    modal.remove();
+
+    if (returnToLobby && leoidsState.onlineSessionId) {
+      openOnlineLobbyScreen(leoidsState.onlineSessionId);
+    }
+  };
+}
+
+  
          
  function refreshBoundaryButtons() {
   const isCircle = leoidsState.boundaryMode === "circle";
@@ -1036,7 +1186,8 @@ function startGpsOnlineSync() {
 }
 
 
-          
+  
+
 function setBoundaryRadius(radius = DEFAULT_BOUNDARY_RADIUS) {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
 
@@ -4286,7 +4437,9 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
       closeLobbyScreen();
 
       setTimeout(() => {
-        openSetupPanel?.();
+        openLeoidsMissionSetupScreen({
+          returnToLobby: true,
+        });
       }, 150);
     });
 
@@ -4300,6 +4453,10 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId) {
       }
 
       if (!confirm("End this mission/lobby?")) return;
+
+      if (leoidsState.active) {
+        endRound?.("manual");
+      }
 
       if (typeof supabase.endSession === "function") {
         await supabase.endSession(leoidsState.onlineSessionId);
@@ -6075,7 +6232,7 @@ return {
   tagNearestRunner,
   tagSpecificRunner,
   rescueJailedRunners,
-
+  openLeoidsMissionSetupScreen,
   createOnlineSession,
   joinOnlineSession,
   startOnlinePlayerSync,
