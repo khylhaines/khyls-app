@@ -2823,9 +2823,30 @@ async function sendRunnerToJail(runner, taggedBy = null) {
 
   const hunterName = taggedBy?.name || "Hunter";
 
+ 
   if (taggedBy) {
-    taggedBy.score = Number(taggedBy.score || 0) + 50;
-    taggedBy.coins = Number(taggedBy.coins || 0) + 10;
+
+  taggedBy.tagStreak =
+    Number(taggedBy.tagStreak || 0) + 1;
+
+  const combo = taggedBy.tagStreak;
+
+  const points =
+    50 + Math.max(0, combo - 1) * 15;
+
+  const coins =
+    10 + Math.max(0, combo - 1) * 3;
+
+  awardLeoidsCombo?.({
+    player: taggedBy,
+    points,
+    coins,
+    combo,
+    theme: "hunter",
+    label: "TAG STREAK"
+  });
+}
+
 
 showLeoidsScorePopup({
   text: "+50",
@@ -2842,12 +2863,7 @@ showLeoidsCinematicOverlay({
 
 playLeoidsSound?.("player_tagged", 1);
     
-    if (taggedBy.isLocal || taggedBy.id === leoidsState.onlinePlayerId || !taggedBy.isOnline) {
-      leoidsState.score = Number(leoidsState.score || 0) + 50;
-      leoidsState.coins = Number(leoidsState.coins || 0) + 10;
-    }
-  }
-
+    
   const firebase = window.firebasePlayers;
   const supabase = getSupabaseSafe();
   const sessionId = leoidsState.onlineSessionId || supabase?.sessionId;
