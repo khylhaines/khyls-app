@@ -3243,7 +3243,32 @@ function playLeoidsSound(name, volume = 1) {
   }
 }
 
-   
+
+let leoidsAudioUnlocked = false;
+
+function unlockLeoidsAudio() {
+  if (leoidsAudioUnlocked) return;
+
+  leoidsAudioUnlocked = true;
+
+  Object.values(leoidsSounds || {}).forEach((sound) => {
+    try {
+      sound.muted = true;
+      sound.play()
+        .then(() => {
+          sound.pause();
+          sound.currentTime = 0;
+          sound.muted = false;
+        })
+        .catch(() => {
+          sound.muted = false;
+        });
+    } catch {}
+  });
+
+  console.log("LEOIDS audio unlocked.");
+}
+  
   function showLeoidsEvent(title, message, emoji = "⚡", theme = "base") {
   const old = document.getElementById("leoids-event-banner");
   if (old) old.remove();
@@ -5764,6 +5789,9 @@ function wirePanelButtons() {
   const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
   loadLeoidsSounds?.();
 
+document.body.addEventListener("click", unlockLeoidsAudio, { once: true });
+document.body.addEventListener("touchstart", unlockLeoidsAudio, { once: true });
+  
   hideSetupButton("btn-leoids-quick-start");
   hideSetupButton("btn-leoids-add-ai-runner");
   hideSetupButton("btn-leoids-add-ai-hunter");
