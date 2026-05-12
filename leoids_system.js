@@ -3102,6 +3102,52 @@ async function sendRunnerToJail(runner, taggedBy = null) {
     return true;
   }
 
+const leoidsSounds = {};
+
+function loadLeoidsSounds() {
+  leoidsSounds.mission_start = new Audio("sounds/mission_start.mp3");
+  leoidsSounds.countdown_tick = new Audio("sounds/countdown_tick.mp3");
+  leoidsSounds.countdown_final = new Audio("sounds/countdown_final.mp3");
+
+  leoidsSounds.hunter_released = new Audio("sounds/hunter_released.mp3");
+
+  leoidsSounds.player_tagged = new Audio("sounds/player_tagged.mp3");
+  leoidsSounds.jail_rescue = new Audio("sounds/jail_rescue.mp3");
+
+  leoidsSounds.boundary_warning = new Audio("sounds/boundary_warning.mp3");
+
+  leoidsSounds.button_click = new Audio("sounds/button_click.mp3");
+
+  leoidsSounds.mission_complete = new Audio("sounds/mission_complete.mp3");
+
+  leoidsSounds.victory = new Audio("sounds/victory.mp3");
+  leoidsSounds.defeat = new Audio("sounds/defeat.mp3");
+
+  Object.values(leoidsSounds).forEach((sound) => {
+    sound.preload = "auto";
+    sound.volume = 0.85;
+  });
+
+  console.log("LEOIDS sounds loaded.");
+}
+
+function playLeoidsSound(name, volume = 1) {
+  try {
+    const sound = leoidsSounds[name];
+
+    if (!sound) return;
+
+    sound.pause();
+    sound.currentTime = 0;
+    sound.volume = volume;
+
+    sound.play().catch(() => {});
+  } catch (err) {
+    console.warn("Sound failed:", name, err);
+  }
+}
+
+   
   function showLeoidsEvent(title, message, emoji = "⚡", theme = "base") {
   const old = document.getElementById("leoids-event-banner");
   if (old) old.remove();
@@ -3580,11 +3626,26 @@ function handleOnlineCountdown(session) {
     leoidsState.countdownIntervalId = null;
   }
 
+  let lastSoundSecond = null;
+
   leoidsState.countdownIntervalId = setInterval(async () => {
     const secondsLeft = Math.ceil((startsAtMs - Date.now()) / 1000);
 
     showCountdownBanner(Math.max(0, secondsLeft));
     updatePanel();
+
+    if (
+      secondsLeft > 0 &&
+      secondsLeft !== lastSoundSecond
+    ) {
+      lastSoundSecond = secondsLeft;
+
+      if (secondsLeft <= 5) {
+        playLeoidsSound?.("countdown_final");
+      } else {
+        playLeoidsSound?.("countdown_tick", 0.45);
+      }
+    }
 
     if (secondsLeft <= 0) {
       clearInterval(leoidsState.countdownIntervalId);
@@ -3608,7 +3669,7 @@ function handleOnlineCountdown(session) {
 }
 
 
- function startRoundFromOnlineSession(session = null) {
+function startRoundFromOnlineSession(session = null) {
   if (session) {
     applyOnlineSessionConfig?.(session);
   }
@@ -3627,6 +3688,8 @@ function handleOnlineCountdown(session) {
   leoidsState.status = "free";
   leoidsState.score = 0;
   leoidsState.coins = 0;
+
+  playLeoidsSound?.("mission_start");
 
   leoidsState.timeLeft = Number(
     leoidsState.roundTime || session?.round_time || DEFAULT_ROUND_SECONDS
@@ -3672,7 +3735,6 @@ function handleOnlineCountdown(session) {
 
   leoidsState.intervalId = setInterval(tickRound, 1000);
 }
-  
 
 async function startOnlineCountdown(seconds = 60) {
   const supabase = getSupabaseSafe();
@@ -3881,6 +3943,8 @@ function tickRound() {
         leoidsState.hunterDelayLeft === 5 ||
         leoidsState.hunterDelayLeft <= 3
       ) {
+        playLeoidsSound?.("countdown_final");
+
         showLeoidsEvent(
           "HUNTERS RELEASE SOON",
           `${leoidsState.hunterDelayLeft} seconds`,
@@ -3895,6 +3959,8 @@ function tickRound() {
     if (leoidsState.hunterDelayLeft <= 0) {
       leoidsState.huntersReleased = true;
       leoidsState.lastHunterCountdownSecond = null;
+
+      playLeoidsSound?.("hunter_released");
 
       const local = getLocalPlayer();
 
@@ -3947,6 +4013,7 @@ function tickRound() {
   checkBoundaryRules();
 
   if (leoidsState.timeLeft <= 0) {
+    playLeoidsSound?.("mission_complete");
     endRound("timer");
     return;
   }
