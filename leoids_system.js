@@ -3382,6 +3382,8 @@ function showLeoidsCinematicOverlay({
     }, 340);
   }, duration);
 }
+  
+window.showLeoidsCinematicOverlay = showLeoidsCinematicOverlay;
 
   
   function showLeoidsEvent(title, message, emoji = "⚡", theme = "base") {
