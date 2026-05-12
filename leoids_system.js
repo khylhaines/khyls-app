@@ -1095,7 +1095,7 @@ function openLeoidsMissionSetupScreen({ returnToLobby = true } = {}) {
   leoidsState.mapMode = "boundary";
 
   enterBattleMap?.();
-  hideActionButton?.();
+  hideLeoidsMapControls?.();
   showLeoidsMapControls?.("boundary");
   enableMapPointAdding?.();
 
@@ -1117,7 +1117,7 @@ function openLeoidsMissionSetupScreen({ returnToLobby = true } = {}) {
   leoidsState.mapMode = "base";
 
   enterBattleMap?.();
-  hideActionButton?.();
+  hideLeoidsMapControls?.();
   setBaseHere?.();
 
   speakText?.("Set the jail base on the map.");
