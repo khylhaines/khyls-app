@@ -2808,6 +2808,7 @@ window.showLeoidsScorePopup = showLeoidsScorePopup;
   
   
 async function sendRunnerToJail(runner, taggedBy = null) {
+
   if (!runner || runner.role !== "runner") return false;
   if (runner.status === "jailed") return false;
 
@@ -2815,94 +2816,108 @@ async function sendRunnerToJail(runner, taggedBy = null) {
   runner.jailedAtBase = false;
 
   if (leoidsState.basePoint) {
-    runner.position = randomNearbyPoint(leoidsState.basePoint, 5);
+    runner.position =
+      randomNearbyPoint(leoidsState.basePoint, 5);
+
     runner.jailedAtBase = true;
   }
 
   playLeoidsSound?.("player_tagged", 1);
 
-  const hunterName = taggedBy?.name || "Hunter";
+  const hunterName =
+    taggedBy?.name || "Hunter";
 
- 
   if (taggedBy) {
 
-  taggedBy.tagStreak =
-    Number(taggedBy.tagStreak || 0) + 1;
+    taggedBy.tagStreak =
+      Number(taggedBy.tagStreak || 0) + 1;
 
-  const combo = taggedBy.tagStreak;
+    const combo =
+      taggedBy.tagStreak;
 
-  const points =
-    50 + Math.max(0, combo - 1) * 15;
+    const points =
+      50 + Math.max(0, combo - 1) * 15;
 
-  const coins =
-    10 + Math.max(0, combo - 1) * 3;
+    const coins =
+      10 + Math.max(0, combo - 1) * 3;
 
-  awardLeoidsCombo?.({
-    player: taggedBy,
-    points,
-    coins,
-    combo,
-    theme: "hunter",
-    label: "TAG STREAK"
-  });
-}
-
-
-showLeoidsScorePopup({
-  text: "+50",
-  theme: "hunter"
-});
-
-showLeoidsCinematicOverlay({
-  title: "RUNNER TAGGED",
-  subtitle: `${runner.name} captured by ${hunterName}`,
-  icon: "🔒",
-  theme: "hunter",
-  duration: 1400,
-});
-
-playLeoidsSound?.("player_tagged", 1);
-    
-    
-  const firebase = window.firebasePlayers;
-  const supabase = getSupabaseSafe();
-  const sessionId = leoidsState.onlineSessionId || supabase?.sessionId;
-
-  if (firebase && sessionId && runner.id) {
-    await firebase.updatePlayer(`${sessionId}_${runner.id}`, {
-      id: runner.id,
-      sessionId,
-      name: runner.name || "Runner",
-      avatar: runner.avatar || "🧍",
-      role: "runner",
-      status: "jailed",
-      lat: runner.position?.lat ?? null,
-      lng: runner.position?.lng ?? null,
-      online: true,
-      updatedAt: Date.now(),
+    awardLeoidsCombo?.({
+      player: taggedBy,
+      points,
+      coins,
+      combo,
+      theme: "hunter",
+      label: "TAG STREAK"
     });
 
-    console.log("FIREBASE TAG SYNC OK", runner.name);
+    showLeoidsCinematicOverlay?.({
+      title: "RUNNER TAGGED",
+      subtitle:
+        `${runner.name} captured by ${hunterName}`,
+      icon: "🔒",
+      theme: "hunter",
+      duration: 1400,
+    });
   }
 
-  await syncPlayerToOnline?.(runner);
+  const firebase =
+    window.firebasePlayers;
 
-  if (taggedBy) {
-    await syncPlayerToOnline?.(taggedBy);
+  const supabase =
+    getSupabaseSafe();
+
+  const sessionId =
+    leoidsState.onlineSessionId ||
+    supabase?.sessionId;
+
+  if (
+    firebase &&
+    sessionId &&
+    runner.id
+  ) {
+
+    await firebase.updatePlayer(
+      `${sessionId}_${runner.id}`,
+      {
+        id: runner.id,
+        sessionId,
+
+        name:
+          runner.name || "Runner",
+
+        avatar:
+          runner.avatar || "🧍",
+
+        role: "runner",
+
+        status: "jailed",
+
+        lat:
+          runner.position?.lat ?? null,
+
+        lng:
+          runner.position?.lng ?? null,
+
+        online: true,
+
+        updatedAt: Date.now(),
+      }
+    );
+
+    console.log(
+      "FIREBASE TAG SYNC OK",
+      runner.name
+    );
   }
 
   drawPlayerMarkers?.();
+
   renderPlayers?.();
+
   updatePanel?.();
+
   updateLeoidsBattleHud?.();
 
-showLeoidsCinematicOverlay({
-  title: "RUNNER JAILED",
-  subtitle: `${runner.name} was captured`,
-  icon: "🔒",
-  theme: "hunter"
-});
-  
   showLeoidsEvent(
     "RUNNER JAILED",
     `${runner.name} was tagged by ${hunterName}.\nGo to jail/base.`,
@@ -2914,12 +2929,9 @@ showLeoidsCinematicOverlay({
     navigator.vibrate([180, 90, 180]);
   }
 
-  document.body.animate(
-    [{ filter: "brightness(1.8)" }, { filter: "brightness(1)" }],
-    { duration: 450, easing: "ease-out" }
+  speakText?.(
+    `${runner.name} tagged. Runner sent to jail.`
   );
-
-  speakText?.(`${runner.name} tagged. Runner sent to jail.`);
 
   checkHunterWin?.();
 
