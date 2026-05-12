@@ -1007,13 +1007,15 @@ function openLeoidsMissionSetupScreen({ returnToLobby = true } = {}) {
       <div style="margin-top:14px;padding:12px;border-radius:16px;background:rgba(255,255,255,.06);">
         <h3 style="margin:0 0 8px;color:#ffd54a;">Boundary</h3>
 
+       <button id="setup-boundary-street" type="button" style="width:100%;min-height:44px;border-radius:14px;background:#202a3c;color:white;font-weight:900;margin-top:8px;border:none;">
+          STREET BOUNDARY
+        </button>
+        
+
         <button id="setup-boundary-circle" type="button" style="width:100%;min-height:44px;border-radius:14px;background:#00d4ff;color:#05070b;font-weight:1000;border:none;">
           CIRCLE BOUNDARY
         </button>
 
-        <button id="setup-boundary-street" type="button" style="width:100%;min-height:44px;border-radius:14px;background:#202a3c;color:white;font-weight:900;margin-top:8px;border:none;">
-          STREET BOUNDARY
-        </button>
 
         <select id="setup-boundary-size" style="width:100%;min-height:44px;margin-top:10px;border-radius:12px;">
           <option value="100">100m - small</option>
