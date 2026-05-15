@@ -4844,31 +4844,57 @@ function checkRunnerDangerWarning() {
 
   hunters.forEach((hunter) => {
     const distance = distanceMeters(local.position, hunter.position);
-    if (distance < closestDistance) closestDistance = distance;
+
+    if (distance < closestDistance) {
+      closestDistance = distance;
+    }
   });
 
   if (closestDistance > 35) return;
 
   const now = Date.now();
 
-  if (now - Number(leoidsState.lastRunnerDangerAt || 0) < 7000) {
+  const veryClose = closestDistance <= 15;
+  const cooldown = veryClose ? 3500 : 7000;
+
+  if (now - Number(leoidsState.lastRunnerDangerAt || 0) < cooldown) {
     return;
   }
 
   leoidsState.lastRunnerDangerAt = now;
 
   showLeoidsCinematicOverlay?.({
-    title: "HUNTER NEAR",
+    title: veryClose ? "DANGER CLOSE" : "HUNTER NEAR",
     subtitle: `${Math.round(closestDistance)}m away`,
     icon: "🔴",
     theme: "hunter",
-    duration: 1300,
+    duration: veryClose ? 1100 : 1300,
   });
 
-  playLeoidsSound?.("boundary_warning", 0.55);
+  playLeoidsSound?.(
+    veryClose ? "countdown_final" : "boundary_warning",
+    veryClose ? 0.65 : 0.45
+  );
 
   if (navigator.vibrate) {
-    navigator.vibrate([70, 50, 70]);
+    navigator.vibrate(
+      veryClose
+        ? [90, 50, 90, 50, 140]
+        : [70, 50, 70]
+    );
+  }
+
+  if (veryClose) {
+    document.body.animate(
+      [
+        { filter: "brightness(1.8)" },
+        { filter: "brightness(1)" }
+      ],
+      {
+        duration: 450,
+        easing: "ease-out"
+      }
+    );
   }
 }
 
