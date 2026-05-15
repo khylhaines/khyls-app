@@ -998,36 +998,106 @@ function startGpsOnlineSync() {
 
   leoidsState.gpsWatchId = navigator.geolocation.watchPosition(
     async (position) => {
-      const point = {
+      const rawPoint = {
         lat: Number(position.coords.latitude),
         lng: Number(position.coords.longitude),
       };
 
+      const accuracy = Number(position.coords.accuracy || 999);
       const local = getLocalPlayer();
-      if (local) {
-        local.position = point;
-        local.lat = point.lat;
-        local.lng = point.lng;
+
+      if (!local) return;
+
+      local.accuracy = accuracy;
+
+     if (accuracy > 60) {
+      const now = Date.now();
+
+  if (now - Number(leoidsState.lastGpsWarningAt || 0) > 12000) {
+    leoidsState.lastGpsWarningAt = now;
+
+    showLeoidsCinematicOverlay?.({
+      title: "GPS WEAK",
+      subtitle: `Accuracy is about ${Math.round(accuracy)}m.\nMove into open space.`,
+      icon: "📡",
+      theme: "danger",
+      duration: 1800,
+    });
+
+    playLeoidsSound?.("boundary_warning", 0.45);
+
+    if (navigator.vibrate) {
+      navigator.vibrate([80, 60, 80]);
+    }
+  }
+}
+
+      
+      const oldPoint = local.position;
+
+      let point = rawPoint;
+
+      if (oldPoint) {
+        const jumpDistance = distanceMeters(oldPoint, rawPoint);
+
+        if (accuracy > 80 && jumpDistance > 25) {
+          console.warn("GPS ignored: weak jump", {
+            accuracy,
+            jumpDistance: Math.round(jumpDistance),
+          });
+
+          return;
+        }
+
+        point = {
+          lat: oldPoint.lat + (rawPoint.lat - oldPoint.lat) * 0.35,
+          lng: oldPoint.lng + (rawPoint.lng - oldPoint.lng) * 0.35,
+        };
       }
 
-      await syncLocalPlayerPosition(point);
+      local.position = point;
+      local.lat = point.lat;
+      local.lng = point.lng;
 
+      await syncLocalPlayerPosition(point);
       await loadOnlinePlayers();
 
-      drawPlayerMarkers();
+      drawPlayerMarkers?.();
       renderPlayers?.();
       updatePanel?.();
       updateLeoidsBattleHud?.();
+      updateLeoidsLiveActionButton?.();
 
-      console.log("GPS UPDATE + PLAYERS REFRESHED", point);
+     if (leoidsState.followMe !== false) {
+  const map = getMapSafe?.();
+
+  if (map && point) {
+    const now = Date.now();
+
+    if (now - Number(leoidsState.lastMapFollowAt || 0) > 2500) {
+      leoidsState.lastMapFollowAt = now;
+
+      map.panTo([point.lat, point.lng], {
+        animate: true,
+        duration: 0.65,
+      });
+    }
+  }
+}
+
+      
+      console.log("GPS SMOOTH UPDATE", {
+        point,
+        accuracy,
+      });
     },
     (error) => {
       console.warn("LEOIDS GPS sync error:", error);
     },
     {
       enableHighAccuracy: true,
-      maximumAge: 5000,
-      timeout: 30000,
+      maximumAge: 2000,
+      timeout: 20000,
     }
   );
 
@@ -1035,7 +1105,6 @@ function startGpsOnlineSync() {
   speakText?.("Online GPS sync started.");
   return true;
 }
-
 function openLeoidsMissionSetupScreen({ returnToLobby = true } = {}) {
   const old = document.getElementById("leoids-mission-setup-screen");
   if (old) old.remove();
@@ -3300,6 +3369,153 @@ showLeoidsCinematicOverlay({
   checkHunterWin?.();
 }
 
+function updateLeoidsLiveActionButton() {
+  let btn = document.getElementById("leoids-live-action-button");
+
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.id = "leoids-live-action-button";
+    btn.type = "button";
+
+    btn.style.position = "fixed";
+    btn.style.left = "50%";
+    btn.style.bottom = "24px";
+    btn.style.transform = "translateX(-50%)";
+    btn.style.zIndex = "999999";
+    btn.style.width = "min(92vw,420px)";
+    btn.style.minHeight = "72px";
+    btn.style.borderRadius = "26px";
+    btn.style.border = "none";
+    btn.style.fontSize = "24px";
+    btn.style.fontWeight = "1000";
+    btn.style.letterSpacing = ".04em";
+    btn.style.boxShadow = "0 0 34px rgba(0,0,0,.45)";
+    btn.style.display = "none";
+
+    document.body.appendChild(btn);
+  }
+
+  const local = getLocalPlayer?.();
+
+  if (!leoidsState.active || !local || !local.position) {
+    btn.style.display = "none";
+    return;
+  }
+
+  if (local.role === "hunter") {
+    if (!leoidsState.huntersReleased) {
+      btn.style.display = "none";
+      return;
+    }
+
+    const tagRadius = Number(leoidsState.tagRadius || DEFAULT_TAG_RADIUS);
+
+    let closestRunner = null;
+    let closestDistance = Infinity;
+
+    leoidsState.players.forEach((player) => {
+      if (!player.position) return;
+      if (player.id === local.id) return;
+      if (player.role !== "runner") return;
+      if (player.status !== "free") return;
+
+      const distance = distanceMeters(local.position, player.position);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestRunner = player;
+      }
+    });
+
+    if (!closestRunner || closestDistance > tagRadius) {
+      btn.style.display = "none";
+      return;
+    }
+
+    btn.style.display = "block";
+    btn.innerText = `🔴 TAG ${closestRunner.name || "RUNNER"}`;
+    btn.style.background = "#ff3b3b";
+    btn.style.color = "white";
+    btn.style.boxShadow = "0 0 38px rgba(255,59,59,.75)";
+
+    btn.onclick = async () => {
+      unlockLeoidsAudio?.();
+      playLeoidsSound?.("button_click", 0.8);
+
+      btn.disabled = true;
+      btn.innerText = "TAGGING...";
+
+      await tagSpecificRunner?.(closestRunner);
+
+      setTimeout(() => {
+        btn.disabled = false;
+        updateLeoidsLiveActionButton?.();
+      }, 700);
+    };
+
+    return;
+  }
+
+  if (local.role === "runner") {
+    if (local.status === "jailed") {
+      btn.style.display = "none";
+      return;
+    }
+
+    if (!leoidsState.basePoint) {
+      btn.style.display = "none";
+      return;
+    }
+
+    const hasJailedRunners = leoidsState.players.some(
+      (player) => player.role === "runner" && player.status === "jailed"
+    );
+
+    if (!hasJailedRunners) {
+      btn.style.display = "none";
+      return;
+    }
+
+    const baseRadius = Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
+    const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
+
+    if (distanceToBase > baseRadius) {
+      btn.style.display = "none";
+      return;
+    }
+
+    btn.style.display = "block";
+    btn.innerText = "🟢 RESCUE TEAM";
+    btn.style.background = "#22c55e";
+    btn.style.color = "#05070b";
+    btn.style.boxShadow = "0 0 38px rgba(34,197,94,.75)";
+
+    btn.onclick = () => {
+      unlockLeoidsAudio?.();
+      playLeoidsSound?.("button_click", 0.8);
+
+      tryReleaseJailedRunners?.();
+
+      setTimeout(() => {
+        updateLeoidsLiveActionButton?.();
+      }, 700);
+    };
+
+    return;
+  }
+
+  btn.style.display = "none";
+}
+
+
+
+function hideLeoidsLiveActionButton() {
+  const btn = document.getElementById("leoids-live-action-button");
+  if (btn) btn.remove();
+}
+
+  
+  
 function updateLeoidsBattleHud() {
   let hud = document.getElementById("leoids-battle-hud");
 
@@ -4662,6 +4878,7 @@ function tickRound() {
 
   updatePanel?.();
   updateLeoidsBattleHud?.();
+  updateLeoidsLiveActionButton?.();
 }
 
 function showLeoidsMatchEndScreen({
@@ -4798,8 +5015,9 @@ function showLeoidsMatchEndScreen({
  function endRound(reason = "manual") {
 
   leoidsState.active = false;
-
-  clearInterval?.(leoidsState.intervalId);
+  hideLeoidsLiveActionButton?.();
+  
+   clearInterval?.(leoidsState.intervalId);
 
   const runnersFree = leoidsState.players.filter(
     (p) =>
@@ -6979,6 +7197,8 @@ return {
   startOnlineSessionSync,
   startOnlineCountdown,
   startRoundFromOnlineSession,
+  updateLeoidsLiveActionButton,
+  hideLeoidsLiveActionButton,
   showLeoidsBattleHud,
   hideLeoidsBattleHud,
   updateLeoidsBattleHud,
