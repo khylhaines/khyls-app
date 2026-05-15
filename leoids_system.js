@@ -4773,6 +4773,59 @@ function startOnlineSessionSync() {
 }
 
 
+function checkRunnerDangerWarning() {
+  if (!leoidsState.active) return;
+  if (!leoidsState.huntersReleased) return;
+
+  const local = getLocalPlayer?.();
+
+  if (!local) return;
+  if (local.role !== "runner") return;
+  if (local.status !== "free") return;
+  if (!local.position) return;
+
+  const hunters = leoidsState.players.filter(
+    (player) =>
+      player.role === "hunter" &&
+      player.status === "free" &&
+      player.position
+  );
+
+  if (!hunters.length) return;
+
+  let closestDistance = Infinity;
+
+  hunters.forEach((hunter) => {
+    const distance = distanceMeters(local.position, hunter.position);
+    if (distance < closestDistance) closestDistance = distance;
+  });
+
+  if (closestDistance > 35) return;
+
+  const now = Date.now();
+
+  if (now - Number(leoidsState.lastRunnerDangerAt || 0) < 7000) {
+    return;
+  }
+
+  leoidsState.lastRunnerDangerAt = now;
+
+  showLeoidsCinematicOverlay?.({
+    title: "HUNTER NEAR",
+    subtitle: `${Math.round(closestDistance)}m away`,
+    icon: "🔴",
+    theme: "hunter",
+    duration: 1300,
+  });
+
+  playLeoidsSound?.("boundary_warning", 0.55);
+
+  if (navigator.vibrate) {
+    navigator.vibrate([70, 50, 70]);
+  }
+}
+
+  
 function tickRound() {
   if (!leoidsState.active) return;
 
@@ -4869,6 +4922,7 @@ function tickRound() {
   }
 
   checkBoundaryRules();
+  checkRunnerDangerWarning?.();
 
   if (leoidsState.timeLeft <= 0) {
     playLeoidsSound?.("mission_complete", 1);
