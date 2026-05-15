@@ -3469,13 +3469,15 @@ function updateLeoidsLiveActionButton() {
 
     const now = Date.now();
 
-    if (now - Number(leoidsState.lastTagRangeVibrateAt || 0) > 1200) {
-      leoidsState.lastTagRangeVibrateAt = now;
+   if (now - Number(leoidsState.lastTagRangeVibrateAt || 0) > 1200) {
+  leoidsState.lastTagRangeVibrateAt = now;
 
-      if (navigator.vibrate) {
-        navigator.vibrate(60);
-      }
-    }
+  if (navigator.vibrate) {
+    navigator.vibrate(60);
+  }
+
+  playLeoidsSound?.("countdown_tick", 0.4);
+}
 
     btn.style.display = "block";
     btn.classList.toggle("urgent", closestDistance <= tagRadius / 2);
