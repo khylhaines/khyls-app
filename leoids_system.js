@@ -3375,27 +3375,31 @@ function ensureLeoidsLiveActionButtonStyle() {
 
   const style = document.createElement("style");
   style.id = "leoids-live-action-button-style";
+
   style.textContent = `
     @keyframes leoidsLiveActionPulse {
-      0% {
-        transform: translateX(-50%) scale(1);
-      }
-      50% {
-        transform: translateX(-50%) scale(1.05);
-      }
-      100% {
-        transform: translateX(-50%) scale(1);
-      }
+      0% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.05); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+
+    @keyframes leoidsLiveActionUrgent {
+      0% { transform: translateX(-50%) scale(1); filter: brightness(1); }
+      50% { transform: translateX(-50%) scale(1.1); filter: brightness(1.4); }
+      100% { transform: translateX(-50%) scale(1); filter: brightness(1); }
     }
 
     #leoids-live-action-button {
       animation: leoidsLiveActionPulse .75s infinite;
     }
+
+    #leoids-live-action-button.urgent {
+      animation: leoidsLiveActionUrgent .38s infinite;
+    }
   `;
 
   document.head.appendChild(style);
 }
-
 
   
 function updateLeoidsLiveActionButton() {
@@ -3474,6 +3478,7 @@ function updateLeoidsLiveActionButton() {
     }
 
     btn.style.display = "block";
+    btn.classList.toggle("urgent", closestDistance <= tagRadius / 2);
     btn.innerText = `🔴 TAG ${closestRunner.name || "RUNNER"}`;
     btn.style.background = "#ff3b3b";
     btn.style.color = "white";
