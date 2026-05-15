@@ -3369,9 +3369,40 @@ showLeoidsCinematicOverlay({
   checkHunterWin?.();
 }
 
+
+function ensureLeoidsLiveActionButtonStyle() {
+  if (document.getElementById("leoids-live-action-button-style")) return;
+
+  const style = document.createElement("style");
+  style.id = "leoids-live-action-button-style";
+  style.textContent = `
+    @keyframes leoidsLiveActionPulse {
+      0% {
+        transform: translateX(-50%) scale(1);
+      }
+      50% {
+        transform: translateX(-50%) scale(1.05);
+      }
+      100% {
+        transform: translateX(-50%) scale(1);
+      }
+    }
+
+    #leoids-live-action-button {
+      animation: leoidsLiveActionPulse .75s infinite;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+
+  
 function updateLeoidsLiveActionButton() {
   let btn = document.getElementById("leoids-live-action-button");
 
+   ensureLeoidsLiveActionButtonStyle?.();
+  
   if (!btn) {
     btn = document.createElement("button");
     btn.id = "leoids-live-action-button";
