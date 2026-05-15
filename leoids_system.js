@@ -3399,10 +3399,10 @@ function ensureLeoidsLiveActionButtonStyle() {
 
   
 function updateLeoidsLiveActionButton() {
+  ensureLeoidsLiveActionButtonStyle?.();
+
   let btn = document.getElementById("leoids-live-action-button");
 
-   ensureLeoidsLiveActionButtonStyle?.();
-  
   if (!btn) {
     btn = document.createElement("button");
     btn.id = "leoids-live-action-button";
@@ -3461,6 +3461,16 @@ function updateLeoidsLiveActionButton() {
     if (!closestRunner || closestDistance > tagRadius) {
       btn.style.display = "none";
       return;
+    }
+
+    const now = Date.now();
+
+    if (now - Number(leoidsState.lastTagRangeVibrateAt || 0) > 1200) {
+      leoidsState.lastTagRangeVibrateAt = now;
+
+      if (navigator.vibrate) {
+        navigator.vibrate(60);
+      }
     }
 
     btn.style.display = "block";
@@ -3537,7 +3547,6 @@ function updateLeoidsLiveActionButton() {
 
   btn.style.display = "none";
 }
-
 
 
 function hideLeoidsLiveActionButton() {
