@@ -3752,29 +3752,35 @@ function updateLeoidsBattleHud() {
 
 
   
-  function checkHunterWin() {
-  if (!leoidsState.active) return false;
+ function checkHunterWin() {
+  if (!leoidsState.active) return;
 
-  const runners = leoidsState.players.filter((p) => p.role === "runner");
+  const runners = leoidsState.players.filter(
+    (p) => p.role === "runner"
+  );
 
-  if (!runners.length) return false;
+  if (!runners.length) return;
 
-  const allJailed = runners.every((p) => p.status === "jailed");
+  const allJailed = runners.every(
+    (p) => p.status === "jailed"
+  );
 
-  if (!allJailed) return false;
+  if (allJailed) {
+    playLeoidsSound?.("defeat", 1);
 
-  leoidsState.players
-    .filter((p) => p.role === "hunter")
-    .forEach((hunter) => {
-      hunter.score = Number(hunter.score || 0) + 200;
-      hunter.coins = Number(hunter.coins || 0) + 30;
-    });
+    showLeoidsEvent?.(
+      "ALL RUNNERS CAUGHT",
+      "Hunters win the round.",
+      "🔴",
+      "hunter"
+    );
 
-  playLeoidsSound?.("victory", 1);
-  endRound("hunters");
+    speakText?.("All runners caught. Hunters win.");
 
-  return true;
+    endRound?.("hunters");
+  }
 }
+
 
 
 function testAllLeoidsSounds() {
@@ -4381,54 +4387,31 @@ async function saveOnlineSessionConfig() {
 function applyOnlineSessionConfig(session) {
   if (!session) return;
 
-  if (session.boundary) {
-    leoidsState.boundaryMode =
-      session.boundary.mode === "polygon" ? "polygon" : "circle";
+  leoidsState.roundTime = Number(session.round_time || DEFAULT_ROUND_SECONDS);
+  leoidsState.hunterDelay = Number(
+    session.hunter_delay || DEFAULT_HUNTER_DELAY_SECONDS
+  );
+  leoidsState.baseRadius = Number(
+    session.base_radius || DEFAULT_BASE_RADIUS
+  );
+  leoidsState.tagRadius = Number(
+    session.tag_radius || DEFAULT_TAG_RADIUS
+  );
 
-    leoidsState.boundaryRadius = Number(
-      session.boundary.radius || DEFAULT_BOUNDARY_RADIUS
-    );
-
-    leoidsState.boundaryCenter = session.boundary.center || null;
-    leoidsState.boundaryPoints = Array.isArray(session.boundary.points)
-      ? session.boundary.points
-      : [];
-  }
-
-  if (session.base_lat !== null && session.base_lat !== undefined) {
+  if (session.base_lat && session.base_lng) {
     leoidsState.basePoint = {
       lat: Number(session.base_lat),
       lng: Number(session.base_lng),
     };
-
-    window.__leoidsBasePoint = leoidsState.basePoint;
   }
 
-  if (session.round_time) {
-    leoidsState.roundTime = Number(session.round_time);
-    leoidsState.timeLeft = Number(session.round_time);
+  if (session.boundary) {
+    leoidsState.boundary = session.boundary;
   }
 
-  if (session.hunter_delay) {
-    leoidsState.hunterDelay = Number(session.hunter_delay);
-    leoidsState.hunterDelayLeft = Number(session.hunter_delay);
-  }
+  leoidsState.onlineSessionId = session.id;
 
-  if (session.base_radius) {
-    leoidsState.baseRadius = Number(session.base_radius);
-  }
-
-  if (session.tag_radius) {
-    leoidsState.tagRadius = Number(session.tag_radius);
-  }
-
-  if (session.countdown_seconds) {
-    leoidsState.countdownSeconds = Number(session.countdown_seconds);
-  }
-
-  redrawAllMapObjects();
-  renderPlayers();
-  updatePanel();
+  updatePanel?.();
 }
 
 async function loadAndApplyOnlineSession() {
@@ -4490,57 +4473,59 @@ function hideCountdownBanner() {
 }
 
 function handleOnlineCountdown(session) {
-  if (!session || session.status !== "countdown" || !session.game_starts_at) return;
+  if (!session) return;
 
-  const startsAtMs = new Date(session.game_starts_at).getTime();
-
-  if (!Number.isFinite(startsAtMs)) return;
+  const startsAt = new Date(session.game_starts_at || 0).getTime();
+  if (!startsAt) return;
 
   if (leoidsState.countdownIntervalId) {
     clearInterval(leoidsState.countdownIntervalId);
     leoidsState.countdownIntervalId = null;
   }
 
-  let lastSoundSecond = null;
+  showCountdownBanner?.();
 
-  leoidsState.countdownIntervalId = setInterval(async () => {
-    const secondsLeft = Math.ceil((startsAtMs - Date.now()) / 1000);
+  leoidsState.lastCountdownSecond = null;
 
-    showCountdownBanner(Math.max(0, secondsLeft));
-    updatePanel();
+  leoidsState.countdownIntervalId = setInterval(() => {
+    const now = Date.now();
+    const secondsLeft = Math.max(0, Math.ceil((startsAt - now) / 1000));
 
-    if (
+    updateCountdownBanner?.(secondsLeft);
+
+    const shouldAnnounce =
+      secondsLeft <= 10 &&
       secondsLeft > 0 &&
-      secondsLeft !== lastSoundSecond
-    ) {
-      lastSoundSecond = secondsLeft;
+      leoidsState.lastCountdownSecond !== secondsLeft;
 
-      if (secondsLeft <= 5) {
-        playLeoidsSound?.("countdown_final");
-      } else {
-        playLeoidsSound?.("countdown_tick", 0.45);
-      }
+    if (shouldAnnounce) {
+      leoidsState.lastCountdownSecond = secondsLeft;
+
+      playLeoidsSound?.(
+        secondsLeft <= 5 ? "countdown_final" : "countdown_tick",
+        secondsLeft <= 5 ? 0.9 : 0.45
+      );
+
+      speakText?.(`${secondsLeft}`);
     }
 
     if (secondsLeft <= 0) {
       clearInterval(leoidsState.countdownIntervalId);
       leoidsState.countdownIntervalId = null;
 
-      hideCountdownBanner();
+      hideCountdownBanner?.();
 
-      if (leoidsState.isLobbyHost && leoidsState.onlineSessionId) {
-        await updateOnlineSession({
-          status: "active",
-          round_started_at: new Date().toISOString(),
-        });
-      }
+      playLeoidsSound?.("mission_start", 1);
 
-      startRoundFromOnlineSession({
-        ...session,
-        status: "active",
+      showLeoidsCinematicOverlay?.({
+        title: "MISSION START",
+        subtitle: "Game is live",
+        icon: "🚀",
+        theme: "base",
+        duration: 1500,
       });
     }
-  }, 500);
+  }, 250);
 }
 
 
