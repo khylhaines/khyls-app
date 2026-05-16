@@ -4711,6 +4711,7 @@ function handleOnlineSessionUpdate(payload) {
 }
 
 
+
 function startOnlineSessionSync() {
   const supabase = getSupabaseSafe();
 
@@ -5033,6 +5034,9 @@ function tickRound() {
   updateLeoidsBattleHud?.();
   updateLeoidsLiveActionButton?.();
 }
+
+
+  
 function showLeoidsMatchEndScreen({
   title = "ROUND COMPLETE",
   message = "Mission ended.",
