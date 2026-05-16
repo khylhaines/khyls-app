@@ -5042,10 +5042,12 @@ function showLeoidsMatchEndScreen({
   message = "Mission ended.",
   icon = "🏆",
   theme = "base",
-  reason = "manual",
 } = {}) {
   const old = document.getElementById("leoids-match-end-screen");
   if (old) old.remove();
+
+  const oldLeaderboard = document.getElementById("leoids-leaderboard-screen");
+  if (oldLeaderboard) oldLeaderboard.remove();
 
   const colors = {
     base: "#00d4ff",
@@ -5070,7 +5072,7 @@ function showLeoidsMatchEndScreen({
               align-items:center;
               gap:10px;
               padding:12px;
-              border-radius:14px;
+              border-radius:16px;
               background:${
                 index === 0
                   ? "rgba(255,213,74,.16)"
@@ -5083,14 +5085,14 @@ function showLeoidsMatchEndScreen({
               };
               margin-top:8px;
             ">
-              <div>
+              <div style="text-align:left;">
                 <strong>${index + 1}. ${getPlayerIcon?.(player) || "🧍"} ${
             player.name || "Player"
           }</strong>
                 <div style="font-size:12px;opacity:.78;margin-top:3px;">
-                  ${String(player.role || "player").toUpperCase()} • ${String(
-            player.status || "free"
-          ).toUpperCase()}
+                  ${(player.role || "player").toUpperCase()} • ${
+            (player.status || "free").toUpperCase()
+          }${player.isOnline ? " • ONLINE" : ""}
                 </div>
               </div>
 
@@ -5104,7 +5106,7 @@ function showLeoidsMatchEndScreen({
           `
         )
         .join("")
-    : `<div style="opacity:.75;margin-top:12px;text-align:center;">No players found.</div>`;
+    : `<div style="opacity:.75;margin-top:12px;">No players found.</div>`;
 
   const modal = document.createElement("div");
   modal.id = "leoids-match-end-screen";
@@ -5119,22 +5121,29 @@ function showLeoidsMatchEndScreen({
 
   modal.innerHTML = `
     <div style="
-      width:min(94vw,560px);
+      width:min(94vw,580px);
       max-height:88vh;
       overflow:auto;
       border:2px solid ${color};
       border-radius:30px;
       background:linear-gradient(180deg,#101827,#05070b);
       color:white;
-      padding:22px;
+      padding:24px;
       box-shadow:0 0 45px ${color}77;
       font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       text-align:center;
     ">
-      <div style="font-size:64px;line-height:1;">${icon}</div>
+      <div style="
+        font-size:64px;
+        line-height:1;
+        margin-bottom:10px;
+        filter:drop-shadow(0 0 14px ${color});
+      ">
+        ${icon}
+      </div>
 
       <h2 style="
-        margin:12px 0 0;
+        margin:0;
         color:${color};
         font-size:30px;
         letter-spacing:.08em;
@@ -5143,7 +5152,7 @@ function showLeoidsMatchEndScreen({
       </h2>
 
       <p style="
-        opacity:.9;
+        opacity:.92;
         font-size:16px;
         line-height:1.45;
         margin:12px 0 0;
@@ -5152,14 +5161,22 @@ function showLeoidsMatchEndScreen({
       </p>
 
       <div style="margin-top:18px;text-align:left;">
-        <h3 style="color:${color};margin:0 0 8px;">Leaderboard</h3>
+        <h3 style="
+          color:${color};
+          margin:0 0 8px;
+          font-size:16px;
+          letter-spacing:.06em;
+        ">
+          FINAL LEADERBOARD
+        </h3>
+
         ${rows}
       </div>
 
       <button id="btn-leoids-match-play-again" type="button" style="
         width:100%;
         min-height:50px;
-        border-radius:16px;
+        border-radius:18px;
         border:none;
         background:#22c55e;
         color:#05070b;
@@ -5170,20 +5187,20 @@ function showLeoidsMatchEndScreen({
         PLAY AGAIN
       </button>
 
-      <button id="btn-leoids-match-map" type="button" style="
+      <button id="btn-leoids-match-lobby" type="button" style="
         width:100%;
         min-height:46px;
         border-radius:16px;
         border:none;
-        background:${color};
+        background:#00d4ff;
         color:#05070b;
         font-weight:1000;
         margin-top:10px;
       ">
-        BACK TO MAP
+        BACK TO LOBBY / SETUP
       </button>
 
-      <button id="btn-leoids-match-lobby" type="button" style="
+      <button id="btn-leoids-match-map" type="button" style="
         width:100%;
         min-height:44px;
         border-radius:16px;
@@ -5193,49 +5210,12 @@ function showLeoidsMatchEndScreen({
         font-weight:900;
         margin-top:10px;
       ">
-        BACK TO LOBBY / SETUP
-      </button>
-
-      <button id="btn-leoids-match-close" type="button" style="
-        width:100%;
-        min-height:42px;
-        border-radius:16px;
-        border:none;
-        background:#111827;
-        color:white;
-        font-weight:900;
-        margin-top:10px;
-      ">
-        CLOSE
+        BACK TO MAP
       </button>
     </div>
   `;
 
   document.body.appendChild(modal);
-
-  document.getElementById("btn-leoids-match-close")?.addEventListener("click", () => {
-    modal.remove();
-  });
-
-  document.getElementById("btn-leoids-match-map")?.addEventListener("click", () => {
-    modal.remove();
-    enterBattleMap?.();
-    redrawAllMapObjects?.();
-    renderPlayers?.();
-    drawPlayerMarkers?.();
-    showLeoidsBattleHud?.();
-    updatePanel?.();
-  });
-
-  document.getElementById("btn-leoids-match-lobby")?.addEventListener("click", () => {
-    modal.remove();
-
-    if (leoidsState.onlineSessionId) {
-      openOnlineLobbyScreen?.(leoidsState.onlineSessionId);
-    } else {
-      openSetupPanel?.();
-    }
-  });
 
   document.getElementById("btn-leoids-match-play-again")?.addEventListener("click", () => {
     modal.remove();
@@ -5254,31 +5234,44 @@ function showLeoidsMatchEndScreen({
       leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
     );
     leoidsState.huntersReleased = false;
-    leoidsState.lastHunterCountdownSecond = null;
-    leoidsState.lastRunnerDangerAt = 0;
-    leoidsState.lastRescueAt = 0;
+    leoidsState.endedAt = null;
 
     seedPlayerPositions?.();
-
-    if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
-      startOnlineCountdown?.(leoidsState.countdownSeconds || 10);
-      return;
-    }
-
     startRound?.();
+  });
+
+  document.getElementById("btn-leoids-match-lobby")?.addEventListener("click", () => {
+    modal.remove();
+
+    if (leoidsState.onlineSessionId) {
+      openOnlineLobbyScreen?.(leoidsState.onlineSessionId);
+    } else {
+      openSetupPanel?.();
+    }
+  });
+
+  document.getElementById("btn-leoids-match-map")?.addEventListener("click", () => {
+    modal.remove();
+    enterBattleMap?.();
+    redrawAllMapObjects?.();
+    drawPlayerMarkers?.();
+    updatePanel?.();
+    showLeoidsBattleHud?.();
   });
 }
 
 
 
- function endRound(reason = "manual") {
-  if (!leoidsState.active && leoidsState.endedAt) return;
+function endRound(reason = "manual") {
+  if (!leoidsState.active && leoidsState.endedAt) {
+    console.warn("Round already ended — blocking duplicate end screen.");
+    return;
+  }
 
   leoidsState.active = false;
   leoidsState.endedAt = new Date().toISOString();
 
   hideLeoidsLiveActionButton?.();
-  hideLeoidsCommandHub?.();
 
   if (leoidsState.intervalId) {
     clearInterval(leoidsState.intervalId);
@@ -5297,8 +5290,17 @@ function showLeoidsMatchEndScreen({
 
   hideCountdownBanner?.();
 
+  const oldLeaderboard = document.getElementById("leoids-leaderboard-screen");
+  if (oldLeaderboard) oldLeaderboard.remove();
+
+  const oldRoundEnd = document.getElementById("leoids-round-end-screen");
+  if (oldRoundEnd) oldRoundEnd.remove();
+
+  const oldMatchEnd = document.getElementById("leoids-match-end-screen");
+  if (oldMatchEnd) oldMatchEnd.remove();
+
   const runnersFree = leoidsState.players.filter(
-    (p) => p.role === "runner" && p.status === "free"
+    (player) => player.role === "runner" && player.status === "free"
   ).length;
 
   let resultText = "Round ended.";
@@ -5339,9 +5341,12 @@ function showLeoidsMatchEndScreen({
   }
 
   document.body.animate(
-    [{ filter: "brightness(2)" }, { filter: "brightness(1)" }],
+    [
+      { filter: "brightness(2)" },
+      { filter: "brightness(1)" },
+    ],
     {
-      duration: 1000,
+      duration: 900,
       easing: "ease-out",
     }
   );
@@ -5350,34 +5355,27 @@ function showLeoidsMatchEndScreen({
     title: resultTitle,
     subtitle: resultText,
     icon: resultIcon,
-    theme: resultTheme === "runner" ? "runner" : resultTheme === "hunter" ? "hunter" : "gold",
-    duration: 1800,
+    theme: resultTheme,
+    duration: 1900,
   });
 
-  showLeoidsEvent?.(resultTitle, resultText, resultIcon, resultTheme);
-
   speakText?.(resultText);
-
-  if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
-    updateOnlineSession?.({
-      status: "ended",
-      ended_at: leoidsState.endedAt,
-    });
-  }
 
   updatePanel?.();
   updateLeoidsBattleHud?.();
 
   setTimeout(() => {
-    showLeoidsMatchEndScreen?.({
+    showLeoidsMatchEndScreen({
       title: resultTitle,
       message: resultText,
       icon: resultIcon,
       theme: resultTheme,
-      reason,
     });
-  }, 900);
+  }, 950);
+
+  saveState?.();
 }
+
 
   
   function stopTimer() {
