@@ -4473,61 +4473,78 @@ function hideCountdownBanner() {
 }
 
 function handleOnlineCountdown(session) {
-  if (!session) return;
+  if (!session || session.status !== "countdown") return;
 
-  const startsAt = new Date(session.game_starts_at || 0).getTime();
-  if (!startsAt) return;
+  const startsAtRaw = session.game_starts_at;
+  const startsAtMs = startsAtRaw ? new Date(startsAtRaw).getTime() : NaN;
+
+  if (!Number.isFinite(startsAtMs)) {
+    console.warn("Invalid countdown start time:", startsAtRaw, session);
+
+    hideCountdownBanner?.();
+
+    showLeoidsEvent?.(
+      "COUNTDOWN ERROR",
+      "Countdown time was missing or invalid. Host should restart the mission.",
+      "⚠️",
+      "danger"
+    );
+
+    return;
+  }
 
   if (leoidsState.countdownIntervalId) {
     clearInterval(leoidsState.countdownIntervalId);
     leoidsState.countdownIntervalId = null;
   }
 
-  showCountdownBanner?.();
+  let lastSoundSecond = null;
 
-  leoidsState.lastCountdownSecond = null;
+  leoidsState.countdownIntervalId = setInterval(async () => {
+    const rawSecondsLeft = Math.ceil((startsAtMs - Date.now()) / 1000);
+    const secondsLeft = Number.isFinite(rawSecondsLeft)
+      ? Math.max(0, rawSecondsLeft)
+      : 0;
 
-  leoidsState.countdownIntervalId = setInterval(() => {
-    const now = Date.now();
-    const secondsLeft = Math.max(0, Math.ceil((startsAt - now) / 1000));
+    showCountdownBanner(secondsLeft);
+    updatePanel?.();
 
-    updateCountdownBanner?.(secondsLeft);
+    if (secondsLeft > 0 && secondsLeft !== lastSoundSecond) {
+      lastSoundSecond = secondsLeft;
 
-    const shouldAnnounce =
-      secondsLeft <= 10 &&
-      secondsLeft > 0 &&
-      leoidsState.lastCountdownSecond !== secondsLeft;
-
-    if (shouldAnnounce) {
-      leoidsState.lastCountdownSecond = secondsLeft;
-
-      playLeoidsSound?.(
-        secondsLeft <= 5 ? "countdown_final" : "countdown_tick",
-        secondsLeft <= 5 ? 0.9 : 0.45
-      );
-
-      speakText?.(`${secondsLeft}`);
+      if (secondsLeft <= 5) {
+        playLeoidsSound?.("countdown_final", 0.9);
+      } else {
+        playLeoidsSound?.("countdown_tick", 0.45);
+      }
     }
 
     if (secondsLeft <= 0) {
       clearInterval(leoidsState.countdownIntervalId);
       leoidsState.countdownIntervalId = null;
 
-      hideCountdownBanner?.();
+      hideCountdownBanner();
 
-      playLeoidsSound?.("mission_start", 1);
+      if (leoidsState.isLobbyHost && leoidsState.onlineSessionId) {
+        await updateOnlineSession?.({
+          status: "active",
+          round_started_at: new Date().toISOString(),
+        });
+      }
 
-      showLeoidsCinematicOverlay?.({
-        title: "MISSION START",
-        subtitle: "Game is live",
-        icon: "🚀",
-        theme: "base",
-        duration: 1500,
+      startRoundFromOnlineSession({
+        ...session,
+        status: "active",
       });
     }
-  }, 250);
+  }, 500);
 }
 
+
+function updateCountdownBanner(secondsLeft) {
+  showCountdownBanner(secondsLeft);
+}
+  
 
 function startRoundFromOnlineSession(session = null) {
   if (session) {
