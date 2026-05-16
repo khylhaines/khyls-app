@@ -4473,25 +4473,11 @@ function hideCountdownBanner() {
 }
 
 function handleOnlineCountdown(session) {
-  if (!session || session.status !== "countdown") return;
+  if (!session || session.status !== "countdown" || !session.game_starts_at) return;
 
-  const startsAtRaw = session.game_starts_at;
-  const startsAtMs = startsAtRaw ? new Date(startsAtRaw).getTime() : NaN;
+  const startsAtMs = new Date(session.game_starts_at).getTime();
 
-  if (!Number.isFinite(startsAtMs)) {
-    console.warn("Invalid countdown start time:", startsAtRaw, session);
-
-    hideCountdownBanner?.();
-
-    showLeoidsEvent?.(
-      "COUNTDOWN ERROR",
-      "Countdown time was missing or invalid. Host should restart the mission.",
-      "⚠️",
-      "danger"
-    );
-
-    return;
-  }
+  if (!Number.isFinite(startsAtMs)) return;
 
   if (leoidsState.countdownIntervalId) {
     clearInterval(leoidsState.countdownIntervalId);
@@ -4499,31 +4485,77 @@ function handleOnlineCountdown(session) {
   }
 
   let lastSoundSecond = null;
+  let warned60 = false;
+  let warned30 = false;
+  let warned10 = false;
 
   leoidsState.countdownIntervalId = setInterval(async () => {
-    const rawSecondsLeft = Math.ceil((startsAtMs - Date.now()) / 1000);
-    const secondsLeft = Number.isFinite(rawSecondsLeft)
-      ? Math.max(0, rawSecondsLeft)
-      : 0;
+    const secondsLeft = Math.ceil((startsAtMs - Date.now()) / 1000);
+    const safeSecondsLeft = Math.max(0, secondsLeft);
 
-    showCountdownBanner(secondsLeft);
+    leoidsState.lastCountdownSecondsLeft = safeSecondsLeft;
+
+    showCountdownBanner(safeSecondsLeft);
     updatePanel?.();
 
-    if (secondsLeft > 0 && secondsLeft !== lastSoundSecond) {
-      lastSoundSecond = secondsLeft;
+    if (safeSecondsLeft === 60 && !warned60) {
+      warned60 = true;
 
-      if (secondsLeft <= 5) {
+      showLeoidsEvent?.(
+        "ONE MINUTE",
+        "Host can still change runners and hunters.",
+        "⏱️",
+        "base"
+      );
+
+      speakText?.("One minute. Host can still change runners and hunters.");
+    }
+
+    if (safeSecondsLeft === 30 && !warned30) {
+      warned30 = true;
+
+      showLeoidsEvent?.(
+        "30 SECONDS",
+        "Final role changes now.",
+        "⚠️",
+        "danger"
+      );
+
+      speakText?.("Thirty seconds. Final role changes now.");
+    }
+
+    if (safeSecondsLeft === 10 && !warned10) {
+      warned10 = true;
+
+      showLeoidsEvent?.(
+        "ROLES LOCKED",
+        "Final countdown. Mission starting.",
+        "🔒",
+        "hunter"
+      );
+
+      speakText?.("Roles locked. Final countdown.");
+    }
+
+    if (safeSecondsLeft > 0 && safeSecondsLeft !== lastSoundSecond) {
+      lastSoundSecond = safeSecondsLeft;
+
+      if (safeSecondsLeft <= 10) {
         playLeoidsSound?.("countdown_final", 0.9);
-      } else {
+        speakText?.(`${safeSecondsLeft}`);
+      } else if (safeSecondsLeft === 60 || safeSecondsLeft === 30) {
+        playLeoidsSound?.("countdown_tick", 0.65);
+      } else if (safeSecondsLeft % 10 === 0) {
         playLeoidsSound?.("countdown_tick", 0.45);
       }
     }
 
-    if (secondsLeft <= 0) {
+    if (safeSecondsLeft <= 0) {
       clearInterval(leoidsState.countdownIntervalId);
       leoidsState.countdownIntervalId = null;
+      leoidsState.lastCountdownSecondsLeft = null;
 
-      hideCountdownBanner();
+      hideCountdownBanner?.();
 
       if (leoidsState.isLobbyHost && leoidsState.onlineSessionId) {
         await updateOnlineSession?.({
@@ -4532,14 +4564,13 @@ function handleOnlineCountdown(session) {
         });
       }
 
-      startRoundFromOnlineSession({
+      startRoundFromOnlineSession?.({
         ...session,
         status: "active",
       });
     }
   }, 500);
 }
-
 
 function updateCountdownBanner(secondsLeft) {
   showCountdownBanner(secondsLeft);
@@ -4565,7 +4596,7 @@ function startRoundFromOnlineSession(session = null) {
   leoidsState.status = "free";
   leoidsState.score = 0;
   leoidsState.coins = 0;
-  leoidsState.endedAt = null;
+  leoidsState.roleLocked = true;
 
   playLeoidsSound?.("mission_start", 1);
 
@@ -4574,28 +4605,26 @@ function startRoundFromOnlineSession(session = null) {
   }
 
   leoidsState.timeLeft = Number(
+    leoidsState.roundTime ||
     session?.round_time ||
-      leoidsState.roundTime ||
-      DEFAULT_ROUND_SECONDS
+    DEFAULT_ROUND_SECONDS
   );
 
   leoidsState.hunterDelayLeft = Number(
+    leoidsState.hunterDelay ||
     session?.hunter_delay ||
-      leoidsState.hunterDelay ||
-      DEFAULT_HUNTER_DELAY_SECONDS
+    DEFAULT_HUNTER_DELAY_SECONDS
   );
 
   leoidsState.huntersReleased = false;
   leoidsState.lastHunterCountdownSecond = null;
   leoidsState.lastRescueAt = 0;
-  leoidsState.lastRunnerDangerAt = 0;
   leoidsState.startedAt = new Date().toISOString();
+  leoidsState.endedAt = null;
 
   leoidsState.players.forEach((player) => {
     player.status = "free";
     player.jailedAtBase = false;
-    player.score = 0;
-    player.coins = 0;
   });
 
   closeModal?.("leoids-modal");
@@ -4614,20 +4643,21 @@ function startRoundFromOnlineSession(session = null) {
 
   showLeoidsCinematicOverlay?.({
     title: "MISSION STARTED",
-    subtitle: "Runners hide.\nHunters wait for release.",
+    subtitle: "Roles locked.\nRunners hide. Hunters wait for release.",
     icon: "🚀",
     theme: "base",
-    duration: 1800,
   });
 
   showLeoidsEvent?.(
     "MISSION STARTED",
-    "Runners hide.\nHunters wait for release.",
+    "Roles locked.\nRunners hide.\nHunters wait for release.",
     "🚀",
     "base"
   );
 
-  speakText?.("Mission started. Runners hide. Hunters wait for release.");
+  speakText?.(
+    "Mission started. Roles locked. Runners hide. Hunters wait for release."
+  );
 
   document.body.animate(
     [{ filter: "brightness(2)" }, { filter: "brightness(1)" }],
@@ -4641,6 +4671,7 @@ function startRoundFromOnlineSession(session = null) {
 }
 
 
+  
 async function startOnlineCountdown(seconds = 60) {
   const supabase = getSupabaseSafe();
 
@@ -5263,15 +5294,9 @@ function showLeoidsMatchEndScreen({
 }
 
 
-
 function endRound(reason = "manual") {
-  if (!leoidsState.active && leoidsState.endedAt) {
-    console.warn("Round already ended — blocking duplicate end screen.");
-    return;
-  }
-
   leoidsState.active = false;
-  leoidsState.endedAt = new Date().toISOString();
+  leoidsState.roleLocked = false;
 
   hideLeoidsLiveActionButton?.();
 
@@ -5280,29 +5305,13 @@ function endRound(reason = "manual") {
     leoidsState.intervalId = null;
   }
 
-  if (leoidsState.aiIntervalId) {
-    clearInterval(leoidsState.aiIntervalId);
-    leoidsState.aiIntervalId = null;
-  }
-
   if (leoidsState.countdownIntervalId) {
     clearInterval(leoidsState.countdownIntervalId);
     leoidsState.countdownIntervalId = null;
   }
 
-  hideCountdownBanner?.();
-
-  const oldLeaderboard = document.getElementById("leoids-leaderboard-screen");
-  if (oldLeaderboard) oldLeaderboard.remove();
-
-  const oldRoundEnd = document.getElementById("leoids-round-end-screen");
-  if (oldRoundEnd) oldRoundEnd.remove();
-
-  const oldMatchEnd = document.getElementById("leoids-match-end-screen");
-  if (oldMatchEnd) oldMatchEnd.remove();
-
   const runnersFree = leoidsState.players.filter(
-    (player) => player.role === "runner" && player.status === "free"
+    (p) => p.role === "runner" && p.status === "free"
   ).length;
 
   let resultText = "Round ended.";
@@ -5331,10 +5340,6 @@ function endRound(reason = "manual") {
     resultTheme = "hunter";
     playLeoidsSound?.("defeat", 1);
   } else {
-    resultTitle = "ROUND ENDED";
-    resultText = "Mission stopped by the host.";
-    resultIcon = "⚡";
-    resultTheme = "base";
     playLeoidsSound?.("mission_complete", 1);
   }
 
@@ -5343,12 +5348,9 @@ function endRound(reason = "manual") {
   }
 
   document.body.animate(
-    [
-      { filter: "brightness(2)" },
-      { filter: "brightness(1)" },
-    ],
+    [{ filter: "brightness(2)" }, { filter: "brightness(1)" }],
     {
-      duration: 900,
+      duration: 1000,
       easing: "ease-out",
     }
   );
@@ -5357,25 +5359,30 @@ function endRound(reason = "manual") {
     title: resultTitle,
     subtitle: resultText,
     icon: resultIcon,
-    theme: resultTheme,
-    duration: 1900,
+    theme: resultTheme === "hunter" ? "hunter" : resultTheme === "runner" ? "runner" : "gold",
+    duration: 2400,
   });
 
-  speakText?.(resultText);
-
-  updatePanel?.();
-  updateLeoidsBattleHud?.();
+  showLeoidsEvent?.(
+    resultTitle,
+    resultText,
+    resultIcon,
+    resultTheme
+  );
 
   setTimeout(() => {
-    showLeoidsMatchEndScreen({
+    showLeoidsMatchEndScreen?.({
       title: resultTitle,
       message: resultText,
       icon: resultIcon,
       theme: resultTheme,
     });
-  }, 950);
+  }, 900);
 
-  saveState?.();
+  speakText?.(resultText);
+
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
 }
 
 
@@ -7341,11 +7348,32 @@ document.getElementById("btn-leoids-open-setup")
 }
 
 function setRole(role = "runner") {
-  leoidsState.role = role === "hunter" ? "hunter" : "runner";
+  const safeRole = role === "hunter" ? "hunter" : "runner";
+  const finalCountdownLocked =
+    !leoidsState.active &&
+    leoidsState.countdownIntervalId &&
+    Number(leoidsState.lastCountdownSecondsLeft || 999) <= 10;
 
-  const local = getLocalPlayer();
+  if (leoidsState.active || finalCountdownLocked) {
+    showLeoidsEvent?.(
+      "ROLE LOCKED",
+      "Roles are locked for this mission.",
+      "🔒",
+      "danger"
+    );
+
+    speakText?.("Roles are locked for this mission.");
+    updatePanel?.();
+    renderPlayers?.();
+    return;
+  }
+
+  leoidsState.role = safeRole;
+
+  const local = getLocalPlayer?.();
+
   if (local) {
-    local.role = leoidsState.role;
+    local.role = safeRole;
     local.status = "free";
     local.jailedAtBase = false;
   }
@@ -7354,7 +7382,7 @@ function setRole(role = "runner") {
   const hunterBtn = $("btn-leoids-hunter");
 
   if (runnerBtn) {
-    const active = leoidsState.role === "runner";
+    const active = safeRole === "runner";
 
     runnerBtn.classList.toggle("active", active);
     runnerBtn.innerText = active ? "🟢 RUNNER SELECTED" : "🟢 RUNNER";
@@ -7370,7 +7398,7 @@ function setRole(role = "runner") {
   }
 
   if (hunterBtn) {
-    const active = leoidsState.role === "hunter";
+    const active = safeRole === "hunter";
 
     hunterBtn.classList.toggle("active", active);
     hunterBtn.innerText = active ? "🔴 HUNTER SELECTED" : "🔴 HUNTER";
@@ -7390,10 +7418,9 @@ function setRole(role = "runner") {
   updatePanel?.();
   updateLeoidsBattleHud?.();
 
-  speakText?.(
-    leoidsState.role === "hunter" ? "Hunter selected." : "Runner selected."
-  );
+  speakText?.(safeRole === "hunter" ? "Hunter selected." : "Runner selected.");
 }
+
 
   
   
