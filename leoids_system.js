@@ -3753,23 +3753,28 @@ function updateLeoidsBattleHud() {
 
   
   function checkHunterWin() {
-    const runners = leoidsState.players.filter((p) => p.role === "runner");
-    const allJailed =
-      runners.length && runners.every((p) => p.status === "jailed");
+  if (!leoidsState.active) return false;
 
-    if (!allJailed) return false;
+  const runners = leoidsState.players.filter((p) => p.role === "runner");
 
-    leoidsState.players
-      .filter((p) => p.role === "hunter")
-      .forEach((hunter) => {
-        hunter.score += 200;
-        hunter.coins += 30;
-      });
+  if (!runners.length) return false;
 
-    endRound("hunters");
-    speakText?.("Hunters win. All runners jailed.");
-    return true;
-  }
+  const allJailed = runners.every((p) => p.status === "jailed");
+
+  if (!allJailed) return false;
+
+  leoidsState.players
+    .filter((p) => p.role === "hunter")
+    .forEach((hunter) => {
+      hunter.score = Number(hunter.score || 0) + 200;
+      hunter.coins = Number(hunter.coins || 0) + 30;
+    });
+
+  playLeoidsSound?.("victory", 1);
+  endRound("hunters");
+
+  return true;
+}
 
 
 function testAllLeoidsSounds() {
@@ -5013,6 +5018,7 @@ function showLeoidsMatchEndScreen({
   message = "Mission ended.",
   icon = "🏆",
   theme = "base",
+  reason = "manual",
 } = {}) {
   const old = document.getElementById("leoids-match-end-screen");
   if (old) old.remove();
@@ -5030,27 +5036,58 @@ function showLeoidsMatchEndScreen({
     (a, b) => Number(b.score || 0) - Number(a.score || 0)
   );
 
-  const rows = sortedPlayers.map((player, index) => `
-    <div style="
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      padding:10px;
-      border-radius:14px;
-      background:rgba(255,255,255,.07);
-      margin-top:8px;
-    ">
-      <span>${index + 1}. ${getPlayerIcon?.(player) || "🧍"} ${player.name || "Player"}</span>
-      <strong>${Number(player.score || 0)} pts</strong>
-    </div>
-  `).join("");
+  const rows = sortedPlayers.length
+    ? sortedPlayers
+        .map(
+          (player, index) => `
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:10px;
+              padding:12px;
+              border-radius:14px;
+              background:${
+                index === 0
+                  ? "rgba(255,213,74,.16)"
+                  : "rgba(255,255,255,.07)"
+              };
+              border:${
+                index === 0
+                  ? "1px solid rgba(255,213,74,.55)"
+                  : "1px solid rgba(255,255,255,.08)"
+              };
+              margin-top:8px;
+            ">
+              <div>
+                <strong>${index + 1}. ${getPlayerIcon?.(player) || "🧍"} ${
+            player.name || "Player"
+          }</strong>
+                <div style="font-size:12px;opacity:.78;margin-top:3px;">
+                  ${String(player.role || "player").toUpperCase()} • ${String(
+            player.status || "free"
+          ).toUpperCase()}
+                </div>
+              </div>
+
+              <div style="text-align:right;">
+                <strong>${Number(player.score || 0)} pts</strong>
+                <div style="font-size:12px;opacity:.78;margin-top:3px;">
+                  ${Number(player.coins || 0)} coins
+                </div>
+              </div>
+            </div>
+          `
+        )
+        .join("")
+    : `<div style="opacity:.75;margin-top:12px;text-align:center;">No players found.</div>`;
 
   const modal = document.createElement("div");
   modal.id = "leoids-match-end-screen";
   modal.style.position = "fixed";
   modal.style.inset = "0";
   modal.style.zIndex = "999999";
-  modal.style.background = "rgba(0,0,0,.9)";
+  modal.style.background = "rgba(0,0,0,.92)";
   modal.style.display = "flex";
   modal.style.alignItems = "center";
   modal.style.justifyContent = "center";
@@ -5081,37 +5118,66 @@ function showLeoidsMatchEndScreen({
         ${title}
       </h2>
 
-      <p style="opacity:.9;font-size:16px;line-height:1.45;">
+      <p style="
+        opacity:.9;
+        font-size:16px;
+        line-height:1.45;
+        margin:12px 0 0;
+      ">
         ${message}
       </p>
 
-      <div style="
-        margin-top:16px;
-        text-align:left;
-      ">
+      <div style="margin-top:18px;text-align:left;">
         <h3 style="color:${color};margin:0 0 8px;">Leaderboard</h3>
-        ${rows || `<div style="opacity:.75;">No players found.</div>`}
+        ${rows}
       </div>
 
-      <button id="btn-leoids-match-end-lobby" type="button" style="
+      <button id="btn-leoids-match-play-again" type="button" style="
         width:100%;
-        min-height:48px;
+        min-height:50px;
+        border-radius:16px;
+        border:none;
+        background:#22c55e;
+        color:#05070b;
+        font-weight:1000;
+        margin-top:18px;
+        font-size:15px;
+      ">
+        PLAY AGAIN
+      </button>
+
+      <button id="btn-leoids-match-map" type="button" style="
+        width:100%;
+        min-height:46px;
         border-radius:16px;
         border:none;
         background:${color};
         color:#05070b;
         font-weight:1000;
-        margin-top:18px;
+        margin-top:10px;
       ">
-        BACK TO LOBBY
+        BACK TO MAP
       </button>
 
-      <button id="btn-leoids-match-end-close" type="button" style="
+      <button id="btn-leoids-match-lobby" type="button" style="
         width:100%;
         min-height:44px;
         border-radius:16px;
         border:none;
         background:#202a3c;
+        color:white;
+        font-weight:900;
+        margin-top:10px;
+      ">
+        BACK TO LOBBY / SETUP
+      </button>
+
+      <button id="btn-leoids-match-close" type="button" style="
+        width:100%;
+        min-height:42px;
+        border-radius:16px;
+        border:none;
+        background:#111827;
         color:white;
         font-weight:900;
         margin-top:10px;
@@ -5123,11 +5189,21 @@ function showLeoidsMatchEndScreen({
 
   document.body.appendChild(modal);
 
-  document.getElementById("btn-leoids-match-end-close")?.addEventListener("click", () => {
+  document.getElementById("btn-leoids-match-close")?.addEventListener("click", () => {
     modal.remove();
   });
 
-  document.getElementById("btn-leoids-match-end-lobby")?.addEventListener("click", () => {
+  document.getElementById("btn-leoids-match-map")?.addEventListener("click", () => {
+    modal.remove();
+    enterBattleMap?.();
+    redrawAllMapObjects?.();
+    renderPlayers?.();
+    drawPlayerMarkers?.();
+    showLeoidsBattleHud?.();
+    updatePanel?.();
+  });
+
+  document.getElementById("btn-leoids-match-lobby")?.addEventListener("click", () => {
     modal.remove();
 
     if (leoidsState.onlineSessionId) {
@@ -5136,24 +5212,69 @@ function showLeoidsMatchEndScreen({
       openSetupPanel?.();
     }
   });
+
+  document.getElementById("btn-leoids-match-play-again")?.addEventListener("click", () => {
+    modal.remove();
+
+    leoidsState.players.forEach((player) => {
+      player.status = "free";
+      player.jailedAtBase = false;
+      player.score = 0;
+      player.coins = 0;
+    });
+
+    leoidsState.score = 0;
+    leoidsState.coins = 0;
+    leoidsState.timeLeft = Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
+    leoidsState.hunterDelayLeft = Number(
+      leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
+    );
+    leoidsState.huntersReleased = false;
+    leoidsState.lastHunterCountdownSecond = null;
+    leoidsState.lastRunnerDangerAt = 0;
+    leoidsState.lastRescueAt = 0;
+
+    seedPlayerPositions?.();
+
+    if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
+      startOnlineCountdown?.(leoidsState.countdownSeconds || 10);
+      return;
+    }
+
+    startRound?.();
+  });
 }
 
 
+
  function endRound(reason = "manual") {
+  if (!leoidsState.active && leoidsState.endedAt) return;
 
   leoidsState.active = false;
+  leoidsState.endedAt = new Date().toISOString();
+
   hideLeoidsLiveActionButton?.();
-  
-   clearInterval?.(leoidsState.intervalId);
+  hideLeoidsCommandHub?.();
+
+  if (leoidsState.intervalId) {
+    clearInterval(leoidsState.intervalId);
+    leoidsState.intervalId = null;
+  }
+
+  if (leoidsState.aiIntervalId) {
+    clearInterval(leoidsState.aiIntervalId);
+    leoidsState.aiIntervalId = null;
+  }
+
+  if (leoidsState.countdownIntervalId) {
+    clearInterval(leoidsState.countdownIntervalId);
+    leoidsState.countdownIntervalId = null;
+  }
+
+  hideCountdownBanner?.();
 
   const runnersFree = leoidsState.players.filter(
-    (p) =>
-      p.role === "runner" &&
-      p.status === "free"
-  ).length;
-
-  const hunters = leoidsState.players.filter(
-    (p) => p.role === "hunter"
+    (p) => p.role === "runner" && p.status === "free"
   ).length;
 
   let resultText = "Round ended.";
@@ -5162,41 +5283,30 @@ function showLeoidsMatchEndScreen({
   let resultTheme = "base";
 
   if (reason === "timer") {
-
     if (runnersFree > 0) {
-
       resultTitle = "RUNNERS WIN";
-      resultText =
-        `${runnersFree} runner${runnersFree === 1 ? "" : "s"} survived.`;
-
+      resultText = `${runnersFree} runner${runnersFree === 1 ? "" : "s"} survived.`;
       resultIcon = "🟢";
       resultTheme = "runner";
-
       playLeoidsSound?.("victory", 1);
-
     } else {
-
       resultTitle = "HUNTERS WIN";
       resultText = "Hunters caught everyone.";
-
       resultIcon = "🔴";
       resultTheme = "hunter";
-
       playLeoidsSound?.("defeat", 1);
     }
-
   } else if (reason === "hunters") {
-
     resultTitle = "HUNTERS WIN";
     resultText = "All runners were jailed.";
-
     resultIcon = "🔴";
     resultTheme = "hunter";
-
     playLeoidsSound?.("defeat", 1);
-
   } else {
-
+    resultTitle = "ROUND ENDED";
+    resultText = "Mission stopped by the host.";
+    resultIcon = "⚡";
+    resultTheme = "base";
     playLeoidsSound?.("mission_complete", 1);
   }
 
@@ -5205,48 +5315,44 @@ function showLeoidsMatchEndScreen({
   }
 
   document.body.animate(
-    [
-      { filter: "brightness(2)" },
-      { filter: "brightness(1)" }
-    ],
+    [{ filter: "brightness(2)" }, { filter: "brightness(1)" }],
     {
       duration: 1000,
-      easing: "ease-out"
+      easing: "ease-out",
     }
   );
 
-showLeoidsCinematicOverlay({
-  title: "ROUND COMPLETE",
-  subtitle: resultText,
-  icon: "🏆",
-  theme: "gold",
-  duration: 2600
-});
-   
-  showLeoidsEvent(
-    resultTitle,
-    resultText,
-    resultIcon,
-    resultTheme
-  );
-
-setTimeout(() => {
-  showLeoidsMatchEndScreen({
+  showLeoidsCinematicOverlay?.({
     title: resultTitle,
-    message: resultText,
+    subtitle: resultText,
     icon: resultIcon,
-    theme: resultTheme,
+    theme: resultTheme === "runner" ? "runner" : resultTheme === "hunter" ? "hunter" : "gold",
+    duration: 1800,
   });
-}, 900);
-   
+
+  showLeoidsEvent?.(resultTitle, resultText, resultIcon, resultTheme);
+
   speakText?.(resultText);
+
+  if (leoidsState.onlineEnabled && leoidsState.onlineSessionId) {
+    updateOnlineSession?.({
+      status: "ended",
+      ended_at: leoidsState.endedAt,
+    });
+  }
 
   updatePanel?.();
   updateLeoidsBattleHud?.();
 
   setTimeout(() => {
-    openLeoidsLeaderboard?.();
-  }, 2200);
+    showLeoidsMatchEndScreen?.({
+      title: resultTitle,
+      message: resultText,
+      icon: resultIcon,
+      theme: resultTheme,
+      reason,
+    });
+  }, 900);
 }
 
   
