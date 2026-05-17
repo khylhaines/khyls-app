@@ -3010,113 +3010,94 @@ async function sendRunnerToJail(runner, taggedBy = null) {
 
 async function tagSpecificRunner(runner) {
   if (!leoidsState.active) return false;
-  if (!runner) return false;
-
-  const local = getLocalPlayer?.();
-
-  if (!local || local.role !== "hunter") {
-    showLeoidsEvent?.(
-      "HUNTERS ONLY",
-      "Only hunters can tag runners.",
-      "🔴",
-      "hunter"
-    );
-    return false;
-  }
-
   if (!leoidsState.huntersReleased) {
-    showLeoidsEvent?.(
-      "NOT YET",
-      "Wait for hunter release.",
-      "⏱️",
-      "hunter"
-    );
+    speakText?.("Hunters have not been released yet.");
     return false;
   }
 
-  if (!local.position || !runner.position) return false;
+  const hunter = getLocalPlayer?.();
+
+  if (!hunter) {
+    speakText?.("No hunter found.");
+    return false;
+  }
+
+  if (hunter.role !== "hunter") {
+    speakText?.("Only hunters can tag runners.");
+    return false;
+  }
+
+  if (hunter.status !== "free") {
+    speakText?.("You cannot tag right now.");
+    return false;
+  }
+
+  if (hunter.carryingRunnerId) {
+    speakText?.("Take your captured runner to jail first.");
+    return false;
+  }
+
+  if (!runner || runner.role !== "runner") {
+    speakText?.("No valid runner selected.");
+    return false;
+  }
+
+  if (runner.status !== "free") {
+    speakText?.("That runner is not free.");
+    return false;
+  }
+
+  if (!hunter.position || !runner.position) {
+    speakText?.("GPS position is not ready.");
+    return false;
+  }
 
   const tagRadius = Number(leoidsState.tagRadius || DEFAULT_TAG_RADIUS);
-  const distance = distanceMeters(local.position, runner.position);
+  const distance = distanceMeters(hunter.position, runner.position);
 
   if (distance > tagRadius) {
-    showLeoidsEvent?.(
-      "TOO FAR",
-      `${Math.round(distance)}m away`,
-      "📏",
-      "hunter"
-    );
+    speakText?.("Runner is too far away.");
     return false;
   }
 
-  // 🚨 PREVENT DOUBLE TAG
-  if (runner.status === "jailed") return false;
+  runner.status = "captured";
+  runner.escortedBy = hunter.id;
+  runner.capturedAt = Date.now();
 
-  // =========================
-  // 🔴 APPLY TAG
-  // =========================
-  runner.status = "jailed";
-  runner.jailedAtBase = true;
+  hunter.carryingRunnerId = runner.id;
 
-  local.score = Number(local.score || 0) + 100;
-  local.coins = Number(local.coins || 0) + 10;
-
-  leoidsState.lastTagAt = Date.now();
-
-  // =========================
-  // 🔊 FEEDBACK
-  // =========================
-  playLeoidsSound?.("tag_success", 1);
+  playLeoidsSound?.("hunter_tag", 1);
 
   if (navigator.vibrate) {
-    navigator.vibrate([120, 80, 120]);
+    navigator.vibrate([160, 80, 220]);
   }
 
   showLeoidsCinematicOverlay?.({
-    title: "TAGGED",
-    subtitle: `${runner.name || "Runner"} captured`,
+    title: "RUNNER CAUGHT",
+    subtitle: `Take ${runner.name || "the runner"} to jail.`,
     icon: "🔴",
     theme: "hunter",
-    duration: 1400,
+    duration: 1700,
   });
 
   showLeoidsEvent?.(
-    "RUNNER TAGGED",
-    `${runner.name || "Runner"} sent to jail`,
+    "RUNNER CAUGHT",
+    `Hunter must take ${runner.name || "runner"} to jail before tagging again.`,
     "🔴",
     "hunter"
   );
 
-  speakText?.("Runner tagged.");
+  speakText?.("Runner caught. Take them to jail.");
 
-  // =========================
-  // 🌐 ONLINE SYNC (CRITICAL)
-  // =========================
   await syncPlayerToOnline?.(runner);
-  await syncPlayerToOnline?.(local);
-
-  // 🔥 FORCE ALL CLIENTS TO UPDATE
+  await syncPlayerToOnline?.(hunter);
   await loadOnlinePlayers?.();
 
-  // =========================
-  // 🎯 CHECK WIN CONDITION
-  // =========================
-  const runnersLeft = leoidsState.players.filter(
-    (p) => p.role === "runner" && p.status === "free"
-  ).length;
-
-  if (runnersLeft === 0) {
-    endRound?.("hunters");
-    return true;
-  }
-
-  // =========================
-  // 🔄 UI REFRESH
-  // =========================
   renderPlayers?.();
   drawPlayerMarkers?.();
   updatePanel?.();
   updateLeoidsBattleHud?.();
+  updateLeoidsLiveActionButton?.();
 
   return true;
 }
@@ -3197,6 +3178,86 @@ async function tagNearestRunner() {
   return await tagSpecificRunner(nearestRunner.id);
 }
 
+
+async function checkHunterEscortDelivery() {
+  if (!leoidsState.active) return false;
+  if (!leoidsState.basePoint) return false;
+
+  const hunters = leoidsState.players.filter(
+    (player) =>
+      player.role === "hunter" &&
+      player.status === "free" &&
+      player.position &&
+      player.carryingRunnerId
+  );
+
+  if (!hunters.length) return false;
+
+  let deliveredAny = false;
+
+  for (const hunter of hunters) {
+    const runner = leoidsState.players.find(
+      (player) => player.id === hunter.carryingRunnerId
+    );
+
+    if (!runner) {
+      hunter.carryingRunnerId = null;
+      continue;
+    }
+
+    const baseRadius = Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
+    const distanceToBase = distanceMeters(hunter.position, leoidsState.basePoint);
+
+    if (distanceToBase > baseRadius) continue;
+
+    runner.status = "jailed";
+    runner.jailedAtBase = true;
+    runner.escortedBy = null;
+
+    hunter.carryingRunnerId = null;
+    hunter.score = Number(hunter.score || 0) + 100;
+    hunter.coins = Number(hunter.coins || 0) + 10;
+
+    deliveredAny = true;
+
+    playLeoidsSound?.("hunter_tag", 1);
+
+    showLeoidsCinematicOverlay?.({
+      title: "RUNNER JAILED",
+      subtitle: `${runner.name || "Runner"} delivered to jail.`,
+      icon: "🔴",
+      theme: "hunter",
+      duration: 1500,
+    });
+
+    showLeoidsEvent?.(
+      "RUNNER JAILED",
+      `${runner.name || "Runner"} has been delivered to jail.`,
+      "🔴",
+      "hunter"
+    );
+
+    speakText?.("Runner delivered to jail.");
+
+    await syncPlayerToOnline?.(runner);
+    await syncPlayerToOnline?.(hunter);
+  }
+
+  if (deliveredAny) {
+    await loadOnlinePlayers?.();
+
+    renderPlayers?.();
+    drawPlayerMarkers?.();
+    updatePanel?.();
+    updateLeoidsBattleHud?.();
+    updateLeoidsLiveActionButton?.();
+
+    checkHunterWin?.();
+  }
+
+  return deliveredAny;
+}
+  
 
  async function rescueJailedRunners() {
   const local = getLocalPlayer?.();
@@ -3400,12 +3461,60 @@ function updateLeoidsLiveActionButton() {
     return;
   }
 
-  // =========================
-  // 🔴 HUNTER MODE
-  // =========================
   if (local.role === "hunter") {
     if (!leoidsState.huntersReleased) {
       btn.style.display = "none";
+      return;
+    }
+
+    if (local.carryingRunnerId) {
+      const capturedRunner = leoidsState.players.find(
+        (player) => player.id === local.carryingRunnerId
+      );
+
+      if (!leoidsState.basePoint) {
+        btn.style.display = "block";
+        btn.classList.remove("urgent");
+        btn.innerText = "🔴 JAIL BASE NOT SET";
+        btn.style.background = "#374151";
+        btn.style.color = "white";
+        return;
+      }
+
+      const baseRadius = Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
+      const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
+
+      btn.style.display = "block";
+      btn.classList.toggle("urgent", distanceToBase <= baseRadius);
+      btn.innerText =
+        distanceToBase <= baseRadius
+          ? `🔴 DELIVER ${capturedRunner?.name || "RUNNER"}`
+          : `🔴 TAKE ${capturedRunner?.name || "RUNNER"} TO JAIL • ${Math.round(
+              distanceToBase
+            )}M`;
+
+      btn.style.background = distanceToBase <= baseRadius ? "#ffd54a" : "#ff3b3b";
+      btn.style.color = distanceToBase <= baseRadius ? "#05070b" : "white";
+      btn.style.boxShadow =
+        distanceToBase <= baseRadius
+          ? "0 0 38px rgba(255,213,74,.75)"
+          : "0 0 38px rgba(255,59,59,.75)";
+
+      btn.onclick = async () => {
+        unlockLeoidsAudio?.();
+        playLeoidsSound?.("button_click", 0.8);
+
+        btn.disabled = true;
+        btn.innerText = "CHECKING JAIL...";
+
+        await checkHunterEscortDelivery?.();
+
+        setTimeout(() => {
+          btn.disabled = false;
+          updateLeoidsLiveActionButton?.();
+        }, 700);
+      };
+
       return;
     }
 
@@ -3470,10 +3579,18 @@ function updateLeoidsLiveActionButton() {
     return;
   }
 
-  // =========================
-  // 🟢 RUNNER MODE
-  // =========================
   if (local.role === "runner") {
+    if (local.status === "captured") {
+      btn.style.display = "block";
+      btn.classList.add("urgent");
+      btn.innerText = "🔴 CAPTURED - BEING TAKEN TO JAIL";
+      btn.style.background = "#ff3b3b";
+      btn.style.color = "white";
+      btn.style.boxShadow = "0 0 38px rgba(255,59,59,.75)";
+      btn.onclick = null;
+      return;
+    }
+
     if (local.status === "jailed") {
       btn.style.display = "none";
       return;
@@ -3502,22 +3619,19 @@ function updateLeoidsLiveActionButton() {
     }
 
     btn.style.display = "block";
+    btn.classList.remove("urgent");
     btn.innerText = "🟢 RESCUE TEAM";
     btn.style.background = "#22c55e";
     btn.style.color = "#05070b";
     btn.style.boxShadow = "0 0 38px rgba(34,197,94,.75)";
 
-    btn.onclick = async () => {
+    btn.onclick = () => {
       unlockLeoidsAudio?.();
       playLeoidsSound?.("button_click", 0.8);
 
-      btn.disabled = true;
-      btn.innerText = "RESCUING...";
-
-      await tryReleaseJailedRunners?.();
+      tryReleaseJailedRunners?.();
 
       setTimeout(() => {
-        btn.disabled = false;
         updateLeoidsLiveActionButton?.();
       }, 700);
     };
@@ -5028,13 +5142,6 @@ function tickRound() {
           duration: 1700,
         });
 
-        showLeoidsEvent?.(
-          "HUNTERS RELEASED",
-          "Go. Catch the runners.",
-          "🔴",
-          "hunter"
-        );
-
         speakText?.("Hunters released. Go and catch the runners.");
       } else {
         showLeoidsCinematicOverlay?.({
@@ -5044,13 +5151,6 @@ function tickRound() {
           theme: "runner",
           duration: 1700,
         });
-
-        showLeoidsEvent?.(
-          "HUNTERS RELEASED",
-          "Run. Hide. Rescue your team.",
-          "🏃",
-          "runner"
-        );
 
         speakText?.("Hunters released. Runners, keep moving.");
       }
@@ -5081,6 +5181,7 @@ function tickRound() {
     }
   }
 
+  checkHunterEscortDelivery?.();
   checkBoundaryRules?.();
   checkRunnerDangerWarning?.();
   checkHunterWin?.();
@@ -5097,7 +5198,6 @@ function tickRound() {
   updateLeoidsBattleHud?.();
   updateLeoidsLiveActionButton?.();
 }
-
 
   
 function showLeoidsMatchEndScreen({
