@@ -3720,35 +3720,26 @@ function updateLeoidsBattleHud() {
 
 
   
- function checkHunterWin() {
-  if (!leoidsState.active) return;
+function checkHunterWin() {
+  const runners = leoidsState.players.filter((p) => p.role === "runner");
 
-  const runners = leoidsState.players.filter(
-    (p) => p.role === "runner"
-  );
+  const allJailed =
+    runners.length > 0 &&
+    runners.every((p) => p.status === "jailed");
 
-  if (!runners.length) return;
+  if (!allJailed) return false;
 
-  const allJailed = runners.every(
-    (p) => p.status === "jailed"
-  );
+  leoidsState.players
+    .filter((p) => p.role === "hunter")
+    .forEach((hunter) => {
+      hunter.score = Number(hunter.score || 0) + 200;
+      hunter.coins = Number(hunter.coins || 0) + 30;
+    });
 
-  if (allJailed) {
-    playLeoidsSound?.("defeat", 1);
-
-    showLeoidsEvent?.(
-      "ALL RUNNERS CAUGHT",
-      "Hunters win the round.",
-      "🔴",
-      "hunter"
-    );
-
-    speakText?.("All runners caught. Hunters win.");
-
-    endRound?.("hunters");
-  }
+  endRound("hunters");
+  speakText?.("Hunters win. All runners jailed.");
+  return true;
 }
-
 
 
 function testAllLeoidsSounds() {
