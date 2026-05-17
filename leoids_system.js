@@ -3173,7 +3173,7 @@ async function tagNearestRunner() {
 }
 
 
-  function rescueJailedRunners() {
+ async function rescueJailedRunners() {
   const local = getLocalPlayer?.();
 
   if (!leoidsState.active) return false;
@@ -3375,6 +3375,9 @@ function updateLeoidsLiveActionButton() {
     return;
   }
 
+  // =========================
+  // 🔴 HUNTER MODE
+  // =========================
   if (local.role === "hunter") {
     if (!leoidsState.huntersReleased) {
       btn.style.display = "none";
@@ -3407,15 +3410,15 @@ function updateLeoidsLiveActionButton() {
 
     const now = Date.now();
 
-   if (now - Number(leoidsState.lastTagRangeVibrateAt || 0) > 1200) {
-  leoidsState.lastTagRangeVibrateAt = now;
+    if (now - Number(leoidsState.lastTagRangeVibrateAt || 0) > 1200) {
+      leoidsState.lastTagRangeVibrateAt = now;
 
-  if (navigator.vibrate) {
-    navigator.vibrate(60);
-  }
+      if (navigator.vibrate) {
+        navigator.vibrate(60);
+      }
 
-  playLeoidsSound?.("countdown_tick", 0.4);
-}
+      playLeoidsSound?.("countdown_tick", 0.4);
+    }
 
     btn.style.display = "block";
     btn.classList.toggle("urgent", closestDistance <= tagRadius / 2);
@@ -3442,6 +3445,9 @@ function updateLeoidsLiveActionButton() {
     return;
   }
 
+  // =========================
+  // 🟢 RUNNER MODE
+  // =========================
   if (local.role === "runner") {
     if (local.status === "jailed") {
       btn.style.display = "none";
@@ -3476,13 +3482,17 @@ function updateLeoidsLiveActionButton() {
     btn.style.color = "#05070b";
     btn.style.boxShadow = "0 0 38px rgba(34,197,94,.75)";
 
-    btn.onclick = () => {
+    btn.onclick = async () => {
       unlockLeoidsAudio?.();
       playLeoidsSound?.("button_click", 0.8);
 
-      tryReleaseJailedRunners?.();
+      btn.disabled = true;
+      btn.innerText = "RESCUING...";
+
+      await tryReleaseJailedRunners?.();
 
       setTimeout(() => {
+        btn.disabled = false;
         updateLeoidsLiveActionButton?.();
       }, 700);
     };
