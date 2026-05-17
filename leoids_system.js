@@ -3098,110 +3098,80 @@ async function syncPlayerToOnline(player) {
 
 
 async function tagNearestRunner() {
-  const local = getLocalPlayer();
+  const local = getLocalPlayer?.();
+
+  if (!leoidsState.active) {
+    speakText?.("No active round.");
+    return false;
+  }
 
   if (!local) {
     speakText?.("No local player found.");
     return false;
   }
 
-  if (!leoidsState.active) {
-    speakText?.("Round has not started.");
-    return false;
-  }
-
   if (local.role !== "hunter") {
-    showLeoidsEvent(
+    showLeoidsEvent?.(
       "HUNTERS ONLY",
       "Only hunters can tag runners.",
       "🔴",
       "hunter"
     );
-
     speakText?.("Only hunters can tag runners.");
     return false;
   }
 
   if (!leoidsState.huntersReleased) {
-    showLeoidsEvent(
+    showLeoidsEvent?.(
       "HUNTERS LOCKED",
-      `Wait ${formatTime(leoidsState.hunterDelayLeft)} before tagging.`,
+      "Wait for hunter release.",
       "⏱️",
-      "hunter"
+      "danger"
     );
-
-    speakText?.("Hunters have not been released yet.");
+    speakText?.("Wait for hunter release.");
     return false;
   }
 
   if (!local.position) {
-    showLeoidsEvent(
-      "LOCATION NEEDED",
-      "Your position is not known yet.",
-      "📍",
-      "hunter"
-    );
-
-    speakText?.("Your location is not known yet.");
+    speakText?.("Your GPS position is not ready.");
     return false;
   }
-
-  const runners = leoidsState.players.filter(
-    (player) =>
-      player.role === "runner" &&
-      player.status === "free" &&
-      player.id !== local.id &&
-      player.position
-  );
-
-  if (!runners.length) {
-    showLeoidsEvent(
-      "NO RUNNERS",
-      "No free runners are available to tag.",
-      "🔴",
-      "hunter"
-    );
-
-    speakText?.("No free runners available.");
-    return false;
-  }
-
-  let closestRunner = null;
-  let closestDistance = Infinity;
-
-  runners.forEach((runner) => {
-    const distance = distanceMeters(local.position, runner.position);
-
-    if (distance < closestDistance) {
-      closestDistance = distance;
-      closestRunner = runner;
-    }
-  });
 
   const tagRadius = Number(leoidsState.tagRadius || DEFAULT_TAG_RADIUS);
 
-  console.log("TAG CHECK", {
-    hunter: local.name,
-    runner: closestRunner?.name,
-    distance: Math.round(closestDistance),
-    tagRadius,
-    huntersReleased: leoidsState.huntersReleased,
+  let nearestRunner = null;
+  let nearestDistance = Infinity;
+
+  leoidsState.players.forEach((player) => {
+    if (!player.position) return;
+    if (player.role !== "runner") return;
+    if (player.status === "jailed") return;
+
+    const distance = distanceMeters(local.position, player.position);
+
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestRunner = player;
+    }
   });
 
-  if (!closestRunner || closestDistance > tagRadius) {
-    showLeoidsEvent(
+  if (!nearestRunner || nearestDistance > tagRadius) {
+    showLeoidsEvent?.(
       "NO TAG",
-      `Nearest runner is ${Math.round(closestDistance)}m away.\nTag range: ${tagRadius}m`,
-      "📍",
-      "hunter"
+      `No runner inside tag range.\nClosest: ${
+        Number.isFinite(nearestDistance) ? `${Math.round(nearestDistance)}m` : "--"
+      }\nRange: ${tagRadius}m`,
+      "❌",
+      "danger"
     );
 
     speakText?.("No runner in tag range.");
     return false;
   }
 
-  return await sendRunnerToJail(closestRunner, local);
+  return await tagSpecificRunner(nearestRunner.id);
 }
+
 
   function rescueJailedRunners() {
   const local = getLocalPlayer?.();
@@ -5319,10 +5289,51 @@ function showLeoidsMatchEndScreen({
 }
 
 
+async function endOnlineRound(reason = "manual") {
+  const supabase = getSupabaseSafe?.();
+
+  if (!supabase || !leoidsState.onlineSessionId) return null;
+
+  const payload = {
+    status: "ended",
+    end_reason: reason,
+    round_ended_at: new Date().toISOString(),
+    last_seen: new Date().toISOString(),
+  };
+
+  if (typeof updateOnlineSession === "function") {
+    return await updateOnlineSession(payload);
+  }
+
+  if (supabase.client) {
+    const { data, error } = await supabase.client
+      .from("leoids_sessions")
+      .update(payload)
+      .eq("id", leoidsState.onlineSessionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn("Could not end online round:", error);
+      return null;
+    }
+
+    return data;
+  }
+
+  return null;
+}
+
+  
+
+
 async function endRound(reason = "manual", options = {}) {
   const skipOnlineSync = !!options.skipOnlineSync;
 
+  if (!leoidsState.active && leoidsState.endedAt) return;
+
   leoidsState.active = false;
+  leoidsState.endedAt = new Date().toISOString();
 
   hideLeoidsLiveActionButton?.();
 
@@ -5340,9 +5351,10 @@ async function endRound(reason = "manual", options = {}) {
     !skipOnlineSync &&
     leoidsState.onlineEnabled &&
     leoidsState.onlineSessionId &&
-    leoidsState.isLobbyHost
+    leoidsState.isLobbyHost &&
+    typeof endOnlineRound === "function"
   ) {
-    await endOnlineRound?.(reason);
+    await endOnlineRound(reason);
   }
 
   const runnersFree = leoidsState.players.filter(
@@ -5357,9 +5369,7 @@ async function endRound(reason = "manual", options = {}) {
   if (reason === "timer") {
     if (runnersFree > 0) {
       resultTitle = "RUNNERS WIN";
-      resultText = `${runnersFree} runner${
-        runnersFree === 1 ? "" : "s"
-      } survived.`;
+      resultText = `${runnersFree} runner${runnersFree === 1 ? "" : "s"} survived.`;
       resultIcon = "🟢";
       resultTheme = "runner";
       playLeoidsSound?.("victory", 1);
@@ -5396,7 +5406,12 @@ async function endRound(reason = "manual", options = {}) {
     title: resultTitle,
     subtitle: resultText,
     icon: resultIcon,
-    theme: resultTheme === "runner" ? "runner" : resultTheme === "hunter" ? "hunter" : "gold",
+    theme:
+      resultTheme === "runner"
+        ? "runner"
+        : resultTheme === "hunter"
+        ? "hunter"
+        : "gold",
     duration: 2400,
   });
 
