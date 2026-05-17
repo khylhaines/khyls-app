@@ -3203,132 +3203,100 @@ async function tagNearestRunner() {
   return await sendRunnerToJail(closestRunner, local);
 }
 
-function rescueJailedRunners() {
-  const local = getLocalPlayer();
+  function rescueJailedRunners() {
+  const local = getLocalPlayer?.();
+
+  if (!leoidsState.active) return false;
 
   if (!local) {
     speakText?.("No local player found.");
-    return;
+    return false;
   }
 
   if (local.role !== "runner") {
-    showLeoidsEvent("RUNNERS ONLY", "Only runners can rescue jailed players.", "🟢", "runner");
     speakText?.("Only runners can rescue jailed players.");
-    return;
+    return false;
   }
 
   if (local.status === "jailed") {
-    showLeoidsEvent("YOU ARE JAILED", "You cannot rescue while jailed.\nWait for another runner.", "🔒", "danger");
-    speakText?.("You are jailed. Wait for another runner to rescue you.");
-    return;
+    speakText?.("You are jailed. Another runner must rescue you.");
+    return false;
   }
 
-  if (!leoidsState.basePoint && window.__leoidsBasePoint) {
-    leoidsState.basePoint = window.__leoidsBasePoint;
+  if (!leoidsState.basePoint || !local.position) {
+    speakText?.("Base or GPS position is not ready.");
+    return false;
   }
 
-  if (!leoidsState.basePoint) {
-    showLeoidsEvent("NO JAIL BASE", "Set the jail/base before rescuing.", "🛡️", "base");
-    speakText?.("Set the jail base first.");
-    return;
-  }
-
-  if (!local.position) {
-    showLeoidsEvent("LOCATION NEEDED", "Your position is not known yet.", "📍", "base");
-    speakText?.("Your location is not known yet.");
-    return;
-  }
-
-  const now = Date.now();
-
-  if (now - Number(leoidsState.lastRescueAt || 0) < 3000) return;
-
-  const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
   const baseRadius = Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS);
+  const distanceToBase = distanceMeters(local.position, leoidsState.basePoint);
 
   if (distanceToBase > baseRadius) {
-    showLeoidsEvent(
-      "TOO FAR FROM BASE",
-      `Get inside the rescue zone.\nDistance: ${Math.round(distanceToBase)}m / ${baseRadius}m`,
-      "📍",
-      "base"
-    );
-
-    speakText?.("You are not close enough to the jail base.");
-    return;
+    speakText?.("Move closer to the jail base to rescue.");
+    return false;
   }
 
   const jailedRunners = leoidsState.players.filter(
-    (player) => player.role === "runner" && player.status === "jailed"
+    (player) =>
+      player.role === "runner" &&
+      player.status === "jailed"
   );
 
   if (!jailedRunners.length) {
-    showLeoidsEvent("NO ONE TO RESCUE", "There are no jailed runners right now.", "🛡️", "base");
-    speakText?.("No runners need rescuing.");
-    return;
+    speakText?.("No jailed runners to rescue.");
+    return false;
   }
 
   jailedRunners.forEach((runner) => {
     runner.status = "free";
     runner.jailedAtBase = false;
-    runner.position = randomNearbyPoint(leoidsState.basePoint, 18);
   });
+
+  local.score = Number(local.score || 0) + jailedRunners.length * 75;
+  local.coins = Number(local.coins || 0) + jailedRunners.length * 8;
+
+  leoidsState.lastRescueAt = Date.now();
 
   playLeoidsSound?.("jail_rescue", 1);
 
   if (navigator.vibrate) {
-    navigator.vibrate([80, 60, 80, 60, 220]);
+    navigator.vibrate([120, 80, 120, 80, 180]);
   }
 
-  document.body.animate(
-    [{ filter: "brightness(1.7)" }, { filter: "brightness(1)" }],
-    { duration: 550, easing: "ease-out" }
-  );
+  showLeoidsCinematicOverlay?.({
+    title: "RESCUE COMPLETE",
+    subtitle: `${jailedRunners.length} runner${
+      jailedRunners.length === 1 ? "" : "s"
+    } released.`,
+    icon: "🛡️",
+    theme: "runner",
+    duration: 1600,
+  });
 
-  const rescuedCount = jailedRunners.length;
-  const points = rescuedCount * 75;
-  const coins = rescuedCount * 15;
-
- awardLeoidsCombo({
-  player: local,
-  points,
-  coins,
-  combo: rescuedCount,
-  theme: "runner",
-  label: "RESCUE"
-});
-
-  if (local.isLocal || local.id === leoidsState.onlinePlayerId || !local.isOnline) {
-    leoidsState.score = Number(leoidsState.score || 0) + points;
-    leoidsState.coins = Number(leoidsState.coins || 0) + coins;
-  }
-
-  leoidsState.lastRescueAt = now;
-
-  drawPlayerMarkers?.();
-  renderPlayers?.();
-  updatePanel?.();
-  updateLeoidsBattleHud?.();
-
-showLeoidsCinematicOverlay({
-  title: "RESCUE COMPLETE",
-  subtitle: `${rescuedCount} runner${rescuedCount === 1 ? "" : "s"} rescued`,
-  icon: "🟢",
-  theme: "runner"
-});
-  
-  showLeoidsEvent(
+  showLeoidsEvent?.(
     "RESCUE COMPLETE",
-    `${rescuedCount} runner${rescuedCount === 1 ? "" : "s"} rescued.\n+${points} points`,
-    "🟢",
+    `${jailedRunners.length} runner${
+      jailedRunners.length === 1 ? "" : "s"
+    } released from jail.`,
+    "🛡️",
     "runner"
   );
 
-  speakText?.(
-    rescuedCount === 1
-      ? "Rescue complete. One runner released."
-      : `Rescue complete. ${rescuedCount} runners released.`
-  );
+  speakText?.("Rescue complete.");
+
+  for (const runner of jailedRunners) {
+    await syncPlayerToOnline?.(runner);
+  }
+
+  await syncPlayerToOnline?.(local);
+  await loadOnlinePlayers?.();
+
+  renderPlayers?.();
+  drawPlayerMarkers?.();
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
+
+  return true;
 }
 
   
@@ -4721,27 +4689,93 @@ async function startOnlineCountdown(seconds = 60) {
 }
 
 
-function handleOnlineSessionUpdate(payload) {
+async function handleOnlineSessionUpdate(payload) {
   const session = payload?.new || payload;
-
   if (!session) return;
 
-  applyOnlineSessionConfig?.(session);
+  applyOnlineSessionConfig(session);
 
   if (session.status === "countdown") {
-    handleOnlineCountdown?.(session);
+    handleOnlineCountdown(session);
     return;
   }
 
   if (session.status === "active" && !leoidsState.active) {
-    startRoundFromOnlineSession?.(session);
+    startRoundFromOnlineSession(session);
     return;
   }
 
-  if (session.status === "ended" && leoidsState.active) {
-    endRound?.("manual");
+  if (
+    session.status === "round_complete" ||
+    session.status === "ended"
+  ) {
+    await loadOnlinePlayers?.();
+
+    if (!leoidsState.roundEndShown) {
+      leoidsState.roundEndShown = true;
+      leoidsState.active = false;
+
+      hideCountdownBanner?.();
+      hideLeoidsLiveActionButton?.();
+
+      if (leoidsState.intervalId) {
+        clearInterval(leoidsState.intervalId);
+        leoidsState.intervalId = null;
+      }
+
+      if (leoidsState.aiIntervalId) {
+        clearInterval(leoidsState.aiIntervalId);
+        leoidsState.aiIntervalId = null;
+      }
+
+      const runnersFree = leoidsState.players.filter(
+        (p) => p.role === "runner" && p.status === "free"
+      ).length;
+
+      const resultTitle =
+        runnersFree > 0 ? "RUNNERS WIN" : "HUNTERS WIN";
+
+      const resultText =
+        runnersFree > 0
+          ? `${runnersFree} runner${runnersFree === 1 ? "" : "s"} survived.`
+          : "All runners were jailed.";
+
+      const resultIcon = runnersFree > 0 ? "🟢" : "🔴";
+      const resultTheme = runnersFree > 0 ? "runner" : "hunter";
+
+      showLeoidsCinematicOverlay?.({
+        title: resultTitle,
+        subtitle: resultText,
+        icon: resultIcon,
+        theme: resultTheme,
+        duration: 2400,
+      });
+
+      showLeoidsEvent?.(
+        resultTitle,
+        resultText,
+        resultIcon,
+        resultTheme
+      );
+
+      setTimeout(() => {
+        showLeoidsMatchEndScreen?.({
+          title: resultTitle,
+          message: resultText,
+          icon: resultIcon,
+          theme: resultTheme,
+        });
+      }, 900);
+
+      speakText?.(resultText);
+
+      updatePanel?.();
+      updateLeoidsBattleHud?.();
+      drawPlayerMarkers?.();
+    }
   }
 }
+
 
 
 
@@ -5294,9 +5328,10 @@ function showLeoidsMatchEndScreen({
 }
 
 
-function endRound(reason = "manual") {
+async function endRound(reason = "manual", options = {}) {
+  const skipOnlineSync = !!options.skipOnlineSync;
+
   leoidsState.active = false;
-  leoidsState.roleLocked = false;
 
   hideLeoidsLiveActionButton?.();
 
@@ -5305,9 +5340,18 @@ function endRound(reason = "manual") {
     leoidsState.intervalId = null;
   }
 
-  if (leoidsState.countdownIntervalId) {
-    clearInterval(leoidsState.countdownIntervalId);
-    leoidsState.countdownIntervalId = null;
+  if (leoidsState.aiIntervalId) {
+    clearInterval(leoidsState.aiIntervalId);
+    leoidsState.aiIntervalId = null;
+  }
+
+  if (
+    !skipOnlineSync &&
+    leoidsState.onlineEnabled &&
+    leoidsState.onlineSessionId &&
+    leoidsState.isLobbyHost
+  ) {
+    await endOnlineRound?.(reason);
   }
 
   const runnersFree = leoidsState.players.filter(
@@ -5322,7 +5366,9 @@ function endRound(reason = "manual") {
   if (reason === "timer") {
     if (runnersFree > 0) {
       resultTitle = "RUNNERS WIN";
-      resultText = `${runnersFree} runner${runnersFree === 1 ? "" : "s"} survived.`;
+      resultText = `${runnersFree} runner${
+        runnersFree === 1 ? "" : "s"
+      } survived.`;
       resultIcon = "🟢";
       resultTheme = "runner";
       playLeoidsSound?.("victory", 1);
@@ -5359,16 +5405,14 @@ function endRound(reason = "manual") {
     title: resultTitle,
     subtitle: resultText,
     icon: resultIcon,
-    theme: resultTheme === "hunter" ? "hunter" : resultTheme === "runner" ? "runner" : "gold",
+    theme: resultTheme === "runner" ? "runner" : resultTheme === "hunter" ? "hunter" : "gold",
     duration: 2400,
   });
 
-  showLeoidsEvent?.(
-    resultTitle,
-    resultText,
-    resultIcon,
-    resultTheme
-  );
+  speakText?.(resultText);
+
+  updatePanel?.();
+  updateLeoidsBattleHud?.();
 
   setTimeout(() => {
     showLeoidsMatchEndScreen?.({
@@ -5378,11 +5422,6 @@ function endRound(reason = "manual") {
       theme: resultTheme,
     });
   }, 900);
-
-  speakText?.(resultText);
-
-  updatePanel?.();
-  updateLeoidsBattleHud?.();
 }
 
 
