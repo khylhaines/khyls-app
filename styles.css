@@ -2315,13 +2315,12 @@ body.leoids-mode-active .barrow-quest-hud {
 
 #home-center {
   position: absolute;
-  top: 24%;
+  top: 38%;
   left: 50%;
   z-index: 3;
   transform: translate(-50%, -50%);
   text-align: center;
 }
-
 #leoids-home-logo-img {
   width: min(42vw, 180px);
   max-height: 180px;
@@ -2332,37 +2331,58 @@ body.leoids-mode-active .barrow-quest-hud {
 #home-modes {
   position: absolute;
   left: 50%;
-  bottom: 118px;
+  bottom: 90px;
   transform: translateX(-50%);
   z-index: 4;
   width: min(94vw, 520px);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 18px;
 }
 
 .home-mode-btn {
-  min-height: 88px;
-  border-radius: 20px;
-  border: 2px solid rgba(0, 212, 255, 0.75);
-  background: rgba(3, 7, 18, 0.78);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
   color: #dff7ff;
   font-weight: 1000;
-  font-size: 12px;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.25);
-}
-
-.home-mode-btn.active {
-  border-color: #ffb000;
-  color: #ffd54a;
-  box-shadow: 0 0 24px rgba(255, 176, 0, 0.55);
 }
 
 .home-mode-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 28px;
-  margin-bottom: 6px;
+
+  background: rgba(0, 212, 255, 0.08);
+  border: 2px solid rgba(0, 212, 255, 0.9);
+
+  box-shadow:
+    0 0 12px rgba(0, 212, 255, 0.6),
+    0 0 28px rgba(0, 212, 255, 0.4),
+    inset 0 0 12px rgba(0, 212, 255, 0.25);
+
+  transition: all 0.2s ease;
 }
 
+.home-mode-btn.active .home-mode-icon {
+  border-color: #ffb800;
+  box-shadow:
+    0 0 16px rgba(255, 184, 0, 0.8),
+    0 0 36px rgba(255, 184, 0, 0.5),
+    inset 0 0 14px rgba(255, 184, 0, 0.3);
+}
+
+.home-mode-icon:active {
+  transform: scale(0.92);
+}
 #home-bottom-nav {
   position: absolute;
   left: 0;
