@@ -4083,6 +4083,20 @@ function wireButtons() {
     if (home) home.style.display = "none";
   }
 
+  function enterMapFromHome(mode = "explorer") {
+    hideHome();
+
+    const mapEl = document.getElementById("map");
+    if (mapEl) mapEl.style.display = "block";
+
+    selectGameMode(mode);
+
+    setTimeout(() => {
+      if (map) map.invalidateSize();
+      resetMap();
+    }, 250);
+  }
+
   leoidsSystem?.wirePanelButtons?.();
 
   // ===== GAME MODE PILLS =====
@@ -4099,12 +4113,9 @@ function wireButtons() {
   });
 
   // ===== HOME SCREEN BUTTONS =====
- $("home-nav-map")?.addEventListener("click", () => {
-  hideHome();
-
-  const mapEl = document.getElementById("map");
-  if (mapEl) mapEl.style.display = "block";
-});
+  $("home-nav-map")?.addEventListener("click", () => {
+    enterMapFromHome("explorer");
+  });
 
   $("home-nav-settings")?.addEventListener("click", () => {
     hideHome();
@@ -4112,19 +4123,15 @@ function wireButtons() {
   });
 
   $("home-btn-explorer")?.addEventListener("click", () => {
-    hideHome();
-    showModal("start-modal");
+    enterMapFromHome("explorer");
   });
 
   $("home-btn-leoids")?.addEventListener("click", () => {
-    hideHome();
-    showModal("leoids-modal");
+    enterMapFromHome("leoids");
   });
 
   $("home-btn-territory")?.addEventListener("click", () => {
-    hideHome();
-    state.activeGameMode = "territory";
-    resetMap();
+    enterMapFromHome("territory");
   });
 
   // ===== TERRITORY BOT =====
@@ -4162,7 +4169,7 @@ function wireButtons() {
   // ===== ACTION BUTTON =====
   $("action-trigger")?.addEventListener("click", handleActionTrigger);
 
-  // ===== START BUTTON FIX =====
+  // ===== START BUTTON =====
   $("btn-start")?.addEventListener("click", () => {
     closeModal("start-modal");
     hideHome();
@@ -4176,7 +4183,7 @@ function wireButtons() {
     closeModal("start-modal")
   );
 
-  // ===== HOME BUTTON FIX =====
+  // ===== HOME BUTTON =====
   $("btn-home")?.addEventListener("click", () => {
     currentPin = null;
     currentTask = null;
@@ -4187,6 +4194,7 @@ function wireButtons() {
     state.activePack = "classic";
     state.activeAdultCategory = null;
     state.mapMode = "core";
+
     clearAdultSessionApproval();
     clearActiveRoute();
 
@@ -4197,8 +4205,7 @@ function wireButtons() {
     refreshAdultLockUI();
     resetMap();
 
-    closeModal("start-modal");
-    showHome(); // 🔥 THIS IS THE FIX
+    showHome();
   });
 
   // ===== SHOP =====
@@ -4261,6 +4268,7 @@ function wireButtons() {
   // ===== FORCE HOME ON FIRST LOAD =====
   showHome();
 }
+
 
 
 function setupSystems() {
