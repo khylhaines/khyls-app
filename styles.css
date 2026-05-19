@@ -2250,13 +2250,17 @@ body.leoids-mode-active .barrow-quest-hud {
 ============================ */
 
 #home-screen {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 99999999 !important;
-  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: none;
   overflow: hidden;
   background: #000;
   color: white;
+}
+
+#home-screen.active {
+  display: block;
 }
 
 #home-bg {
@@ -2348,7 +2352,6 @@ body.leoids-mode-active .barrow-quest-hud {
   color: #ffd54a;
   letter-spacing: 0.05em;
 }
-
 
 
 /* ============================
