@@ -2465,7 +2465,7 @@ body.leoids-mode-active .barrow-quest-hud {
 
 #home-center {
   top: auto !important;
-  bottom: 52px !important;
+  bottom: 30px !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   width: min(94vw, 520px);
@@ -2480,7 +2480,7 @@ body.leoids-mode-active .barrow-quest-hud {
 }
 
 #leoids-home-logo-img {
-  width: min(56vw, 260px);
+  width: min(120vw, 360px);
   max-height: 230px;
   object-fit: contain;
   filter:
