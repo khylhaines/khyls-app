@@ -2348,3 +2348,280 @@ body.leoids-mode-active .barrow-quest-hud {
   color: #ffd54a;
   letter-spacing: 0.05em;
 }
+
+
+
+/* ============================
+   LEOIDS MISSION CONTROL MODULE
+============================ */
+
+.leoids-control-module {
+  background:
+    radial-gradient(circle at top, rgba(0, 212, 255, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(2, 8, 20, 0.98), rgba(0, 2, 8, 0.99));
+  padding: 18px;
+  color: white;
+}
+
+.leoids-back-btn {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 10001;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(5, 15, 35, 0.8);
+  color: white;
+  font-size: 30px;
+  border: 1px solid rgba(0, 212, 255, 0.5);
+  box-shadow: 0 0 22px rgba(0, 212, 255, 0.28);
+}
+
+.leoids-hero {
+  text-align: center;
+  padding-top: 10px;
+  margin-bottom: 18px;
+}
+
+.leoids-module-logo {
+  width: min(38vw, 150px);
+  filter: drop-shadow(0 0 24px rgba(0, 212, 255, 0.8));
+}
+
+.leoids-hero h1 {
+  margin: 10px 0 4px;
+  font-size: clamp(34px, 8vw, 58px);
+  font-weight: 1000;
+  letter-spacing: 0.06em;
+  color: #f8fbff;
+  text-shadow: 0 0 18px rgba(0, 212, 255, 0.4);
+}
+
+.leoids-hero p {
+  color: #00eaff;
+  font-weight: 800;
+  margin: 0;
+}
+
+.leoids-quick-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 auto 14px;
+}
+
+.leoids-glass-btn {
+  min-height: 86px;
+  border-radius: 20px;
+  background: rgba(3, 12, 28, 0.74);
+  border: 2px solid rgba(0, 212, 255, 0.72);
+  color: white;
+  font-size: 34px;
+  box-shadow:
+    0 0 18px rgba(0, 212, 255, 0.25),
+    inset 0 0 18px rgba(0, 212, 255, 0.08);
+}
+
+.leoids-glass-btn span,
+.leoids-glass-btn small {
+  display: block;
+}
+
+.leoids-glass-btn span {
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.leoids-glass-btn small {
+  color: #62eaff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.leoids-main-card,
+.leoids-role-card,
+.leoids-how {
+  max-width: 760px;
+  margin: 14px auto;
+  border-radius: 24px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  background: rgba(5, 13, 30, 0.82);
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.45),
+    inset 0 0 28px rgba(0, 212, 255, 0.06);
+  padding: 18px;
+}
+
+.leoids-start-btn {
+  width: 100%;
+  min-height: 116px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #2cff78, #20c75e);
+  color: #03100a;
+  font-size: clamp(24px, 7vw, 42px);
+  font-weight: 1000;
+  box-shadow:
+    0 0 28px rgba(44, 255, 120, 0.58),
+    inset 0 0 20px rgba(255, 255, 255, 0.22);
+}
+
+.leoids-start-btn small {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.leoids-end-btn,
+.leoids-close-btn {
+  width: 100%;
+  min-height: 68px;
+  margin-top: 14px;
+  border-radius: 20px;
+  background: rgba(10, 10, 14, 0.68);
+  color: #ff7668;
+  border: 1px solid rgba(255, 95, 70, 0.75);
+  font-size: 22px;
+  font-weight: 1000;
+  box-shadow: inset 0 0 16px rgba(255, 80, 70, 0.1);
+}
+
+.leoids-how summary {
+  list-style: none;
+  cursor: pointer;
+  color: #7eeeff;
+  font-weight: 1000;
+  letter-spacing: 0.06em;
+}
+
+.leoids-how summary::-webkit-details-marker {
+  display: none;
+}
+
+#leoids-setup-explainer {
+  margin-top: 14px;
+  color: rgba(255, 255, 255, 0.86);
+  line-height: 1.55;
+}
+
+.leoids-role-card h3,
+.leoids-lobby-title {
+  text-align: center;
+  color: #69eaff;
+  margin: 0 0 14px;
+  letter-spacing: 0.08em;
+}
+
+.leoids-role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.leoids-role-btn {
+  min-height: 112px;
+  border-radius: 22px;
+  background: rgba(3, 7, 18, 0.76);
+  font-size: 34px;
+  font-weight: 1000;
+}
+
+.leoids-role-btn span,
+.leoids-role-btn small {
+  display: block;
+}
+
+.leoids-role-btn span {
+  margin-top: 6px;
+  font-size: 22px;
+}
+
+.leoids-role-btn small {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.72);
+}
+
+.leoids-role-btn.runner {
+  border: 2px solid rgba(44, 255, 120, 0.7);
+  color: #83ffad;
+}
+
+.leoids-role-btn.runner.active,
+.leoids-role-btn.runner:focus {
+  box-shadow: 0 0 28px rgba(44, 255, 120, 0.52);
+}
+
+.leoids-role-btn.hunter {
+  border: 2px solid rgba(255, 76, 76, 0.72);
+  color: #ff7070;
+}
+
+.leoids-role-btn.hunter.active,
+.leoids-role-btn.hunter:focus {
+  box-shadow: 0 0 28px rgba(255, 76, 76, 0.5);
+}
+
+.leoids-lobby-title {
+  margin-top: 22px;
+}
+
+.leoids-player-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.leoids-player-row {
+  min-height: 54px;
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: rgba(10, 18, 34, 0.86);
+  border: 1px solid rgba(0, 212, 255, 0.18);
+  box-shadow: inset 0 0 14px rgba(0, 212, 255, 0.05);
+}
+
+.leoids-close-btn {
+  display: block;
+  max-width: 420px;
+  margin: 18px auto 0;
+  color: #ffd54a;
+  border-color: rgba(255, 213, 74, 0.8);
+  box-shadow: 0 0 24px rgba(255, 213, 74, 0.25);
+}
+
+@media (max-width: 520px) {
+  .leoids-control-module {
+    padding: 14px;
+  }
+
+  .leoids-hero h1 {
+    font-size: 34px;
+  }
+
+  .leoids-quick-row {
+    gap: 10px;
+  }
+
+  .leoids-glass-btn {
+    min-height: 76px;
+  }
+
+  .leoids-start-btn {
+    min-height: 104px;
+  }
+
+  .leoids-role-grid {
+    gap: 10px;
+  }
+
+  .leoids-role-btn {
+    min-height: 96px;
+  }
+
+  .leoids-role-btn span {
+    font-size: 18px;
+  }
+}
