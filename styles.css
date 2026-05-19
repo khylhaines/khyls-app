@@ -2462,3 +2462,67 @@ body.leoids-mode-active .barrow-quest-hud {
     0 0 34px rgba(0, 212, 255, 0.45),
     inset 0 0 14px rgba(0, 212, 255, 0.25);
 }
+
+#home-center {
+  top: auto !important;
+  bottom: 38px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: min(94vw, 520px);
+}
+
+.leoids-main-button {
+  display: block;
+  margin: 0 auto 18px;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+#leoids-home-logo-img {
+  width: min(52vw, 230px);
+  max-height: 230px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 18px rgba(0, 212, 255, 0.95))
+    drop-shadow(0 0 42px rgba(0, 212, 255, 0.55));
+}
+
+#home-modes,
+#home-bottom-nav {
+  display: none !important;
+}
+
+#home-coming-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.coming-mode-btn {
+  min-height: 74px;
+  border-radius: 18px;
+  border: 2px solid rgba(0, 212, 255, 0.8);
+  background: rgba(3, 7, 18, 0.74);
+  color: #dff7ff;
+  font-weight: 1000;
+  font-size: 22px;
+  box-shadow:
+    0 0 14px rgba(0, 212, 255, 0.55),
+    inset 0 0 12px rgba(0, 212, 255, 0.18);
+}
+
+.coming-mode-btn span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.coming-mode-btn small {
+  display: block;
+  margin-top: 2px;
+  font-size: 8px;
+  color: #ffd54a;
+  letter-spacing: 0.05em;
+}
+
