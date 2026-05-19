@@ -2283,7 +2283,7 @@ body.leoids-mode-active .barrow-quest-hud {
 #home-center {
   position: absolute !important;
   left: 50% !important;
-  bottom: 68px !important;
+  bottom: 10px !important;
   z-index: 6;
   transform: translateX(-50%) !important;
   width: min(96vw, 560px);
