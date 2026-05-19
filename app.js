@@ -4072,8 +4072,20 @@ function wireButtons() {
   window.__territoryBotEnabled = window.__territoryBotEnabled || false;
   window.__territoryBotDifficulty = window.__territoryBotDifficulty || "normal";
 
+  // ===== HOME SCREEN CONTROL =====
+  function showHome() {
+    const home = document.getElementById("home-screen");
+    if (home) home.style.display = "block";
+  }
+
+  function hideHome() {
+    const home = document.getElementById("home-screen");
+    if (home) home.style.display = "none";
+  }
+
   leoidsSystem?.wirePanelButtons?.();
 
+  // ===== GAME MODE PILLS =====
   $("pill-game-explorer")?.addEventListener("click", () => {
     selectGameMode("explorer");
   });
@@ -4086,6 +4098,33 @@ function wireButtons() {
     selectGameMode("leoids");
   });
 
+  // ===== HOME SCREEN BUTTONS =====
+  $("home-nav-map")?.addEventListener("click", () => {
+    hideHome();
+  });
+
+  $("home-nav-settings")?.addEventListener("click", () => {
+    hideHome();
+    showModal("settings-modal");
+  });
+
+  $("home-btn-explorer")?.addEventListener("click", () => {
+    hideHome();
+    showModal("start-modal");
+  });
+
+  $("home-btn-leoids")?.addEventListener("click", () => {
+    hideHome();
+    showModal("leoids-modal");
+  });
+
+  $("home-btn-territory")?.addEventListener("click", () => {
+    hideHome();
+    state.activeGameMode = "territory";
+    resetMap();
+  });
+
+  // ===== TERRITORY BOT =====
   $("btn-territory-bot-toggle")?.addEventListener("click", () => {
     window.__territoryBotEnabled = !window.__territoryBotEnabled;
 
@@ -4103,15 +4142,12 @@ function wireButtons() {
   $("btn-territory-bot-difficulty")?.addEventListener("click", () => {
     const current = window.__territoryBotDifficulty || "normal";
 
-    if (current === "easy") {
-      window.__territoryBotDifficulty = "normal";
-    } else if (current === "normal") {
-      window.__territoryBotDifficulty = "hard";
-    } else {
-      window.__territoryBotDifficulty = "easy";
-    }
+    if (current === "easy") window.__territoryBotDifficulty = "normal";
+    else if (current === "normal") window.__territoryBotDifficulty = "hard";
+    else window.__territoryBotDifficulty = "easy";
 
-    $("btn-territory-bot-difficulty").innerText = `🎚️ BOT DIFFICULTY: ${window.__territoryBotDifficulty.toUpperCase()}`;
+    $("btn-territory-bot-difficulty").innerText =
+      `🎚️ BOT DIFFICULTY: ${window.__territoryBotDifficulty.toUpperCase()}`;
 
     speakText(`Bot difficulty ${window.__territoryBotDifficulty}.`);
 
@@ -4120,147 +4156,24 @@ function wireButtons() {
     }
   });
 
-  $("btn-territory-close")?.addEventListener("click", () =>
-    closeModal("territory-command-modal")
-  );
-
-  $("btn-territory-close-x")?.addEventListener("click", () =>
-    closeModal("territory-command-modal")
-  );
-
-  $("btn-territory-capture")?.addEventListener("click", async () => {
-    if (!currentPin) return;
-
-    const targetPin = currentPin;
-    const player = getActivePlayer();
-
-    closeModal("territory-command-modal");
-
-    await playTerritoryCaptureCutscene(targetPin, player);
-
-    territorySystem?.captureNode(targetPin, player);
-
-    currentPin = targetPin;
-    openTerritoryCommandPanel(targetPin);
-  });
-
-  $("btn-territory-attack")?.addEventListener("click", async () => {
-    if (!currentPin) return;
-
-    const targetPin = currentPin;
-    const player = getActivePlayer();
-    const beforeNode = territorySystem?.getNode(targetPin);
-    const beforeOwnerId = beforeNode?.ownerId || null;
-
-    closeModal("territory-command-modal");
-
-    await playTerritoryAttackCutscene(
-      targetPin,
-      `Firing on ${targetPin.n || "target"}...`
-    );
-
-    territorySystem?.attackNode(targetPin, player);
-
-    const afterNode = territorySystem?.getNode(targetPin);
-    const afterOwnerId = afterNode?.ownerId || null;
-
-    if (afterOwnerId === player?.id && beforeOwnerId !== afterOwnerId) {
-      await playTerritoryCaptureCutscene(targetPin, player);
-    }
-
-    currentPin = targetPin;
-    openTerritoryCommandPanel(targetPin);
-  });
-
-  $("btn-territory-victory-close")?.addEventListener("click", () => {
-    closeModal("territory-victory-screen");
-  });
-
-  $("btn-territory-repair")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.collectNodeCoins(currentPin, getActivePlayer());
-    openTerritoryCommandPanel(currentPin);
-  });
-
-  $("btn-defence-shield")?.addEventListener("click", async () => {
-    if (!currentPin) return;
-
-    const targetPin = currentPin;
-    closeModal("territory-command-modal");
-
-    await playTerritoryDefenceCutscene("shield", targetPin);
-
-    territorySystem?.installDefence(targetPin, getActivePlayer(), "shield");
-    currentPin = targetPin;
-    openTerritoryCommandPanel(targetPin);
-  });
-
-  $("btn-defence-core")?.addEventListener("click", async () => {
-    if (!currentPin) return;
-
-    const targetPin = currentPin;
-    closeModal("territory-command-modal");
-
-    await playTerritoryDefenceCutscene("core", targetPin);
-
-    territorySystem?.upgradeNode(targetPin, getActivePlayer());
-    currentPin = targetPin;
-    openTerritoryCommandPanel(targetPin);
-  });
-
-  $("btn-defence-bee")?.addEventListener("click", async () => {
-    if (!currentPin) return;
-
-    const targetPin = currentPin;
-    closeModal("territory-command-modal");
-
-    await playTerritoryDefenceCutscene("bee_nest", targetPin);
-
-    territorySystem?.installDefence(targetPin, getActivePlayer(), "bee_nest");
-    currentPin = targetPin;
-    openTerritoryCommandPanel(targetPin);
-  });
-
-  $("btn-weapon-arrow-wood")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.useWeaponOnNode(
-      currentPin,
-      getActivePlayer(),
-      "wooden_arrow"
-    );
-    openTerritoryCommandPanel(currentPin);
-  });
-
-  $("btn-weapon-arrow-bone")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.useWeaponOnNode(
-      currentPin,
-      getActivePlayer(),
-      "bone_arrow"
-    );
-    openTerritoryCommandPanel(currentPin);
-  });
-
-  $("btn-weapon-hand-cannon")?.addEventListener("click", () => {
-    if (!currentPin) return;
-    territorySystem?.useWeaponOnNode(
-      currentPin,
-      getActivePlayer(),
-      "hand_cannon"
-    );
-    openTerritoryCommandPanel(currentPin);
-  });
-
+  // ===== ACTION BUTTON =====
   $("action-trigger")?.addEventListener("click", handleActionTrigger);
 
-  $("btn-start")?.addEventListener("click", () => closeModal("start-modal"));
+  // ===== START BUTTON FIX =====
+  $("btn-start")?.addEventListener("click", () => {
+    closeModal("start-modal");
+    hideHome();
+  });
+
   $("btn-start-close")?.addEventListener("click", () =>
     closeModal("start-modal")
   );
+
   $("btn-start-close-x")?.addEventListener("click", () =>
     closeModal("start-modal")
   );
 
+  // ===== HOME BUTTON FIX =====
   $("btn-home")?.addEventListener("click", () => {
     currentPin = null;
     currentTask = null;
@@ -4280,20 +4193,16 @@ function wireButtons() {
     updateStartButtons();
     refreshAdultLockUI();
     resetMap();
-    showModal("start-modal");
+
+    closeModal("start-modal");
+    showHome(); // 🔥 THIS IS THE FIX
   });
 
+  // ===== SHOP =====
   $("btn-shop")?.addEventListener("click", () => {
     renderShop();
     showModal("shop-modal");
     speakText("Shop opened.");
-  });
-
-  $("voice-select")?.addEventListener("change", (e) => {
-    state.settings.voiceName = String(e.target.value || "");
-    saveState();
-    applySettingsToUI();
-    speakText("Voice updated.");
   });
 
   $("btn-shop-close")?.addEventListener("click", () =>
@@ -4304,14 +4213,7 @@ function wireButtons() {
     closeModal("shop-modal")
   );
 
-  $("btn-home-close")?.addEventListener("click", () =>
-    closeModal("home-modal")
-  );
-
-  $("btn-home-close-x")?.addEventListener("click", () =>
-    closeModal("home-modal")
-  );
-
+  // ===== SETTINGS =====
   $("btn-settings")?.addEventListener("click", () => {
     showModal("settings-modal");
     speakText("System config opened.");
@@ -4330,20 +4232,20 @@ function wireButtons() {
     closeModal("settings-modal")
   );
 
- $("btn-commander")?.addEventListener("click", () => {
-  if (activeGameMode === "leoids") {
-    leoidsSystem?.openSetupPanel?.();
-    leoidsSystem?.wirePanelButtons?.();
-    speakText("LEOIDS control panel opened.");
-    return;
-  }
+  // ===== COMMANDER =====
+  $("btn-commander")?.addEventListener("click", () => {
+    if (activeGameMode === "leoids") {
+      leoidsSystem?.openSetupPanel?.();
+      leoidsSystem?.wirePanelButtons?.();
+      speakText("LEOIDS control panel opened.");
+      return;
+    }
 
-  renderHomeLog();
-  renderCaptainNotes();
-  showModal("commander-hub");
-  speakText("Commander hub opened.");
-});
-
+    renderHomeLog();
+    renderCaptainNotes();
+    showModal("commander-hub");
+    speakText("Commander hub opened.");
+  });
 
   $("btn-close-commander")?.addEventListener("click", () =>
     closeModal("commander-hub")
@@ -4353,273 +4255,8 @@ function wireButtons() {
     closeModal("commander-hub")
   );
 
-  $("btn-send-broadcast")?.addEventListener("click", sendBroadcastMessage);
-  $("btn-save-captain-note")?.addEventListener("click", handleSaveCaptainNote);
-
-  $("btn-close-quest")?.addEventListener("click", () =>
-    closeModal("quest-modal")
-  );
-
-  $("btn-task-close")?.addEventListener("click", () =>
-    closeModal("task-modal")
-  );
-
-  $("btn-read-answers")?.addEventListener("click", () => {
-    if (currentTask?.mode === "boss") {
-      const step =
-        currentTask?.boss?.steps?.[Number(currentTask?.boss?.stepIndex || 0)];
-
-      if (step?.options?.length) {
-        speakOptions(step.options);
-      }
-
-      return;
-    }
-
-    if (currentTask?.question?.options?.length) {
-      speakOptions(currentTask.question.options);
-    }
-  });
-
-  $("btn-reward-image-close")?.addEventListener("click", closeRewardImageModal);
-  $("btn-reward-image-close-x")?.addEventListener(
-    "click",
-    closeRewardImageModal
-  );
-
-  $("pill-full")?.addEventListener("click", () => {
-    state.activePack = "classic";
-    state.mapMode = "core";
-    state.activeAdultCategory = null;
-    clearActiveRoute();
-    leoidsSystem?.exitBattleMap?.();
-    saveState();
-    updateStartButtons();
-    refreshAdultLockUI();
-    resetMap();
-    speakText("Full Barrow selected.");
-  });
-
-  $("pill-park")?.addEventListener("click", () => {
-    state.activePack = "classic";
-    state.mapMode = "park";
-    state.activeAdultCategory = null;
-    clearActiveRoute();
-    leoidsSystem?.exitBattleMap?.();
-    saveState();
-    updateStartButtons();
-    refreshAdultLockUI();
-    resetMap();
-    speakText("Park selected.");
-  });
-
-  $("pill-docks")?.addEventListener("click", () => {
-    state.activePack = "classic";
-    state.mapMode = "abbey";
-    state.activeAdultCategory = null;
-    clearActiveRoute();
-    leoidsSystem?.exitBattleMap?.();
-    saveState();
-    updateStartButtons();
-    refreshAdultLockUI();
-    resetMap();
-    speakText("Abbey selected.");
-  });
-
-  $("pill-truecrime")?.addEventListener("click", () =>
-    openAdultCategory("true_crime", "True crime")
-  );
-
-  $("pill-conspiracy")?.addEventListener("click", () =>
-    openAdultCategory("conspiracy", "Conspiracy")
-  );
-
-  $("pill-history")?.addEventListener("click", () =>
-    openAdultCategory("history", "History")
-  );
-
-  $("pill-kids")?.addEventListener("click", () => {
-    state.tierMode = "kid";
-    state.activePack = "classic";
-    state.activeAdultCategory = null;
-    clearAdultSessionApproval();
-    leoidsSystem?.exitBattleMap?.();
-    saveState();
-    updateStartButtons();
-    refreshAdultLockUI();
-    speakText("Kids mode selected.");
-  });
-
-  $("pill-teen")?.addEventListener("click", () => {
-    state.tierMode = "teen";
-    saveState();
-    updateStartButtons();
-    refreshAdultLockUI();
-    speakText("Teen mode selected.");
-  });
-
-  $("tier-mode")?.addEventListener("change", (e) => {
-    state.tierMode = e.target.value;
-
-    if (state.tierMode === "kid") {
-      clearAdultSessionApproval();
-
-      if (state.activePack === "adult") {
-        state.activePack = "classic";
-        state.activeAdultCategory = null;
-        resetMap();
-      }
-    }
-
-    saveState();
-    refreshAdultLockUI();
-  });
-
-  document.querySelectorAll(".m-tile").forEach((tile) => {
-    tile.addEventListener("click", () => {
-      const mode = tile.dataset.mode;
-      if (!mode || mode === "battle") return;
-      closeModal("quest-modal");
-      openTask(mode);
-    });
-  });
-
-  $("adult-read-case")?.addEventListener("click", () => {
-    closeModal("quest-modal");
-    openTask("read_case");
-  });
-
-  $("adult-view-evidence")?.addEventListener("click", () => {
-    closeModal("quest-modal");
-    openTask("evidence");
-  });
-
-  $("adult-view-clue")?.addEventListener("click", () => {
-    closeModal("quest-modal");
-    openTask("clue");
-  });
-
-  $("adult-ar-verify")?.addEventListener("click", () => {
-    closeModal("quest-modal");
-    openTask("ar_verify");
-  });
-
-  $("btn-player-1")?.addEventListener("click", () => setPlayerCount(1));
-  $("btn-player-2")?.addEventListener("click", () => setPlayerCount(2));
-  $("btn-player-3")?.addEventListener("click", () => setPlayerCount(3));
-  $("btn-player-4")?.addEventListener("click", () => setPlayerCount(4));
-
-  $("btn-hp-k")?.addEventListener("click", () => {
-    const p = getEnabledPlayers()[0];
-    if (p) setActivePlayer(p.id);
-  });
-
-  $("btn-hp-p")?.addEventListener("click", () => {
-    const p = getEnabledPlayers()[1] || getEnabledPlayers()[0];
-    if (p) setActivePlayer(p.id);
-  });
-
-  $("btn-swap")?.addEventListener("click", () => {
-    const enabled = getEnabledPlayers();
-
-    if (enabled.length >= 2) {
-      const tmp = enabled[0].name;
-      enabled[0].name = enabled[1].name;
-      enabled[1].name = tmp;
-      saveState();
-      renderHUD();
-      renderShop();
-      speakText("Players swapped.");
-    }
-  });
-
-  $("btn-night")?.addEventListener("click", () => {
-    nightVisionOn = !nightVisionOn;
-    $("map")?.classList.toggle("night-vision", nightVisionOn);
-    speakText(nightVisionOn ? "Night vision on." : "Night vision off.");
-  });
-
-  $("btn-zoom-ui")?.addEventListener("click", () => {
-    state.settings.zoomUI = !state.settings.zoomUI;
-    saveState();
-    applySettingsToUI();
-    resetMap();
-    speakText(state.settings.zoomUI ? "Zoom buttons on." : "Zoom buttons off.");
-  });
-
-  $("btn-test")?.addEventListener("click", () => {
-    alert("Systems are responding.");
-    speakText("Systems are responding.");
-  });
-
-  $("enter-radius")?.addEventListener("input", (e) => {
-    state.settings.radius = Number(e.target.value);
-    saveState();
-    applySettingsToUI();
-  });
-
-  $("v-pitch")?.addEventListener("input", (e) => {
-    state.settings.voicePitch = Number(e.target.value);
-    saveState();
-    applySettingsToUI();
-    speakText(`Voice pitch ${state.settings.voicePitch}`);
-  });
-
-  $("v-rate")?.addEventListener("input", (e) => {
-    state.settings.voiceRate = Number(e.target.value);
-    saveState();
-    applySettingsToUI();
-    speakText(`Voice rate ${state.settings.voiceRate}`);
-  });
-
-  $("sfx-vol")?.addEventListener("input", (e) => {
-    state.settings.sfxVol = Number(e.target.value);
-    saveState();
-    applySettingsToUI();
-  });
-
-  $("btn-ar-open")?.addEventListener("click", openAR);
-  $("btn-ar-stop")?.addEventListener("click", stopAR);
-
-  $("btn-ar-close")?.addEventListener("click", () => {
-    stopAR();
-    closeModal("ar-modal");
-  });
-
-  $("btn-ar-manual")?.addEventListener("click", () => {
-    stopAR();
-    closeModal("ar-modal");
-    speakText("Hotspot verified.");
-    alert("Hotspot verified.");
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "1") {
-      selectGameMode("explorer");
-    }
-
-    if (e.key === "2") {
-      selectGameMode("territory");
-    }
-
-    if (e.key === "3") {
-      selectGameMode("leoids");
-    }
-
-    if (e.key.toLowerCase() === "b") {
-      window.__territoryBotEnabled = !window.__territoryBotEnabled;
-
-      speakText(
-        window.__territoryBotEnabled
-          ? "Territory bot enabled."
-          : "Territory bot disabled."
-      );
-    }
-  });
-
-  window.addEventListener("beforeunload", () => {
-    saveStateNow(true);
-  });
+  // ===== FORCE HOME ON FIRST LOAD =====
+  showHome();
 }
 
 
