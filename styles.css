@@ -2173,64 +2173,28 @@ input[type="range"] {
   text-align: right;
 }
 
-.leoids-map-tools {
-  position: fixed;
-  left: 50%;
-  bottom: 112px;
-  transform: translateX(-50%);
-  z-index: 9000;
-  display: grid;
-  gap: 8px;
-  width: min(92vw, 360px);
-  pointer-events: auto;
-}
-
-.leoids-map-tools.hidden {
-  display: none !important;
-}
-
-.leoids-map-tools button {
-  min-height: 48px;
-  border-radius: 16px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
-}
-
-#btn-leoids-map-confirm-boundary {
-  background: linear-gradient(180deg, #ffe27c, #ffd54a);
-  color: #111;
-}
-
-#btn-leoids-map-confirm-base {
-  background: linear-gradient(180deg, #4da3ff, #173b6b);
-  color: #fff;
-}
-
-#btn-leoids-map-cancel {
-  background: #111827;
-  color: #fff;
-}
+.leoids-map-tools,
 .leoids-map-controls {
   position: fixed;
   left: 50%;
   bottom: 112px;
   transform: translateX(-50%);
   z-index: 50000;
-  width: min(92vw, 420px);
   display: grid;
   gap: 8px;
+  width: min(92vw, 420px);
   pointer-events: auto;
 }
 
-.leoids-map-controls.hidden {
+.leoids-map-tools.hidden,
+.leoids-map-controls.hidden,
+.leoids-menu-btn.hidden {
   display: none !important;
 }
 
+.leoids-map-tools button,
 .leoids-map-btn {
-  width: 100%;
-  min-height: 46px;
+  min-height: 48px;
   border-radius: 16px;
   padding: 10px 14px;
   font-weight: 900;
@@ -2239,11 +2203,18 @@ input[type="range"] {
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45);
 }
 
+#btn-leoids-map-confirm-boundary,
 .leoids-map-btn.confirm {
   background: linear-gradient(180deg, #ffe27c, #ffd54a 55%, #efb000);
   color: #1c1200;
 }
 
+#btn-leoids-map-confirm-base {
+  background: linear-gradient(180deg, #4da3ff, #173b6b);
+  color: #fff;
+}
+
+#btn-leoids-map-cancel,
 .leoids-map-btn.dark {
   background: linear-gradient(180deg, #202a3c, #101827);
   color: #fff;
@@ -2264,11 +2235,6 @@ input[type="range"] {
   letter-spacing: 0.04em;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
 }
-
-.leoids-menu-btn.hidden {
-  display: none !important;
-}
-
 
 body.leoids-mode-active #xp-display,
 body.leoids-mode-active #coin-display,
@@ -2313,190 +2279,47 @@ body.leoids-mode-active .barrow-quest-hud {
   letter-spacing: 0.05em;
 }
 
+/* Main LEOIDS logo button */
 #home-center {
-  position: absolute;
-  top: 38%;
-  left: 50%;
-  z-index: 3;
-  transform: translate(-50%, -50%);
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 34px !important;
+  z-index: 6;
+  transform: translateX(-50%) !important;
+  width: min(96vw, 560px);
   text-align: center;
 }
-#leoids-home-logo-img {
-  width: min(42vw, 180px);
-  max-height: 180px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 24px rgba(0, 212, 255, 0.75));
-}
 
-#home-modes {
-  position: absolute;
-  left: 50%;
-  bottom: 90px;
-  transform: translateX(-50%);
-  z-index: 4;
-  width: min(94vw, 520px);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-}
-
-.home-mode-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  color: #dff7ff;
-  font-weight: 1000;
-}
-
-.home-mode-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-
-  background: rgba(0, 212, 255, 0.08);
-  border: 2px solid rgba(0, 212, 255, 0.9);
-
-  box-shadow:
-    0 0 12px rgba(0, 212, 255, 0.6),
-    0 0 28px rgba(0, 212, 255, 0.4),
-    inset 0 0 12px rgba(0, 212, 255, 0.25);
-
-  transition: all 0.2s ease;
-}
-
-.home-mode-btn.active .home-mode-icon {
-  border-color: #ffb800;
-  box-shadow:
-    0 0 16px rgba(255, 184, 0, 0.8),
-    0 0 36px rgba(255, 184, 0, 0.5),
-    inset 0 0 14px rgba(255, 184, 0, 0.3);
-}
-
-.home-mode-icon:active {
-  transform: scale(0.92);
-}
-#home-bottom-nav {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  z-index: 5;
-  width: 100%;
-  height: 86px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  background: rgba(2, 6, 23, 0.92);
-  border-top: 1px solid rgba(0, 212, 255, 0.25);
-}
-
-#home-bottom-nav button {
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 26px;
-  font-weight: 1000;
-}
-
-#home-bottom-nav span {
-  display: block;
-  margin-top: 3px;
-  font-size: 12px;
-}
- 24px;
-}
-
-#home-bottom-nav {
-  display: none !important;
-}
-
-#home-center button {
-  border: none;
-  background: transparent;
-  padding: 0;
-}
-
-#leoids-home-logo-img {
-  width: min(48vw, 210px);
-  max-height: 210px;
-  object-fit: contain;
-  filter:
-    drop-shadow(0 0 18px rgba(0, 212, 255, 0.9))
-    drop-shadow(0 0 36px rgba(0, 212, 255, 0.55));
-}
-
-#home-center {
-  top: 38% !important;
-}
-
-#home-modes {
-  bottom: 36px !important;
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.home-mode-btn {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.home-mode-icon {
-  width: 76px;
-  height: 76px;
-  margin: 0 auto 7px;
-  border-radius: 50%;
-  border: 2px solid rgba(0, 212, 255, 0.95);
-  background: rgba(0, 20, 35, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  box-shadow:
-    0 0 14px rgba(0, 212, 255, 0.8),
-    0 0 34px rgba(0, 212, 255, 0.45),
-    inset 0 0 14px rgba(0, 212, 255, 0.25);
-}
-
-#home-center {
-  top: auto !important;
-  bottom: 30px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: min(94vw, 520px);
-}
-
+#home-center button,
 .leoids-main-button {
   display: block;
-  margin: 0 auto 18px;
+  margin: 0 auto 14px;
   border: none;
   background: transparent;
   padding: 0;
 }
 
 #leoids-home-logo-img {
-  width: min(120vw, 360px);
-  max-height: 230px;
+  width: min(82vw, 300px) !important;
+  max-height: 300px !important;
   object-fit: contain;
   filter:
     drop-shadow(0 0 18px rgba(0, 212, 255, 0.95))
     drop-shadow(0 0 42px rgba(0, 212, 255, 0.55));
 }
 
+/* Hide old mode/nav rows */
 #home-modes,
 #home-bottom-nav {
   display: none !important;
 }
 
+/* Three small coming-soon buttons under logo */
 #home-coming-buttons {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 9px;
+  width: 100%;
 }
 
 .coming-mode-btn {
@@ -2525,4 +2348,3 @@ body.leoids-mode-active .barrow-quest-hud {
   color: #ffd54a;
   letter-spacing: 0.05em;
 }
-
