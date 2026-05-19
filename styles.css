@@ -2411,3 +2411,54 @@ body.leoids-mode-active .barrow-quest-hud {
 }
  24px;
 }
+
+#home-bottom-nav {
+  display: none !important;
+}
+
+#home-center button {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+#leoids-home-logo-img {
+  width: min(48vw, 210px);
+  max-height: 210px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 18px rgba(0, 212, 255, 0.9))
+    drop-shadow(0 0 36px rgba(0, 212, 255, 0.55));
+}
+
+#home-center {
+  top: 38% !important;
+}
+
+#home-modes {
+  bottom: 36px !important;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.home-mode-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.home-mode-icon {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 7px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 212, 255, 0.95);
+  background: rgba(0, 20, 35, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  box-shadow:
+    0 0 14px rgba(0, 212, 255, 0.8),
+    0 0 34px rgba(0, 212, 255, 0.45),
+    inset 0 0 14px rgba(0, 212, 255, 0.25);
+}
