@@ -20,48 +20,44 @@
   </head>
 
   <body>
-    <div id="home-screen">
+  <div id="home-screen">
+    <div id="home-bg"></div>
 
-  <!-- Background -->
-  <div id="home-bg"></div>
+    <div id="home-location">LOCATION: BARROW-IN-FURNESS</div>
 
-  <!-- Top Location -->
-  <div id="home-location">
-    LOCATION: BARROW, UK
-  </div>
-
-  <!-- Center Logo -->
-  <div id="home-center">
-    <img src="assets/leoids-logo.png" id="leoids-logo" />
-    <div id="leoids-title">LEOIDS MODE</div>
-  </div>
-
-  <!-- Mode Buttons -->
-  <div id="home-modes">
-
-    <div class="mode-btn">
-      <div class="mode-icon">🧭</div>
-      <div class="mode-text">EXPLORER</div>
+    <div id="home-center">
+      <img
+        id="leoids-home-logo-img"
+        src="./assets/leoids-logo.png"
+        alt="Leoids Logo"
+      />
     </div>
 
-    <div class="mode-btn active">
-      <div class="mode-icon">🚩</div>
-      <div class="mode-text">TERRITORY</div>
+    <div id="home-modes">
+      <button class="home-mode-btn" id="home-btn-explorer" type="button">
+        <div class="home-mode-icon">🧭</div>
+        <div>EXPLORER</div>
+      </button>
+
+      <button class="home-mode-btn active" id="home-btn-leoids" type="button">
+        <div class="home-mode-icon">🦁</div>
+        <div>LEOIDS</div>
+      </button>
+
+      <button class="home-mode-btn" id="home-btn-territory" type="button">
+        <div class="home-mode-icon">🚩</div>
+        <div>TERRITORY</div>
+      </button>
     </div>
 
-    <div class="mode-btn">
-      <div class="mode-icon">🔍</div>
-      <div class="mode-text">TRUE CRIME</div>
+    <div id="home-bottom-nav">
+      <button id="home-nav-map" type="button">🗺️<span>MAP</span></button>
+      <button id="home-nav-profile" type="button">👤<span>PROFILE</span></button>
+      <button id="home-nav-settings" type="button">⚙️<span>SETTINGS</span></button>
     </div>
-
   </div>
 
-  <!-- Bottom Nav -->
-  <div id="home-nav">
-    <div class="nav-item">🗺️<span>MAP</span></div>
-    <div class="nav-item">👤<span>PROFILE</span></div>
-    <div class="nav-item">⚙️<span>SETTINGS</span></div>
-  </div>
+
 
 </div>
     <div class="top-appbar">
