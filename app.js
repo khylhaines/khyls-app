@@ -4073,15 +4073,22 @@ function wireButtons() {
   window.__territoryBotDifficulty = window.__territoryBotDifficulty || "normal";
 
   // ===== HOME SCREEN CONTROL =====
-  function showHome() {
-    const home = document.getElementById("home-screen");
-    if (home) home.style.display = "block";
-  }
 
-  function hideHome() {
-    const home = document.getElementById("home-screen");
-    if (home) home.style.display = "none";
+  function showHome() {
+  const home = document.getElementById("home-screen");
+  if (home) {
+    home.style.display = "block";
+    home.classList.add("active");
   }
+}
+
+function hideHome() {
+  const home = document.getElementById("home-screen");
+  if (home) {
+    home.style.display = "none";
+    home.classList.remove("active");
+  }
+}
 
   function enterMapFromHome(mode = "explorer") {
     hideHome();
