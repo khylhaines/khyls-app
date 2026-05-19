@@ -2384,3 +2384,30 @@ body.leoids-mode-active .barrow-quest-hud {
   font-size: 12px;
 }
 
+
+/* FORCE HOME SCREEN TO SHOW - TEST */
+#home-screen {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999999 !important;
+  background: #000 !important;
+}
+
+#home-bg {
+  position: absolute !important;
+  inset: 0 !important;
+  background: url("./assets/home-bg.jpg") center / cover no-repeat !important;
+}
+
+#home-center,
+#home-location,
+#home-modes,
+#home-bottom-nav {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
