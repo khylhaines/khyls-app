@@ -2385,29 +2385,59 @@ body.leoids-mode-active .barrow-quest-hud {
 }
 
 
-/* FORCE HOME SCREEN TO SHOW - TEST */
-#home-screen {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 99999999 !important;
-  background: #000 !important;
+/* ============================
+   TOP BAR
+============================ */
+.top-appbar {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 2000;
+  display: flex;
+  justify-content: space-between;
 }
 
-#home-bg {
-  position: absolute !important;
-  inset: 0 !important;
-  background: url("./assets/home-bg.jpg") center / cover no-repeat !important;
+.top-pill {
+  background: #111;
+  color: gold;
+  padding: 10px 16px;
+  border-radius: 16px;
+  font-weight: 900;
 }
 
-#home-center,
-#home-location,
-#home-modes,
-#home-bottom-nav {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+/* ============================
+   ACTION BUTTON
+============================ */
+#action-trigger {
+  position: fixed;
+  left: 50%;
+  bottom: 100px;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  font-size: 40px;
+  display: none;
+  z-index: 3000;
 }
 
+/* ============================
+   HUD
+============================ */
+.hud-dock {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 2000;
+}
+
+.hud-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  font-size: 24px;
+}
