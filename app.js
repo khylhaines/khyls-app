@@ -4133,7 +4133,13 @@ function wireButtons() {
   $("home-btn-territory")?.addEventListener("click", () => {
     enterMapFromHome("territory");
   });
+  
+$("home-btn-truecrime")?.addEventListener("click", () => {
+  hideHome();
+  openAdultCategory("true_crime", "True crime");
+});
 
+  
   // ===== TERRITORY BOT =====
   $("btn-territory-bot-toggle")?.addEventListener("click", () => {
     window.__territoryBotEnabled = !window.__territoryBotEnabled;
