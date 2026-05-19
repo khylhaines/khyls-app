@@ -4099,9 +4099,12 @@ function wireButtons() {
   });
 
   // ===== HOME SCREEN BUTTONS =====
-  $("home-nav-map")?.addEventListener("click", () => {
-    hideHome();
-  });
+ $("home-nav-map")?.addEventListener("click", () => {
+  hideHome();
+
+  const mapEl = document.getElementById("map");
+  if (mapEl) mapEl.style.display = "block";
+});
 
   $("home-nav-settings")?.addEventListener("click", () => {
     hideHome();
