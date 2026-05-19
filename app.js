@@ -4421,4 +4421,11 @@ document.addEventListener(
   { once: true }
 );
 
+// ===== FORCE HOME SCREEN FIRST =====
+const home = document.getElementById("home-screen");
+const mapEl = document.getElementById("map");
+
+if (home) home.style.display = "block";
+if (mapEl) mapEl.style.display = "none";
+
 window.addEventListener("DOMContentLoaded", boot);
