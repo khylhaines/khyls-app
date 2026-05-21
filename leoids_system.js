@@ -6474,7 +6474,7 @@ modal.querySelectorAll(".leoids-session-hide-btn").forEach((btn) => {
     openOnlineSessionBrowser();
   });
 });
-
+    
   modal.querySelectorAll(".leoids-session-end-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const sessionId = btn.dataset.sessionId;
