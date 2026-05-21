@@ -5335,38 +5335,82 @@ function showLeoidsMatchEndScreen({
 
   document.body.appendChild(modal);
 
-  document.getElementById("btn-leoids-match-play-again")?.addEventListener("click", () => {
-    modal.remove();
+document.getElementById("btn-leoids-match-play-again")?.addEventListener("click", async () => {
+  modal.remove();
 
-    leoidsState.players.forEach((player) => {
-      player.status = "free";
-      player.jailedAtBase = false;
-      player.score = 0;
-      player.coins = 0;
-    });
+  leoidsState.active = false;
+  leoidsState.huntersReleased = false;
+  leoidsState.lastHunterCountdownSecond = null;
+  leoidsState.endedAt = null;
 
-    leoidsState.score = 0;
-    leoidsState.coins = 0;
-    leoidsState.timeLeft = Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
-    leoidsState.hunterDelayLeft = Number(
-      leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
-    );
-    leoidsState.huntersReleased = false;
-    leoidsState.endedAt = null;
+  stopTimer?.();
+  stopAI?.();
+  hideLeoidsBattleHud?.();
+  hideLeoidsLiveActionButton?.();
 
-    seedPlayerPositions?.();
-    startRound?.();
+  leoidsState.players.forEach((player) => {
+    player.status = "free";
+    player.jailedAtBase = false;
+    player.score = 0;
+    player.coins = 0;
+    player.tagStreak = 0;
   });
 
-  document.getElementById("btn-leoids-match-lobby")?.addEventListener("click", () => {
-    modal.remove();
+  leoidsState.score = 0;
+  leoidsState.coins = 0;
+  leoidsState.timeLeft = Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS);
+  leoidsState.hunterDelayLeft = Number(
+    leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS
+  );
 
-    if (leoidsState.onlineSessionId) {
-      openOnlineLobbyScreen?.(leoidsState.onlineSessionId);
-    } else {
-      openSetupPanel?.();
+  renderPlayers?.();
+  drawPlayerMarkers?.();
+  updatePanel?.();
+
+  if (leoidsState.onlineSessionId) {
+    const supabase = window.LEOIDSSupabase;
+
+    if (supabase?.client) {
+      await supabase.client
+        .from("leoids_sessions")
+        .update({
+          status: "lobby",
+          game_starts_at: null,
+          round_started_at: null,
+          ended_at: null,
+        })
+        .eq("id", leoidsState.onlineSessionId);
     }
-  });
+
+    openOnlineLobbyScreen?.(leoidsState.onlineSessionId);
+  } else {
+    openSetupPanel?.();
+  }
+});
+
+document.getElementById("btn-leoids-match-lobby")?.addEventListener("click", () => {
+  modal.remove();
+
+  // Fully stop game state
+  leoidsState.active = false;
+  leoidsState.huntersReleased = false;
+
+  stopTimer?.();
+  stopAI?.();
+
+  hideLeoidsBattleHud?.();
+  hideLeoidsLiveActionButton?.();
+
+  // Make sure map isn't left in a weird state
+  closeModal?.("leoids-modal");
+
+  // Return to proper lobby/setup
+  if (leoidsState.onlineSessionId) {
+    openOnlineLobbyScreen?.(leoidsState.onlineSessionId);
+  } else {
+    openSetupPanel?.();
+  }
+});
 
   document.getElementById("btn-leoids-match-map")?.addEventListener("click", () => {
     modal.remove();
