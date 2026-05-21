@@ -6348,48 +6348,48 @@ async function openOnlineSessionBrowser() {
     openOnlineSessionBrowser();
   });
 
-  document.getElementById("btn-leoids-host-public-session")?.addEventListener("click", () => {
-    openNameRolePicker({
-      title: "HOST NEW LOBBY",
-      defaultName: supabase.playerName || leoidsState.onlinePlayerName || "Kyle",
-      onConfirm: async ({ displayName, role }) => {
-        const lobbyName = `${displayName}'s LEOIDS Game`;
+ document.getElementById("btn-leoids-host-public-session")?.addEventListener("click", () => {
+  openNameRolePicker({
+    title: "HOST NEW LOBBY",
+    defaultName: supabase.playerName || leoidsState.onlinePlayerName || "Kyle",
+    onConfirm: async ({ displayName, role }) => {
+      const lobbyName = `${displayName}'s LEOIDS Game`;
 
-        leoidsState.onlinePlayerName = displayName;
-        leoidsState.isLobbyHost = true;
-        leoidsState.role = role;
+      leoidsState.onlinePlayerName = displayName;
+      leoidsState.isLobbyHost = true;
+      leoidsState.role = role;
 
-        supabase.playerName = displayName;
+      supabase.playerName = displayName;
 
-        const session = await createOnlineSession(lobbyName);
-        if (!session) return;
+      const session = await createOnlineSession(lobbyName);
+      if (!session) return;
 
-        await joinSessionSafely({
-          sessionId: session.id,
-          displayName,
-          role,
-        });
+      await joinSessionSafely({
+        sessionId: session.id,
+        displayName,
+        role,
+      });
 
-        const local = getLocalPlayer?.();
-        if (local) {
-          local.role = role;
-          local.status = role === "spectator" ? "watching" : "free";
-          local.jailedAtBase = false;
-        }
+      const local = getLocalPlayer?.();
+      if (local) {
+        local.role = role;
+        local.status = role === "spectator" ? "watching" : "free";
+        local.jailedAtBase = false;
+      }
 
-        leoidsState.isLobbyHost = true;
-        leoidsState.onlineSessionId = session.id;
-        leoidsState.onlineEnabled = true;
-        supabase.sessionId = session.id;
+      leoidsState.isLobbyHost = true;
+      leoidsState.onlineSessionId = session.id;
+      leoidsState.onlineEnabled = true;
+      supabase.sessionId = session.id;
 
-        modal.remove();
+      modal.remove();
 
-        openOnlineLobbyScreen(session.id, {
-          autoStartGps: true,
-        });
-      },
-    });
+      openOnlineLobbyScreen(session.id, {
+        autoStartGps: false,
+      });
+    },
   });
+});
 
   modal.querySelectorAll(".leoids-session-join-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
