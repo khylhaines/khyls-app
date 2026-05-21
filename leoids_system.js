@@ -5966,6 +5966,14 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId, op
 
 
 async function openGameMapFromLobby({ startLocation = false } = {}) {
+
+document.getElementById("leoids-online-lobby-screen")?.remove();
+
+if (leoidsState.lobbyRefreshIntervalId) {
+  clearInterval(leoidsState.lobbyRefreshIntervalId);
+  leoidsState.lobbyRefreshIntervalId = null;
+}
+  
   closeLobbyScreen();
 
   leoidsState.active = false;
