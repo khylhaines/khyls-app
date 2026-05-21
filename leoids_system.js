@@ -5962,7 +5962,10 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId, op
     modal.remove();
   }
 
- async function openGameMapFromLobby({ startLocation = false } = {}) {
+
+
+
+async function openGameMapFromLobby({ startLocation = false } = {}) {
   closeLobbyScreen();
 
   leoidsState.active = false;
@@ -6009,7 +6012,7 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId, op
   }, 400);
 }
 
- 
+  
 
 async function openOnlineSessionBrowser() {
   const supabase = window.LEOIDSSupabase;
