@@ -6400,33 +6400,37 @@ modal.querySelectorAll(".leoids-session-join-btn").forEach((btn) => {
       defaultName: supabase.playerName || leoidsState.onlinePlayerName || "Kyle",
       onConfirm: async ({ displayName, role }) => {
         leoidsState.isLobbyHost = false;
-leoidsState.onlinePlayerName = displayName;
-leoidsState.role = role;
+        leoidsState.onlinePlayerName = displayName;
+        leoidsState.role = role;
 
-supabase.playerName = displayName;
+        supabase.playerName = displayName;
 
-await joinSessionSafely({
-  sessionId,
-  displayName,
-  role,
-});
+        await joinSessionSafely({
+          sessionId,
+          displayName,
+          role,
+        });
 
-const local = getLocalPlayer?.();
-if (local) {
-  local.role = role;
-  local.status = role === "spectator" ? "watching" : "free";
-  local.jailedAtBase = false;
-}
+        const local = getLocalPlayer?.();
 
-leoidsState.onlineSessionId = sessionId;
-leoidsState.onlineEnabled = true;
-supabase.sessionId = sessionId;
+        if (local) {
+          local.role = role;
+          local.status = role === "spectator" ? "watching" : "free";
+          local.jailedAtBase = false;
+        }
 
-modal.remove();
+        leoidsState.onlineSessionId = sessionId;
+        leoidsState.onlineEnabled = true;
+        supabase.sessionId = sessionId;
 
-// 🔥 THIS IS THE IMPORTANT FIX
-openOnlineLobbyScreen(sessionId, {
-  autoStartGps: false,
+        modal.remove();
+
+        openOnlineLobbyScreen(sessionId, {
+          autoStartGps: false,
+        });
+      },
+    });
+  });
 });
 
 
