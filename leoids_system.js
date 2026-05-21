@@ -6011,7 +6011,7 @@ async function openGameMapFromLobby({ startLocation = false } = {}) {
     }
   }, 400);
 }
-
+}
   
 
 async function openOnlineSessionBrowser() {
