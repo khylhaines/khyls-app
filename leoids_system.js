@@ -6200,7 +6200,7 @@ async function openOnlineSessionBrowser() {
     document.getElementById("leoids-picker-cancel")?.addEventListener("click", () => {
       picker.remove();
     });
-  }
+  
 
   const hiddenIds = getHiddenLobbyIds();
 
