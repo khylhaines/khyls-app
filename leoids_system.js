@@ -6427,8 +6427,9 @@ modal.remove();
 // 🔥 THIS IS THE IMPORTANT FIX
 openOnlineLobbyScreen(sessionId, {
   autoStartGps: false,
-});
-
+  });
+ });
+    
 
   modal.querySelectorAll(".leoids-session-hide-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -6464,10 +6465,7 @@ openOnlineLobbyScreen(sessionId, {
   });
 }
 
- 
-
-
-function openLeoidsLeaderboard() {
+ function openLeoidsLeaderboard() {
   const old = document.getElementById("leoids-leaderboard-screen");
   if (old) old.remove();
 
