@@ -6469,30 +6469,7 @@ modal.querySelectorAll(".leoids-session-join-btn").forEach((btn) => {
 }
     
     
-  modal.querySelectorAll(".leoids-session-end-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const sessionId = btn.dataset.sessionId;
-
-      if (!confirm("End this lobby for everyone?")) return;
-
-      if (typeof supabase.endSession === "function") {
-        await supabase.endSession(sessionId);
-      } else if (supabase.client) {
-        await supabase.client
-          .from("leoids_sessions")
-          .update({
-            ended_at: new Date().toISOString(),
-            status: "ended",
-          })
-          .eq("id", sessionId);
-      }
-
-      modal.remove();
-      openOnlineSessionBrowser();
-    });
-  });
-}
-
+ 
  function openLeoidsLeaderboard() {
   const old = document.getElementById("leoids-leaderboard-screen");
   if (old) old.remove();
