@@ -5870,89 +5870,12 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId, op
 
   document.body.appendChild(modal);
 
-  async function refreshLobbyScreen() {
-    const activeSessionId = leoidsState.onlineSessionId || supabase.sessionId;
-    if (!activeSessionId) return;
+document.getElementById("leoids-online-lobby-screen")?.remove();
 
-    const session = await supabase.getSession(activeSessionId);
-    const players = await supabase.loadPlayers();
-
-    if (!document.getElementById("leoids-online-lobby-screen")) return;
-
-    leoidsState.isLobbyHost = isLocalLobbyHost(session);
-
-    const title = document.getElementById("leoids-lobby-title");
-    const host = document.getElementById("leoids-lobby-host");
-    const status = document.getElementById("leoids-lobby-status");
-    const playerList = document.getElementById("leoids-lobby-player-list");
-    const hostControls = document.getElementById("leoids-host-controls");
-    const gpsBtn = document.getElementById("btn-leoids-lobby-gps");
-
-    if (title) title.innerText = session?.name || "LEOIDS Lobby";
-    if (host) host.innerText = `Host: ${session?.host_name || "Unknown"}`;
-
-    if (hostControls) {
-      hostControls.style.display = leoidsState.isLobbyHost ? "block" : "none";
-    }
-
-    if (gpsBtn) {
-      gpsBtn.innerText = "📍 ENTER MAP / GPS ON";
-    }
-
-    if (status) {
-      if (session?.status === "countdown" && session?.game_starts_at) {
-        const secondsLeft = Math.max(
-          0,
-          Math.ceil(
-            (new Date(session.game_starts_at).getTime() - Date.now()) / 1000
-          )
-        );
-        status.innerText = `Starting in ${secondsLeft}s`;
-      } else if (session?.status === "active") {
-        status.innerText = "Mission active";
-      } else {
-        status.innerText = leoidsState.isLobbyHost
-          ? "You are host.\nSet up the mission, choose roles, then start."
-          : "Choose runner or hunter.\nGPS can stay on while you wait.";
-      }
-    }
-
-    if (playerList) {
-      playerList.innerHTML = players.length
-        ? players
-            .map((player) => {
-              const role = player.role || "spectator";
-              const icon =
-                role === "hunter"
-                  ? "🔴"
-                  : role === "runner"
-                  ? "🟢"
-                  : "👁️";
-
-              return `
-                <div style="
-                  display:flex;
-                  justify-content:space-between;
-                  gap:10px;
-                  padding:10px;
-                  border-radius:12px;
-                  background:rgba(255,255,255,.07);
-                  margin-top:8px;
-                ">
-                  <span>${icon} ${player.display_name || "Player"}</span>
-                  <strong>${role.toUpperCase()}</strong>
-                </div>
-              `;
-            })
-            .join("")
-        : `<div style="opacity:.75;margin-top:10px;">No players yet.</div>`;
-    }
-
-    if (session && typeof applyOnlineSessionConfig === "function") {
-      applyOnlineSessionConfig(session);
-    }
-  }
-
+if (leoidsState.lobbyRefreshIntervalId) {
+  clearInterval(leoidsState.lobbyRefreshIntervalId);
+  leoidsState.lobbyRefreshIntervalId = null;
+}
   function closeLobbyScreen() {
     if (leoidsState.lobbyRefreshIntervalId) {
       clearInterval(leoidsState.lobbyRefreshIntervalId);
