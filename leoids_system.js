@@ -5989,6 +5989,42 @@ async function openOnlineSessionBrowser() {
     return await supabase.joinSession({ sessionId, displayName, role });
   };
 
+  const getSessionStatusText = (session) => {
+    if (session.ended_at) return "ENDED";
+
+    if (session.expires_at) {
+      const expiry = new Date(session.expires_at).getTime();
+      if (Number.isFinite(expiry) && expiry <= Date.now()) return "EXPIRED";
+    }
+
+    if (session.status === "countdown" && session.game_starts_at) {
+      const secondsLeft = Math.max(
+        0,
+        Math.ceil(
+          (new Date(session.game_starts_at).getTime() - Date.now()) / 1000
+        )
+      );
+
+      return `COUNTDOWN • ${secondsLeft}s`;
+    }
+
+    if (session.status === "active") return "MISSION ACTIVE";
+
+    return "LOBBY OPEN";
+  };
+
+  const isMine = (session) => {
+    const myName =
+      leoidsState.onlinePlayerName ||
+      supabase.playerName ||
+      "";
+
+    const hostName = session?.host
+
+
+
+
+    
   function getSessionStatusText(session) {
     if (session.ended_at) return "ENDED";
 
@@ -6444,7 +6480,30 @@ modal.querySelectorAll(".leoids-session-join-btn").forEach((btn) => {
     });
   });
 
-  
+  modal.querySelectorAll(".leoids-session-end-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const sessionId = btn.dataset.sessionId;
+
+      if (!confirm("End this lobby for everyone?")) return;
+
+      if (typeof supabase.endSession === "function") {
+        await supabase.endSession(sessionId);
+      } else if (supabase.client) {
+        await supabase.client
+          .from("leoids_sessions")
+          .update({
+            ended_at: new Date().toISOString(),
+            status: "ended",
+          })
+          .eq("id", sessionId);
+      }
+
+      modal.remove();
+      openOnlineSessionBrowser();
+    });
+  });
+}
+
     
  
  function openLeoidsLeaderboard() {
