@@ -5962,11 +5962,9 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId, op
     modal.remove();
   }
 
-  asyncfunction openGameMapFromLobby({ startLocation = false } = {}) {
-  // Close lobby UI cleanly
+ async function openGameMapFromLobby({ startLocation = false } = {}) {
   closeLobbyScreen();
 
-  // Reset game/map state properly
   leoidsState.active = false;
   leoidsState.huntersReleased = false;
 
@@ -5976,20 +5974,17 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId, op
   hideLeoidsBattleHud?.();
   hideLeoidsLiveActionButton?.();
 
-  // Clear any leftover overlays
   closeModal?.("leoids-modal");
 
   leoidsState.onlineEnabled = true;
 
-  // Enter map fresh
   enterBattleMap?.();
   hideLeoidsMapControls?.();
 
-  loadAndApplyOnlineSession?.();
+  await loadAndApplyOnlineSession?.();
   startOnlinePlayerSync?.();
   startOnlineSessionSync?.();
-
-  loadOnlinePlayers?.();
+  await loadOnlinePlayers?.();
 
   if (startLocation) {
     startGpsOnlineSync?.();
