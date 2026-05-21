@@ -6465,15 +6465,15 @@ openOnlineLobbyScreen(sessionId, {
 }
     
 
-  modal.querySelectorAll(".leoids-session-hide-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const sessionId = btn.dataset.sessionId;
-      hideLobbyLocally(sessionId);
+modal.querySelectorAll(".leoids-session-hide-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const sessionId = btn.dataset.sessionId;
+    hideLobbyLocally(sessionId);
 
-      modal.remove();
-      openOnlineSessionBrowser();
-    });
+    modal.remove();
+    openOnlineSessionBrowser();
   });
+});
 
   modal.querySelectorAll(".leoids-session-end-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
