@@ -5962,192 +5962,56 @@ async function openOnlineLobbyScreen(sessionId = leoidsState.onlineSessionId, op
     modal.remove();
   }
 
-  async function openGameMapFromLobby({ startLocation = false } = {}) {
-    closeLobbyScreen();
+  asyncfunction openGameMapFromLobby({ startLocation = false } = {}) {
+  // Close lobby UI cleanly
+  closeLobbyScreen();
 
-    leoidsState.onlineEnabled = true;
+  // Reset game/map state properly
+  leoidsState.active = false;
+  leoidsState.huntersReleased = false;
 
-    enterBattleMap?.();
-    hideLeoidsMapControls?.();
-    closeModal?.("leoids-modal");
+  stopTimer?.();
+  stopAI?.();
 
-    await loadAndApplyOnlineSession?.();
-    startOnlinePlayerSync?.();
-    startOnlineSessionSync?.();
-    await loadOnlinePlayers?.();
+  hideLeoidsBattleHud?.();
+  hideLeoidsLiveActionButton?.();
 
-    if (startLocation) {
-      startGpsOnlineSync?.();
-      speakText?.("Location sharing started.");
-    }
+  // Clear any leftover overlays
+  closeModal?.("leoids-modal");
 
-    setTimeout(() => {
-      redrawAllMapObjects?.();
-      drawPlayerMarkers?.();
-      showLeoidsBattleHud?.();
-      updatePanel?.();
+  leoidsState.onlineEnabled = true;
 
-      const map = getMapSafe?.();
-      const local = getLocalPlayer?.();
+  // Enter map fresh
+  enterBattleMap?.();
+  hideLeoidsMapControls?.();
 
-      if (map && local?.position) {
-        map.setView(
-          [local.position.lat, local.position.lng],
-          Math.max(map.getZoom(), 17)
-        );
-      }
-    }, 500);
-  }
-
-  await refreshLobbyScreen();
-
-  if (leoidsState.lobbyRefreshIntervalId) {
-    clearInterval(leoidsState.lobbyRefreshIntervalId);
-  }
-
-  leoidsState.lobbyRefreshIntervalId = setInterval(() => {
-    refreshLobbyScreen();
-    drawPlayerMarkers?.();
-  }, 2000);
-
+  loadAndApplyOnlineSession?.();
   startOnlinePlayerSync?.();
   startOnlineSessionSync?.();
 
-  if (autoStartGps) {
-    setTimeout(() => {
-      openGameMapFromLobby({ startLocation: true });
-    }, 250);
-    return;
+  loadOnlinePlayers?.();
+
+  if (startLocation) {
+    startGpsOnlineSync?.();
+    speakText?.("Location sharing started.");
   }
 
-  document.getElementById("btn-leoids-lobby-close")
-    ?.addEventListener("click", closeLobbyScreen);
+  setTimeout(() => {
+    redrawAllMapObjects?.();
+    drawPlayerMarkers?.();
+    showLeoidsBattleHud?.();
+    updatePanel?.();
 
-  document.getElementById("btn-leoids-lobby-gps")
-    ?.addEventListener("click", () => {
-      openGameMapFromLobby({ startLocation: true });
-    });
+    const map = getMapSafe?.();
+    const local = getLocalPlayer?.();
 
-  document.getElementById("btn-leoids-lobby-help")
-    ?.addEventListener("click", () => {
-      openLeoidsInstructions?.();
-    });
-
-  document.getElementById("btn-leoids-lobby-start-countdown")
-    ?.addEventListener("click", async () => {
-      const session = await supabase.getSession(leoidsState.onlineSessionId);
-
-      if (!isLocalLobbyHost(session)) {
-        alert("Only the host can start the mission.");
-        return;
-      }
-
-      await openGameMapFromLobby({ startLocation: true });
-
-      await saveOnlineSessionConfig?.();
-      await startOnlineCountdown(leoidsState.countdownSeconds || 10);
-
-      speakText?.("Mission started.");
-    });
-
-  document.getElementById("btn-leoids-lobby-host-setup")
-    ?.addEventListener("click", async () => {
-      const session = await supabase.getSession(leoidsState.onlineSessionId);
-
-      if (!isLocalLobbyHost(session)) {
-        alert("Only the host can edit mission setup.");
-        return;
-      }
-
-      closeLobbyScreen();
-
-      setTimeout(() => {
-        openLeoidsMissionSetupScreen({
-          returnToLobby: true,
-        });
-      }, 150);
-    });
-
-  document.getElementById("btn-leoids-lobby-end-session")
-    ?.addEventListener("click", async () => {
-      const session = await supabase.getSession(leoidsState.onlineSessionId);
-
-      if (!isLocalLobbyHost(session)) {
-        alert("Only the host can end this mission.");
-        return;
-      }
-
-      if (!confirm("End this mission/lobby?")) return;
-
-      if (leoidsState.active) {
-        endRound?.("manual");
-      }
-
-      if (typeof supabase.endSession === "function") {
-        await supabase.endSession(leoidsState.onlineSessionId);
-      } else if (supabase.client) {
-        await supabase.client
-          .from("leoids_sessions")
-          .update({
-            ended_at: new Date().toISOString(),
-            status: "ended",
-          })
-          .eq("id", leoidsState.onlineSessionId);
-      }
-
-      closeLobbyScreen();
-      speakText?.("Mission ended.");
-    });
-
-  document.getElementById("btn-leoids-lobby-runner")
-    ?.addEventListener("click", async () => {
-      leoidsState.role = "runner";
-
-      const local = getLocalPlayer?.();
-      if (local) {
-        local.role = "runner";
-        local.status = "free";
-        local.jailedAtBase = false;
-      }
-
-      await supabase.joinSession({
-        sessionId: leoidsState.onlineSessionId,
-        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
-        role: "runner",
-      });
-
-      speakText?.("Runner selected.");
-      await refreshLobbyScreen();
-      await loadOnlinePlayers?.();
-      drawPlayerMarkers?.();
-      updatePanel?.();
-      updateLeoidsBattleHud?.();
-    });
-
-  document.getElementById("btn-leoids-lobby-hunter")
-    ?.addEventListener("click", async () => {
-      leoidsState.role = "hunter";
-
-      const local = getLocalPlayer?.();
-      if (local) {
-        local.role = "hunter";
-        local.status = "free";
-        local.jailedAtBase = false;
-      }
-
-      await supabase.joinSession({
-        sessionId: leoidsState.onlineSessionId,
-        displayName: supabase.playerName || leoidsState.onlinePlayerName || "Player",
-        role: "hunter",
-      });
-
-      speakText?.("Hunter selected.");
-      await refreshLobbyScreen();
-      await loadOnlinePlayers?.();
-      drawPlayerMarkers?.();
-      updatePanel?.();
-      updateLeoidsBattleHud?.();
-    });
+    if (map && local?.position) {
+      map.setView(
+        [local.position.lat, local.position.lng],
+        Math.max(map.getZoom(), 17)
+      );
+    }
+  }, 400);
 }
 
  
