@@ -2566,24 +2566,44 @@ function drawPlayerMarkers() {
     leoidsState.polygonPointMarkers = [];
   }
 
-  function clearBasePoint() {
-    const map = getMapSafe();
+ function clearBasePoint() {
+  const map = getMapSafe();
 
-    if (map && leoidsState.baseLayer) {
-      try {
-        map.removeLayer(leoidsState.baseLayer);
-      } catch {}
-    }
-
-    if (map && leoidsState.baseMarker) {
-      try {
-        map.removeLayer(leoidsState.baseMarker);
-      } catch {}
-    }
-
-    leoidsState.baseLayer = null;
-    leoidsState.baseMarker = null;
+  if (map && leoidsState.baseLayer) {
+    try {
+      map.removeLayer(leoidsState.baseLayer);
+    } catch {}
   }
+
+  if (map && leoidsState.baseCircle) {
+    try {
+      map.removeLayer(leoidsState.baseCircle);
+    } catch {}
+  }
+
+  if (map && leoidsState.basePulseCircle) {
+    try {
+      map.removeLayer(leoidsState.basePulseCircle);
+    } catch {}
+  }
+
+  if (map && leoidsState.baseMarker) {
+    try {
+      map.removeLayer(leoidsState.baseMarker);
+    } catch {}
+  }
+
+  if (leoidsState.basePulseInterval) {
+    clearInterval(leoidsState.basePulseInterval);
+    leoidsState.basePulseInterval = null;
+  }
+
+  leoidsState.baseLayer = null;
+  leoidsState.baseCircle = null;
+  leoidsState.basePulseCircle = null;
+  leoidsState.baseMarker = null;
+}
+
 
   function clearPlayerMarkers() {
     const map = getMapSafe();
@@ -2619,21 +2639,39 @@ function drawPlayerMarkers() {
     speakText?.("LEOIDS boundary cleared.");
   }
 
-  function redrawAllMapObjects() {
-    if (leoidsState.boundaryCenter) {
-      drawCircleBoundary(leoidsState.boundaryCenter, leoidsState.boundaryRadius);
-    }
+ function redrawAllMapObjects() {
+  clearCircleBoundary?.();
+  clearPolygonBoundary?.();
+  clearBasePoint?.();
 
-    if (leoidsState.boundaryPoints.length) {
-      drawPolygonBoundary();
-    }
-
-    if (leoidsState.basePoint) {
-      drawBasePoint(leoidsState.basePoint, leoidsState.baseRadius);
-    }
-
-    drawPlayerMarkers();
+  if (
+    leoidsState.boundaryMode === "circle" &&
+    leoidsState.boundaryCenter
+  ) {
+    drawCircleBoundary(
+      leoidsState.boundaryCenter,
+      Number(leoidsState.boundaryRadius || DEFAULT_BOUNDARY_RADIUS)
+    );
   }
+
+  if (
+    leoidsState.boundaryMode === "polygon" &&
+    Array.isArray(leoidsState.boundaryPoints) &&
+    leoidsState.boundaryPoints.length
+  ) {
+    drawPolygonBoundary();
+  }
+
+  if (leoidsState.basePoint) {
+    drawBasePoint(
+      leoidsState.basePoint,
+      Number(leoidsState.baseRadius || DEFAULT_BASE_RADIUS)
+    );
+  }
+
+  drawPlayerMarkers?.();
+}
+
 
   function hasValidBoundary() {
     if (leoidsState.boundaryMode === "circle") {
@@ -4383,23 +4421,40 @@ function showRoundEndScreen(reason = "manual") {
 
 
 function buildOnlineSessionConfig() {
+  const cleanPoint = (point) => {
+    if (!point) return null;
+
+    const lat = Number(point.lat);
+    const lng = Number(point.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+    return { lat, lng };
+  };
+
+  const cleanPoints = Array.isArray(leoidsState.boundaryPoints)
+    ? leoidsState.boundaryPoints
+        .map(cleanPoint)
+        .filter(Boolean)
+    : [];
+
+  const basePoint = cleanPoint(leoidsState.basePoint);
+  const boundaryCenter = cleanPoint(leoidsState.boundaryCenter);
+
   return {
     status: leoidsState.active ? "active" : "lobby",
 
     boundary: {
-      mode: leoidsState.boundaryMode,
+      mode: leoidsState.boundaryMode === "polygon" ? "polygon" : "circle",
       radius: Number(leoidsState.boundaryRadius || DEFAULT_BOUNDARY_RADIUS),
-      center: leoidsState.boundaryCenter || null,
-      points: Array.isArray(leoidsState.boundaryPoints)
-        ? leoidsState.boundaryPoints
-        : [],
+      center: boundaryCenter,
+      points: cleanPoints,
     },
 
-    jail_lat: leoidsState.basePoint ? Number(leoidsState.basePoint.lat) : null,
-    jail_lng: leoidsState.basePoint ? Number(leoidsState.basePoint.lng) : null,
-
-    base_lat: leoidsState.basePoint ? Number(leoidsState.basePoint.lat) : null,
-    base_lng: leoidsState.basePoint ? Number(leoidsState.basePoint.lng) : null,
+    base_lat: basePoint ? basePoint.lat : null,
+    base_lng: basePoint ? basePoint.lng : null,
+    jail_lat: basePoint ? basePoint.lat : null,
+    jail_lng: basePoint ? basePoint.lng : null,
 
     round_time: Number(leoidsState.roundTime || DEFAULT_ROUND_SECONDS),
     hunter_delay: Number(leoidsState.hunterDelay || DEFAULT_HUNTER_DELAY_SECONDS),
@@ -4410,41 +4465,86 @@ function buildOnlineSessionConfig() {
 }
 
 
-
 async function saveOnlineSessionConfig() {
   if (!leoidsState.onlineSessionId) return null;
 
-  return await updateOnlineSession(buildOnlineSessionConfig());
+  const payload = buildOnlineSessionConfig();
+
+  const saved = await updateOnlineSession(payload);
+
+  if (saved) {
+    applyOnlineSessionConfig(saved);
+  }
+
+  return saved;
 }
 
 function applyOnlineSessionConfig(session) {
   if (!session) return;
 
+  leoidsState.onlineSessionId = session.id || leoidsState.onlineSessionId;
+
   leoidsState.roundTime = Number(session.round_time || DEFAULT_ROUND_SECONDS);
+  leoidsState.timeLeft = leoidsState.active
+    ? leoidsState.timeLeft
+    : leoidsState.roundTime;
+
   leoidsState.hunterDelay = Number(
     session.hunter_delay || DEFAULT_HUNTER_DELAY_SECONDS
   );
-  leoidsState.baseRadius = Number(
-    session.base_radius || DEFAULT_BASE_RADIUS
-  );
-  leoidsState.tagRadius = Number(
-    session.tag_radius || DEFAULT_TAG_RADIUS
-  );
 
-  if (session.base_lat && session.base_lng) {
+  leoidsState.hunterDelayLeft = leoidsState.active
+    ? leoidsState.hunterDelayLeft
+    : leoidsState.hunterDelay;
+
+  leoidsState.baseRadius = Number(session.base_radius || DEFAULT_BASE_RADIUS);
+  leoidsState.tagRadius = Number(session.tag_radius || DEFAULT_TAG_RADIUS);
+  leoidsState.countdownSeconds = Number(session.countdown_seconds || 10);
+
+  const boundary = session.boundary || null;
+
+  if (boundary) {
+    leoidsState.boundaryMode =
+      boundary.mode === "polygon" ? "polygon" : "circle";
+
+    leoidsState.boundaryRadius = Number(
+      boundary.radius || DEFAULT_BOUNDARY_RADIUS
+    );
+
+    leoidsState.boundaryCenter = boundary.center
+      ? {
+          lat: Number(boundary.center.lat),
+          lng: Number(boundary.center.lng),
+        }
+      : null;
+
+    leoidsState.boundaryPoints = Array.isArray(boundary.points)
+      ? boundary.points
+          .map((point) => ({
+            lat: Number(point.lat),
+            lng: Number(point.lng),
+          }))
+          .filter(
+            (point) =>
+              Number.isFinite(point.lat) && Number.isFinite(point.lng)
+          )
+      : [];
+  }
+
+  if (session.base_lat !== null && session.base_lng !== null) {
     leoidsState.basePoint = {
       lat: Number(session.base_lat),
       lng: Number(session.base_lng),
     };
+
+    window.__leoidsBasePoint = leoidsState.basePoint;
   }
 
-  if (session.boundary) {
-    leoidsState.boundary = session.boundary;
-  }
-
-  leoidsState.onlineSessionId = session.id;
-
+  redrawAllMapObjects?.();
+  refreshBoundaryButtons?.();
+  renderPlayers?.();
   updatePanel?.();
+  updateLeoidsBattleHud?.();
 }
 
 async function loadAndApplyOnlineSession() {
@@ -4457,9 +4557,14 @@ async function loadAndApplyOnlineSession() {
   if (!session) return null;
 
   applyOnlineSessionConfig(session);
+
+  setTimeout(() => {
+    redrawAllMapObjects?.();
+    drawPlayerMarkers?.();
+  }, 150);
+
   return session;
 }
-
 function showCountdownBanner(secondsLeft) {
   let banner = document.getElementById("leoids-countdown-banner");
 
