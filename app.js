@@ -2553,6 +2553,10 @@ if (nearby) {
 function openMissionMenu() {
   if (!currentPin) return;
 
+if (window.oldTom?.hasCoverage(currentPin.id)) {
+  window.oldTom.showTomOverlay(currentPin.id, getEffectiveTier(), currentPin.n);
+}
+  
   if (isAbbeyRouteApproachPin(currentPin)) {
     renderAbbeyRouteChoice();
     return;
