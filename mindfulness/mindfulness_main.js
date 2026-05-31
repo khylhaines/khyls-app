@@ -819,5 +819,3 @@ export function initMindfulness() {
   console.log("Mindfulness system initialised.");
 }
 
-  console.log("Mindfulness system initialised.");
-}
