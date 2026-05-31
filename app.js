@@ -6,6 +6,7 @@ import {
   updateAdaptiveProfile,
 } from "./qa.js";
 import { createTerritorySystem } from "./territory_system.js";
+import { initMindfulness } from './mindfulness/mindfulness_main.js';
 import { createLeoidsSystem } from "./leoids_system.js";
 import { PINS } from "./pins.js";
 import { ADULT_PINS } from "./adult_pins.js";
@@ -4142,6 +4143,11 @@ function hideHome() {
     enterMapFromHome("leoids");
   });
 
+$("home-btn-mindfulness")?.addEventListener("click", () => {
+  window.openMindfulnessHome();
+});
+  
+  
   $("home-btn-territory")?.addEventListener("click", () => {
     enterMapFromHome("territory");
   });
@@ -4404,6 +4410,7 @@ function boot() {
     setupSystems();
     initParentalControls();
     initParentalSync();
+    initMindfulness();
     renderEverything();
     wireButtons();
 
