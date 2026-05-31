@@ -430,14 +430,4 @@ function stopBreathAnimation() {
   }
 }
 
-/* =========================================================
-   EXPORTS
-========================================================= */
 
-export {
-  openMorningCheckin,
-  openStateSelector,
-  startStateExercise,
-  startBreathAnimation,
-  stopBreathAnimation,
-};
