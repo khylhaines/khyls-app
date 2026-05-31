@@ -25,6 +25,11 @@ import {
   DEEP_MEDITATIONS,
 } from "./mindfulness_content.js";
 
+import {
+  openRoutinesHome,
+  getSuggestedRoutine,
+} from "./mindfulness_routines.js";
+
 /* =========================================================
    MINDFULNESS HOME SCREEN
 ========================================================= */
@@ -41,6 +46,8 @@ export function openMindfulnessHome() {
   const stateObj = MINDFULNESS_STATES.find(s => s.id === currentState);
 
   const xpPercent = Math.min(100, Math.round((profile.xp / profile.xpToNextLevel) * 100));
+
+  const suggested = getSuggestedRoutine(tier);
 
   const modal = document.createElement("div");
   modal.id = "mindfulness-home";
@@ -119,6 +126,38 @@ export function openMindfulnessHome() {
           box-shadow:0 0 28px rgba(0,212,255,.35);
         ">🌅 MORNING CHECK-IN</button>
       `}
+
+      <!-- SUGGESTED ROUTINE -->
+      ${suggested ? `
+        <button id="btn-suggested-routine" type="button" style="
+          width:100%;min-height:64px;border-radius:20px;margin-bottom:16px;
+          background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(15,37,26,.9));
+          border:1px solid rgba(34,197,94,.3);color:white;cursor:pointer;
+          display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left;
+        ">
+          <span style="font-size:28px;">${suggested.icon}</span>
+          <div>
+            <div style="font-size:11px;color:#22c55e;font-weight:900;letter-spacing:.08em;">SUGGESTED NOW</div>
+            <div style="font-size:15px;font-weight:1000;">${suggested.title}</div>
+          </div>
+          <div style="margin-left:auto;font-size:12px;opacity:.65;">${suggested.duration}m</div>
+        </button>
+      ` : ""}
+
+      <!-- DAILY ROUTINES -->
+      <button id="btn-mind-routines" type="button" style="
+        width:100%;min-height:58px;border-radius:18px;margin-bottom:16px;
+        background:linear-gradient(135deg,#0f1f0f,#111827);
+        color:white;font-weight:900;font-size:15px;
+        border:1px solid rgba(34,197,94,.25);cursor:pointer;
+        display:flex;align-items:center;gap:14px;padding:0 18px;
+      ">
+        <span style="font-size:24px;">🌅</span>
+        <div style="text-align:left;">
+          <div>DAILY ROUTINES</div>
+          <div style="font-size:12px;opacity:.65;margin-top:2px;">Morning, evening, bedtime, stress reset</div>
+        </div>
+      </button>
 
       <!-- QUICK PRACTICES -->
       <div style="margin-bottom:16px;">
@@ -248,6 +287,25 @@ export function openMindfulnessHome() {
   document.getElementById("btn-change-state")?.addEventListener("click", () => {
     modal.remove();
     openMorningCheckin();
+  });
+
+  // Suggested routine
+  document.getElementById("btn-suggested-routine")?.addEventListener("click", () => {
+    if (!suggested) return;
+    const { openRoutinePlayer } = window.__mindfulnessRoutines || {};
+    if (openRoutinePlayer) {
+      modal.remove();
+      openRoutinePlayer(suggested);
+    } else {
+      modal.remove();
+      openRoutinesHome();
+    }
+  });
+
+  // Daily routines
+  document.getElementById("btn-mind-routines")?.addEventListener("click", () => {
+    modal.remove();
+    openRoutinesHome();
   });
 
   // Practice sections
@@ -394,7 +452,6 @@ export function openExerciseScreen(exercise) {
     if (!content) return;
 
     content.innerHTML = `
-      <!-- PROGRESS -->
       <div style="padding:16px 18px 0;flex-shrink:0;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <div style="font-size:12px;opacity:.7;">Step ${currentStep + 1} of ${exercise.steps.length}</div>
@@ -405,7 +462,6 @@ export function openExerciseScreen(exercise) {
         </div>
       </div>
 
-      <!-- STEP CONTENT -->
       <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;">
         <div style="max-width:420px;">
           <div style="font-size:52px;margin-bottom:18px;">${exercise.icon}</div>
@@ -413,7 +469,6 @@ export function openExerciseScreen(exercise) {
         </div>
       </div>
 
-      <!-- BUTTONS -->
       <div style="padding:16px 18px;display:grid;gap:10px;flex-shrink:0;">
         <button id="btn-step-next" type="button" style="
           width:100%;min-height:56px;border-radius:18px;
@@ -437,7 +492,6 @@ export function openExerciseScreen(exercise) {
       </div>
     `;
 
-    // Wire buttons
     document.getElementById("btn-step-next")?.addEventListener("click", () => {
       if (isLast) {
         completeExercise(exercise);
@@ -460,11 +514,9 @@ export function openExerciseScreen(exercise) {
   };
 
   modal.innerHTML = `
-    <!-- HEADER -->
     <div style="
       padding:14px 18px;background:rgba(0,0,0,.3);
-      border-bottom:1px solid rgba(255,255,255,.08);
-      flex-shrink:0;
+      border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
     ">
       <div style="font-size:11px;color:#00d4ff;font-weight:900;letter-spacing:.12em;">${exercise.title}</div>
       <div style="font-size:14px;opacity:.75;margin-top:2px;">${exercise.duration} minute practice</div>
@@ -485,16 +537,12 @@ function completeExercise(exercise) {
   awardMindfulnessXP(xpAmount, exercise.id);
 
   const profile = loadMindfulnessProfile();
-
-  // Track counts for badges
   if (exercise.section === "grounding") profile.groundingCount = (profile.groundingCount || 0) + 1;
   if (exercise.section === "awareness") profile.awarenessCount = (profile.awarenessCount || 0) + 1;
   if (exercise.section === "focus") profile.focusCount = (profile.focusCount || 0) + 1;
   if (exercise.id === "zone_mapping") profile.zoneMappingCount = (profile.zoneMappingCount || 0) + 1;
-
   saveMindfulnessProfile(profile);
 
-  // Completion toast
   const toast = document.createElement("div");
   toast.style.cssText = `
     position:fixed;top:20px;left:50%;transform:translateX(-50%);
@@ -559,7 +607,7 @@ export function openDeepMeditationSection() {
         ">
           <div style="font-weight:900;color:#ffb000;">⚠️ SAFE LOCATION REQUIRED</div>
           <div style="font-size:13px;opacity:.85;margin-top:6px;line-height:1.5;">
-            Deep meditation only unlocks when you are at your safe location (home). Mark your safe location in settings first.
+            Deep meditation only unlocks when you are at your safe location. Mark it in settings first.
           </div>
           <button id="btn-mark-safe" type="button" style="
             width:100%;min-height:44px;border-radius:14px;
@@ -679,7 +727,7 @@ function openMindfulnessSettings() {
       <div style="padding:16px;border-radius:18px;background:#111827;border:1px solid rgba(255,255,255,.1);margin-bottom:14px;">
         <div style="font-weight:900;color:#ffd54a;margin-bottom:12px;">SAFE LOCATION</div>
         <div style="font-size:13px;opacity:.8;margin-bottom:10px;">
-          Mark your home or safe place to unlock deep meditation content.
+          Mark your home or safe place to unlock deep meditation and bedtime content.
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="flex:1;font-weight:900;color:${profile.safeLocationSet ? "#22c55e" : "rgba(255,255,255,.5)"};">
@@ -766,6 +814,10 @@ export function initMindfulness() {
   window.openPracticeSection = openPracticeSection;
   window.openExerciseScreen = openExerciseScreen;
   window.openDeepMeditationSection = openDeepMeditationSection;
+  window.openRoutinesHome = openRoutinesHome;
+
+  console.log("Mindfulness system initialised.");
+}
 
   console.log("Mindfulness system initialised.");
 }
