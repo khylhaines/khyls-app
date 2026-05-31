@@ -430,6 +430,14 @@ function renderParentalDashboard(config) {
           font-size:15px;cursor:pointer;text-align:left;padding:0 16px;
         ">🔔 Alerts Log — ${unreadAlerts > 0 ? `${unreadAlerts} unread` : "All clear"}</button>
 
+
+<button id="btn-parental-family-link" type="button" style="
+  width:100%;min-height:52px;border-radius:16px;
+  background:linear-gradient(180deg,#1b2538,#111827);
+  color:white;font-weight:900;border:1px solid rgba(0,212,255,.3);
+  font-size:15px;cursor:pointer;text-align:left;padding:0 16px;
+">🔗 Family Linking — ${syncState?.familyCode || "Not linked"}</button>
+
         <button id="btn-parental-change-pin" type="button" style="
           width:100%;min-height:48px;border-radius:16px;
           background:#111827;color:#ffd54a;font-weight:900;
@@ -467,6 +475,12 @@ function renderParentalDashboard(config) {
     renderParentalDashboard(updated);
   });
 
+document.getElementById("btn-parental-family-link")?.addEventListener("click", () => {
+  modal.remove();
+  openFamilyLinkingScreen();
+});
+
+   
   document.getElementById("btn-parental-child-profile")?.addEventListener("click", () => {
     modal.remove();
     openChildProfileEditor();
