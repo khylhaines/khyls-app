@@ -2476,7 +2476,7 @@ function startLocationWatch() {
     (pos) => {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
-      dropTrailAt(lat, lng);
+     
 
       heroMarker?.setLatLng([lat, lng]);
       dropTrailAt(lat, lng);
@@ -3694,7 +3694,10 @@ function openTerritoryCommandPanel(pin) {
   const handCannonCount = getInventoryCount("hand_cannon");
 
   if ($("territory-node-name")) $("territory-node-name").innerText = pin.n || "Territory Node";
-  if ($("territory-node-owner")) $("territory-node-owner").innerText = getTerritoryOwnerText(ownerId);
+ if ($("territory-node-owner")) {
+  const ownerNames = { p1: "PLAYER 1", p2: "PLAYER 2", p3: "PLAYER 3", p4: "PLAYER 4" };
+  $("territory-node-owner").innerText = ownerId ? (ownerNames[ownerId] || "OWNED") : "FREE";
+}
   if ($("territory-node-level")) $("territory-node-level").innerText = `L${level}`;
   if ($("territory-node-defence")) $("territory-node-defence").innerText = `${Math.round(defence)}%`;
   if ($("territory-node-stored")) $("territory-node-stored").innerText = `${storedCoins} coins`;
