@@ -102,7 +102,6 @@ export function createLeoidsSystem({
     polygonPointMarkers: [],
     baseLayer: null,
     baseMarker: null,
-    playerMarkers: [],
     mapClickHandler: null,
 
     score: 0,
@@ -7924,7 +7923,6 @@ return {
   showLeoidsBattleHud,
   hideLeoidsBattleHud,
   updateLeoidsBattleHud,
-  stopGpsOnlineSync,
   openOnlineSessionBrowser,
   openOnlineLobbyScreen,
   openLeoidsLeaderboard,
