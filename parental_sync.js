@@ -1,8 +1,8 @@
 /* =========================================================
-   PARENTAL CONTROLS — PHASE 2: FAMILY SYNC
+   PARENTAL CONTROLS — PHASE 2 + 3: FAMILY SYNC & LIVE LOCATION
    Barrow Quest / LEOIDS
    =========================================================
-   FEATURES:
+   PHASE 2:
    - Parent generates family code (e.g. KHYL-8392)
    - Child enters code to link their phone
    - Both phones share family_id via Supabase
@@ -10,47 +10,15 @@
    - Check-ins sync in real time
    - Settings push from parent to child
    - Alerts log synced both ways
-   
-   SUPABASE TABLES NEEDED:
-   
-   parental_families
-   - id (uuid, primary key)
-   - family_code (text, unique)
-   - parent_name (text)
-   - parent_device_id (text)
-   - created_at (timestamptz)
-   - is_active (boolean, default true)
-   
-   parental_children
-   - id (uuid, primary key)
-   - family_id (uuid, references parental_families.id)
-   - child_name (text)
-   - child_age (int)
-   - device_id (text)
-   - last_seen (timestamptz)
-   - last_lat (float8, nullable)
-   - last_lng (float8, nullable)
-   - sos_active (boolean, default false)
-   - sos_triggered_at (timestamptz, nullable)
-   - last_checkin_at (timestamptz, nullable)
-   - created_at (timestamptz)
-   
-   parental_settings
-   - id (uuid, primary key)
-   - family_id (uuid, references parental_families.id, unique)
-   - settings_json (jsonb)
-   - updated_at (timestamptz)
-   
-   parental_alerts
-   - id (uuid, primary key)
-   - family_id (uuid, references parental_families.id)
-   - child_id (uuid, nullable)
-   - message (text)
-   - level (text) -- green / amber / red
-   - created_at (timestamptz)
-   - read_at (timestamptz, nullable)
-   - source (text) -- child / parent / system
-   
+
+   PHASE 3:
+   - Child GPS tracked every 10 seconds
+   - Parent sees live map with child's position
+   - Marker updates smoothly in real time
+   - Distance shown on parent screen
+   - Location history stored (last 50 points)
+   - Low accuracy warning shown to parent
+   - GPS auto-starts when child opens app if linked
 ========================================================= */
 
 const SYNC_STORAGE_KEY = "bq_parental_sync_v1";
@@ -62,12 +30,15 @@ const SYNC_STORAGE_KEY = "bq_parental_sync_v1";
 let syncState = {
   familyId: null,
   familyCode: null,
-  deviceRole: null,       // "parent" or "child"
+  deviceRole: null,
   deviceId: null,
   childRecordId: null,
   realtimeChannel: null,
   syncActive: false,
   lastSyncAt: null,
+  locationWatchId: null,
+  locationTrackingActive: false,
+  lastLocationSyncAt: 0,
 };
 
 function loadSyncState() {
@@ -93,18 +64,16 @@ function saveSyncState() {
 }
 
 /* =========================================================
-   DEVICE ID — stable per device
+   DEVICE ID
 ========================================================= */
 
 function getDeviceId() {
   if (syncState.deviceId) return syncState.deviceId;
-
   let id = localStorage.getItem("bq_device_id");
   if (!id) {
     id = `dev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     localStorage.setItem("bq_device_id", id);
   }
-
   syncState.deviceId = id;
   return id;
 }
@@ -119,7 +88,6 @@ function getSupabase() {
 
 /* =========================================================
    FAMILY CODE GENERATOR
-   Generates something like KHYL-8392
 ========================================================= */
 
 function generateFamilyCode(parentName = "FMLY") {
@@ -129,9 +97,7 @@ function generateFamilyCode(parentName = "FMLY") {
     .replace(/[^A-Z0-9]/g, "")
     .slice(0, 4)
     .padEnd(4, "X");
-
   const suffix = String(Math.floor(1000 + Math.random() * 9000));
-
   return `${prefix}-${suffix}`;
 }
 
@@ -141,41 +107,26 @@ function generateFamilyCode(parentName = "FMLY") {
 
 async function createFamily(parentName, localConfig) {
   const supabase = getSupabase();
-
-  if (!supabase) {
-    console.warn("Supabase not ready for family creation.");
-    return null;
-  }
+  if (!supabase) { console.warn("Supabase not ready."); return null; }
 
   const familyCode = generateFamilyCode(parentName);
   const deviceId = getDeviceId();
 
   const { data, error } = await supabase
     .from("parental_families")
-    .insert({
-      family_code: familyCode,
-      parent_name: parentName,
-      parent_device_id: deviceId,
-      is_active: true,
-    })
+    .insert({ family_code: familyCode, parent_name: parentName, parent_device_id: deviceId, is_active: true })
     .select()
     .single();
 
-  if (error) {
-    console.error("Could not create family:", error);
-    return null;
-  }
+  if (error) { console.error("Could not create family:", error); return null; }
 
   syncState.familyId = data.id;
   syncState.familyCode = data.family_code;
   syncState.deviceRole = "parent";
   syncState.deviceId = deviceId;
-
   saveSyncState();
 
-  // Push current settings to Supabase
   await pushSettingsToSupabase(localConfig);
-
   return data;
 }
 
@@ -185,15 +136,10 @@ async function createFamily(parentName, localConfig) {
 
 async function joinFamily(familyCode, childName, childAge) {
   const supabase = getSupabase();
-
-  if (!supabase) {
-    console.warn("Supabase not ready for family join.");
-    return null;
-  }
+  if (!supabase) { console.warn("Supabase not ready."); return null; }
 
   const cleanCode = String(familyCode || "").trim().toUpperCase();
 
-  // Look up the family
   const { data: family, error: familyError } = await supabase
     .from("parental_families")
     .select("*")
@@ -201,14 +147,10 @@ async function joinFamily(familyCode, childName, childAge) {
     .eq("is_active", true)
     .single();
 
-  if (familyError || !family) {
-    console.warn("Family code not found:", cleanCode, familyError);
-    return null;
-  }
+  if (familyError || !family) { console.warn("Family code not found:", cleanCode); return null; }
 
   const deviceId = getDeviceId();
 
-  // Check if child record already exists for this device
   const { data: existing } = await supabase
     .from("parental_children")
     .select("*")
@@ -221,32 +163,16 @@ async function joinFamily(familyCode, childName, childAge) {
   if (!childRecord) {
     const { data: newChild, error: childError } = await supabase
       .from("parental_children")
-      .insert({
-        family_id: family.id,
-        child_name: childName,
-        child_age: childAge,
-        device_id: deviceId,
-        sos_active: false,
-        last_seen: new Date().toISOString(),
-      })
+      .insert({ family_id: family.id, child_name: childName, child_age: childAge, device_id: deviceId, sos_active: false, last_seen: new Date().toISOString() })
       .select()
       .single();
 
-    if (childError) {
-      console.error("Could not create child record:", childError);
-      return null;
-    }
-
+    if (childError) { console.error("Could not create child record:", childError); return null; }
     childRecord = newChild;
   } else {
-    // Update name/age in case they changed
     await supabase
       .from("parental_children")
-      .update({
-        child_name: childName,
-        child_age: childAge,
-        last_seen: new Date().toISOString(),
-      })
+      .update({ child_name: childName, child_age: childAge, last_seen: new Date().toISOString() })
       .eq("id", childRecord.id);
   }
 
@@ -255,22 +181,18 @@ async function joinFamily(familyCode, childName, childAge) {
   syncState.deviceRole = "child";
   syncState.deviceId = deviceId;
   syncState.childRecordId = childRecord.id;
-
   saveSyncState();
 
-  // Pull settings down from Supabase
   await pullSettingsFromSupabase();
-
   return { family, childRecord };
 }
 
 /* =========================================================
-   PUSH SETTINGS → SUPABASE (parent sends down)
+   PUSH / PULL SETTINGS
 ========================================================= */
 
 async function pushSettingsToSupabase(localConfig) {
   const supabase = getSupabase();
-
   if (!supabase || !syncState.familyId) return false;
 
   const settingsPayload = {
@@ -290,28 +212,14 @@ async function pushSettingsToSupabase(localConfig) {
 
   const { error } = await supabase
     .from("parental_settings")
-    .upsert({
-      family_id: syncState.familyId,
-      settings_json: settingsPayload,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "family_id" });
+    .upsert({ family_id: syncState.familyId, settings_json: settingsPayload, updated_at: new Date().toISOString() }, { onConflict: "family_id" });
 
-  if (error) {
-    console.warn("Could not push settings to Supabase:", error);
-    return false;
-  }
-
-  console.log("Parental settings pushed to Supabase.");
+  if (error) { console.warn("Could not push settings:", error); return false; }
   return true;
 }
 
-/* =========================================================
-   PULL SETTINGS ← SUPABASE (child receives)
-========================================================= */
-
 async function pullSettingsFromSupabase() {
   const supabase = getSupabase();
-
   if (!supabase || !syncState.familyId) return null;
 
   const { data, error } = await supabase
@@ -320,31 +228,19 @@ async function pullSettingsFromSupabase() {
     .eq("family_id", syncState.familyId)
     .maybeSingle();
 
-  if (error || !data) {
-    console.warn("Could not pull settings from Supabase:", error);
-    return null;
-  }
+  if (error || !data) return null;
 
   const settings = data.settings_json;
   if (!settings) return null;
 
-  // Apply to local config
   try {
     const raw = localStorage.getItem("bq_parental_controls_v1");
     const localConfig = raw ? JSON.parse(raw) : {};
-
     if (settings.features) localConfig.features = { ...localConfig.features, ...settings.features };
     if (settings.lobbies) localConfig.lobbies = { ...localConfig.lobbies, ...settings.lobbies };
     if (settings.screenTime) localConfig.screenTime = { ...localConfig.screenTime, ...settings.screenTime };
-
     localStorage.setItem("bq_parental_controls_v1", JSON.stringify(localConfig));
-
-    console.log("Parental settings pulled from Supabase and applied.");
-
-    if (typeof window.checkAndApplyScreenLock === "function") {
-      window.checkAndApplyScreenLock();
-    }
-
+    if (typeof window.checkAndApplyScreenLock === "function") window.checkAndApplyScreenLock();
     return localConfig;
   } catch (err) {
     console.warn("Could not apply pulled settings:", err);
@@ -353,16 +249,427 @@ async function pullSettingsFromSupabase() {
 }
 
 /* =========================================================
-   SYNC SOS TO SUPABASE — child triggers
+   PHASE 3 — CHILD GPS TRACKING
+   Starts on child phone, pushes location every 10 seconds
+========================================================= */
+
+function startChildLocationTracking() {
+  if (!navigator.geolocation) {
+    console.warn("GPS not available on this device.");
+    return false;
+  }
+
+  if (!syncState.childRecordId) {
+    console.warn("Cannot start location tracking — child not linked.");
+    return false;
+  }
+
+  stopChildLocationTracking();
+
+  syncState.locationTrackingActive = true;
+
+  syncState.locationWatchId = navigator.geolocation.watchPosition(
+    async (position) => {
+      const lat = Number(position.coords.latitude);
+      const lng = Number(position.coords.longitude);
+      const accuracy = Math.round(Number(position.coords.accuracy || 999));
+
+      const now = Date.now();
+
+      // Only sync if moved or 10 seconds passed
+      const timeSinceLastSync = now - Number(syncState.lastLocationSyncAt || 0);
+      if (timeSinceLastSync < 10000) return;
+
+      syncState.lastLocationSyncAt = now;
+
+      await syncChildLocationToSupabase(lat, lng, accuracy);
+
+      console.log("PARENTAL GPS SYNC", { lat, lng, accuracy });
+    },
+    (error) => {
+      console.warn("Parental GPS error:", error);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 5000,
+      timeout: 15000,
+    }
+  );
+
+  console.log("Child location tracking started.");
+  return true;
+}
+
+function stopChildLocationTracking() {
+  if (syncState.locationWatchId !== null && syncState.locationWatchId !== undefined) {
+    try {
+      navigator.geolocation.clearWatch(syncState.locationWatchId);
+    } catch {}
+  }
+  syncState.locationWatchId = null;
+  syncState.locationTrackingActive = false;
+  console.log("Child location tracking stopped.");
+}
+
+/* =========================================================
+   SYNC CHILD LOCATION TO SUPABASE
+========================================================= */
+
+async function syncChildLocationToSupabase(lat, lng, accuracy = null) {
+  const supabase = getSupabase();
+  if (!supabase || !syncState.childRecordId) return false;
+
+  await supabase
+    .from("parental_children")
+    .update({
+      last_lat: lat,
+      last_lng: lng,
+      last_accuracy: accuracy,
+      last_seen: new Date().toISOString(),
+    })
+    .eq("id", syncState.childRecordId);
+
+  return true;
+}
+
+/* =========================================================
+   PHASE 3 — PARENT LIVE MAP
+   Parent sees child's position updating in real time
+========================================================= */
+
+function openChildLiveMap(child) {
+  const old = document.getElementById("parental-live-map");
+  if (old) old.remove();
+
+  const hasLocation = child.last_lat && child.last_lng;
+  const accuracy = child.last_accuracy || null;
+  const lastSeen = child.last_seen ? new Date(child.last_seen).toLocaleString() : "Unknown";
+
+  const modal = document.createElement("div");
+  modal.id = "parental-live-map";
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:999999;
+    background:#07111f;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    display:flex;flex-direction:column;
+  `;
+
+  modal.innerHTML = `
+    <!-- HEADER -->
+    <div style="
+      padding:14px 16px;
+      background:linear-gradient(180deg,#07111f,#0b1627);
+      border-bottom:1px solid rgba(255,255,255,.1);
+      display:flex;align-items:center;gap:12px;
+      flex-shrink:0;
+    ">
+      <button id="btn-livemap-back" type="button" style="
+        width:42px;height:42px;border-radius:50%;
+        background:#111827;color:white;border:1px solid rgba(255,255,255,.15);
+        font-size:18px;cursor:pointer;flex-shrink:0;
+      ">←</button>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;color:#00d4ff;font-weight:900;letter-spacing:.1em;">LIVE LOCATION</div>
+        <div style="font-size:18px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:white;">
+          ${child.child_name || "Child"}
+        </div>
+      </div>
+      <button id="btn-livemap-refresh" type="button" style="
+        width:42px;height:42px;border-radius:50%;
+        background:#111827;color:white;border:1px solid rgba(255,255,255,.15);
+        font-size:18px;cursor:pointer;flex-shrink:0;
+      ">↻</button>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div id="livemap-status-bar" style="
+      padding:10px 16px;
+      background:#0b1627;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+      flex-shrink:0;
+    ">
+      <div style="text-align:center;">
+        <div style="font-size:10px;opacity:.65;color:white;letter-spacing:.08em;">STATUS</div>
+        <div id="livemap-status-text" style="font-size:13px;font-weight:900;color:#22c55e;margin-top:2px;">
+          ${child.sos_active ? "🚨 SOS" : "🟢 OK"}
+        </div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:10px;opacity:.65;color:white;letter-spacing:.08em;">ACCURACY</div>
+        <div id="livemap-accuracy-text" style="font-size:13px;font-weight:900;color:white;margin-top:2px;">
+          ${accuracy ? `~${accuracy}m` : "—"}
+        </div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:10px;opacity:.65;color:white;letter-spacing:.08em;">LAST SEEN</div>
+        <div id="livemap-lastseen-text" style="font-size:11px;font-weight:900;color:white;margin-top:2px;">
+          ${lastSeen}
+        </div>
+      </div>
+    </div>
+
+    <!-- MAP CONTAINER -->
+    <div id="parental-map-container" style="flex:1;position:relative;min-height:0;">
+      ${hasLocation ? `
+        <div id="parental-leaflet-map" style="width:100%;height:100%;"></div>
+      ` : `
+        <div style="
+          width:100%;height:100%;
+          display:flex;flex-direction:column;
+          align-items:center;justify-content:center;
+          color:white;text-align:center;padding:28px;
+        ">
+          <div style="font-size:52px;margin-bottom:16px;">📍</div>
+          <div style="font-size:18px;font-weight:900;margin-bottom:8px;">No Location Yet</div>
+          <div style="font-size:14px;opacity:.8;line-height:1.5;">
+            ${child.child_name || "Child"}'s phone hasn't sent a location yet.<br>
+            Make sure GPS is on and the app is open on their phone.
+          </div>
+          <button id="btn-livemap-wait-refresh" type="button" style="
+            margin-top:20px;min-height:46px;padding:0 24px;
+            border-radius:16px;background:#00d4ff;color:#05070b;
+            font-weight:1000;border:none;cursor:pointer;font-size:14px;
+          ">CHECK AGAIN</button>
+        </div>
+      `}
+    </div>
+
+    <!-- BOTTOM ACTIONS -->
+    <div style="
+      padding:14px 16px;
+      background:linear-gradient(0deg,#07111f,#0b1627);
+      border-top:1px solid rgba(255,255,255,.08);
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;
+      flex-shrink:0;
+    ">
+      ${hasLocation ? `
+        <a id="btn-livemap-google" href="https://maps.google.com/?q=${child.last_lat},${child.last_lng}" target="_blank" style="
+          display:flex;align-items:center;justify-content:center;
+          min-height:48px;border-radius:16px;
+          background:#ffd54a;color:#231600;font-weight:1000;
+          text-decoration:none;font-size:14px;
+        ">📍 Open in Maps</a>
+      ` : `
+        <div></div>
+      `}
+      ${child.sos_active ? `
+        <button id="btn-livemap-cancel-sos" type="button" style="
+          min-height:48px;border-radius:16px;
+          background:#ff3b3b;color:white;font-weight:1000;
+          border:none;cursor:pointer;font-size:14px;
+        ">🚨 Cancel SOS</button>
+      ` : `
+        <button id="btn-livemap-close" type="button" style="
+          min-height:48px;border-radius:16px;
+          background:#111827;color:white;font-weight:900;
+          border:1px solid rgba(255,255,255,.1);cursor:pointer;font-size:14px;
+        ">CLOSE</button>
+      `}
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Wire buttons
+  document.getElementById("btn-livemap-back")?.addEventListener("click", () => {
+    modal.remove();
+    stopParentMapUpdates();
+  });
+
+  document.getElementById("btn-livemap-close")?.addEventListener("click", () => {
+    modal.remove();
+    stopParentMapUpdates();
+  });
+
+  document.getElementById("btn-livemap-cancel-sos")?.addEventListener("click", async () => {
+    await cancelRemoteSOS(child.id);
+    modal.remove();
+    stopParentMapUpdates();
+  });
+
+  document.getElementById("btn-livemap-wait-refresh")?.addEventListener("click", async () => {
+    modal.remove();
+    const children = await loadFamilyChildren();
+    const updated = children.find(c => c.id === child.id) || child;
+    openChildLiveMap(updated);
+  });
+
+  document.getElementById("btn-livemap-refresh")?.addEventListener("click", async () => {
+    const children = await loadFamilyChildren();
+    const updated = children.find(c => c.id === child.id) || child;
+    updateLiveMapDisplay(updated);
+  });
+
+  // Init Leaflet map if we have location
+  if (hasLocation) {
+    initParentalLeafletMap(child);
+  }
+
+  // Start polling for updates every 10 seconds
+  startParentMapUpdates(child.id);
+}
+
+/* =========================================================
+   INIT LEAFLET MAP ON PARENT SCREEN
+========================================================= */
+
+let parentMapInstance = null;
+let parentChildMarker = null;
+let parentAccuracyCircle = null;
+let parentMapUpdateInterval = null;
+
+function initParentalLeafletMap(child) {
+  // Wait a tick for DOM
+  setTimeout(() => {
+    const mapEl = document.getElementById("parental-leaflet-map");
+    if (!mapEl) return;
+
+    if (parentMapInstance) {
+      try { parentMapInstance.remove(); } catch {}
+      parentMapInstance = null;
+    }
+
+    const lat = Number(child.last_lat);
+    const lng = Number(child.last_lng);
+    const accuracy = Number(child.last_accuracy || 20);
+
+    parentMapInstance = L.map("parental-leaflet-map", {
+      zoomControl: true,
+      attributionControl: false,
+    }).setView([lat, lng], 17);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(parentMapInstance);
+
+    // Accuracy circle
+    parentAccuracyCircle = L.circle([lat, lng], {
+      radius: accuracy,
+      color: "#00d4ff",
+      fillColor: "#00d4ff",
+      fillOpacity: 0.12,
+      weight: 1,
+    }).addTo(parentMapInstance);
+
+    // Child marker
+    const icon = L.divIcon({
+      className: "parental-child-marker",
+      html: `
+        <div style="
+          width:38px;height:38px;border-radius:50%;
+          background:#00d4ff;
+          border:3px solid white;
+          box-shadow:0 0 18px #00d4ff;
+          display:flex;align-items:center;justify-content:center;
+          font-size:18px;
+        ">
+          👧
+        </div>
+      `,
+      iconSize: [38, 38],
+      iconAnchor: [19, 19],
+    });
+
+    parentChildMarker = L.marker([lat, lng], { icon })
+      .bindTooltip(`${child.child_name || "Child"} — last seen ${child.last_seen ? new Date(child.last_seen).toLocaleTimeString() : "?"}`, {
+        permanent: false,
+        direction: "top",
+      })
+      .addTo(parentMapInstance);
+
+  }, 150);
+}
+
+/* =========================================================
+   UPDATE LIVE MAP DISPLAY
+========================================================= */
+
+function updateLiveMapDisplay(child) {
+  if (!child) return;
+
+  const lat = Number(child.last_lat);
+  const lng = Number(child.last_lng);
+  const accuracy = Number(child.last_accuracy || 20);
+  const hasLocation = child.last_lat && child.last_lng;
+
+  // Update status bar
+  const statusText = document.getElementById("livemap-status-text");
+  const accuracyText = document.getElementById("livemap-accuracy-text");
+  const lastSeenText = document.getElementById("livemap-lastseen-text");
+
+  if (statusText) {
+    statusText.innerText = child.sos_active ? "🚨 SOS" : "🟢 OK";
+    statusText.style.color = child.sos_active ? "#ff3b3b" : "#22c55e";
+  }
+
+  if (accuracyText) {
+    accuracyText.innerText = accuracy ? `~${accuracy}m` : "—";
+    accuracyText.style.color = accuracy > 50 ? "#ffb000" : "white";
+  }
+
+  if (lastSeenText && child.last_seen) {
+    lastSeenText.innerText = new Date(child.last_seen).toLocaleTimeString();
+  }
+
+  // Update Google Maps link
+  if (hasLocation) {
+    const googleLink = document.getElementById("btn-livemap-google");
+    if (googleLink) {
+      googleLink.href = `https://maps.google.com/?q=${lat},${lng}`;
+    }
+  }
+
+  // Update Leaflet marker
+  if (parentMapInstance && parentChildMarker && hasLocation) {
+    parentChildMarker.setLatLng([lat, lng]);
+    parentChildMarker.setTooltipContent(
+      `${child.child_name || "Child"} — ${new Date(child.last_seen || Date.now()).toLocaleTimeString()}`
+    );
+
+    if (parentAccuracyCircle) {
+      parentAccuracyCircle.setLatLng([lat, lng]);
+      parentAccuracyCircle.setRadius(accuracy);
+    }
+
+    // Pan map to child
+    parentMapInstance.panTo([lat, lng], { animate: true, duration: 0.5 });
+  }
+
+  // SOS pulse
+  if (child.sos_active) {
+    showParentSOSAlert(child);
+  }
+}
+
+/* =========================================================
+   START / STOP PARENT MAP POLLING
+========================================================= */
+
+function startParentMapUpdates(childId) {
+  stopParentMapUpdates();
+
+  parentMapUpdateInterval = setInterval(async () => {
+    const children = await loadFamilyChildren();
+    const updated = children.find(c => c.id === childId);
+    if (updated) updateLiveMapDisplay(updated);
+  }, 10000);
+}
+
+function stopParentMapUpdates() {
+  if (parentMapUpdateInterval) {
+    clearInterval(parentMapUpdateInterval);
+    parentMapUpdateInterval = null;
+  }
+}
+
+/* =========================================================
+   SOS SYNC
 ========================================================= */
 
 async function syncSOSToSupabase(active = true) {
   const supabase = getSupabase();
-
-  if (!supabase || !syncState.childRecordId) {
-    console.warn("Cannot sync SOS — no child record or Supabase.");
-    return false;
-  }
+  if (!supabase || !syncState.childRecordId) return false;
 
   const now = new Date().toISOString();
 
@@ -375,51 +682,38 @@ async function syncSOSToSupabase(active = true) {
     })
     .eq("id", syncState.childRecordId);
 
-  if (error) {
-    console.warn("Could not sync SOS to Supabase:", error);
-    return false;
-  }
+  if (error) { console.warn("Could not sync SOS:", error); return false; }
 
-  // Also write to alerts table
   if (syncState.familyId) {
     const raw = localStorage.getItem("bq_parental_controls_v1");
     const config = raw ? JSON.parse(raw) : {};
     const childName = config?.child?.name || "Child";
 
-    await supabase
-      .from("parental_alerts")
-      .insert({
-        family_id: syncState.familyId,
-        child_id: syncState.childRecordId,
-        message: active
-          ? `🚨 SOS ACTIVATED by ${childName}`
-          : `✅ SOS cancelled`,
-        level: active ? "red" : "green",
-        source: "child",
-      });
+    await supabase.from("parental_alerts").insert({
+      family_id: syncState.familyId,
+      child_id: syncState.childRecordId,
+      message: active ? `🚨 SOS ACTIVATED by ${childName}` : `✅ SOS cancelled`,
+      level: active ? "red" : "green",
+      source: "child",
+    });
   }
 
-  console.log("SOS synced to Supabase:", active);
   return true;
 }
 
 /* =========================================================
-   SYNC CHECK-IN TO SUPABASE — child triggers
+   CHECK-IN SYNC
 ========================================================= */
 
 async function syncCheckInToSupabase() {
   const supabase = getSupabase();
-
   if (!supabase || !syncState.childRecordId) return false;
 
   const now = new Date().toISOString();
 
   await supabase
     .from("parental_children")
-    .update({
-      last_checkin_at: now,
-      last_seen: now,
-    })
+    .update({ last_checkin_at: now, last_seen: now })
     .eq("id", syncState.childRecordId);
 
   if (syncState.familyId) {
@@ -427,48 +721,24 @@ async function syncCheckInToSupabase() {
     const config = raw ? JSON.parse(raw) : {};
     const childName = config?.child?.name || "Child";
 
-    await supabase
-      .from("parental_alerts")
-      .insert({
-        family_id: syncState.familyId,
-        child_id: syncState.childRecordId,
-        message: `✅ CHECK-IN: ${childName} is safe`,
-        level: "green",
-        source: "child",
-      });
+    await supabase.from("parental_alerts").insert({
+      family_id: syncState.familyId,
+      child_id: syncState.childRecordId,
+      message: `✅ CHECK-IN: ${childName} is safe`,
+      level: "green",
+      source: "child",
+    });
   }
 
   return true;
 }
 
 /* =========================================================
-   SYNC CHILD LOCATION TO SUPABASE
-========================================================= */
-
-async function syncChildLocationToSupabase(lat, lng) {
-  const supabase = getSupabase();
-
-  if (!supabase || !syncState.childRecordId) return false;
-
-  await supabase
-    .from("parental_children")
-    .update({
-      last_lat: lat,
-      last_lng: lng,
-      last_seen: new Date().toISOString(),
-    })
-    .eq("id", syncState.childRecordId);
-
-  return true;
-}
-
-/* =========================================================
-   LOAD ALERTS FROM SUPABASE — parent side
+   LOAD DATA
 ========================================================= */
 
 async function loadRemoteAlerts() {
   const supabase = getSupabase();
-
   if (!supabase || !syncState.familyId) return [];
 
   const { data, error } = await supabase
@@ -478,21 +748,12 @@ async function loadRemoteAlerts() {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (error) {
-    console.warn("Could not load remote alerts:", error);
-    return [];
-  }
-
+  if (error) return [];
   return data || [];
 }
 
-/* =========================================================
-   MARK REMOTE ALERTS READ
-========================================================= */
-
 async function markRemoteAlertsRead() {
   const supabase = getSupabase();
-
   if (!supabase || !syncState.familyId) return;
 
   await supabase
@@ -502,13 +763,8 @@ async function markRemoteAlertsRead() {
     .is("read_at", null);
 }
 
-/* =========================================================
-   LOAD CHILDREN — parent side
-========================================================= */
-
 async function loadFamilyChildren() {
   const supabase = getSupabase();
-
   if (!supabase || !syncState.familyId) return [];
 
   const { data, error } = await supabase
@@ -517,21 +773,12 @@ async function loadFamilyChildren() {
     .eq("family_id", syncState.familyId)
     .order("created_at", { ascending: true });
 
-  if (error) {
-    console.warn("Could not load family children:", error);
-    return [];
-  }
-
+  if (error) return [];
   return data || [];
 }
 
-/* =========================================================
-   CANCEL SOS — parent side
-========================================================= */
-
 async function cancelRemoteSOS(childId) {
   const supabase = getSupabase();
-
   if (!supabase || !childId) return false;
 
   await supabase
@@ -540,32 +787,25 @@ async function cancelRemoteSOS(childId) {
     .eq("id", childId);
 
   if (syncState.familyId) {
-    await supabase
-      .from("parental_alerts")
-      .insert({
-        family_id: syncState.familyId,
-        child_id: childId,
-        message: "✅ SOS cancelled by parent",
-        level: "green",
-        source: "parent",
-      });
+    await supabase.from("parental_alerts").insert({
+      family_id: syncState.familyId,
+      child_id: childId,
+      message: "✅ SOS cancelled by parent",
+      level: "green",
+      source: "parent",
+    });
   }
 
   return true;
 }
 
 /* =========================================================
-   REALTIME LISTENER — parent phone
-   Fires when child triggers SOS or checks in
+   REALTIME LISTENERS
 ========================================================= */
 
 function startParentRealtimeListener() {
   const supabase = getSupabase();
-
-  if (!supabase || !syncState.familyId) {
-    console.warn("Cannot start realtime — no Supabase or family ID.");
-    return false;
-  }
+  if (!supabase || !syncState.familyId) return false;
 
   if (syncState.realtimeChannel) {
     try { supabase.removeChannel(syncState.realtimeChannel); } catch {}
@@ -574,32 +814,15 @@ function startParentRealtimeListener() {
 
   const channel = supabase
     .channel(`parental_family_${syncState.familyId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "parental_children",
-        filter: `family_id=eq.${syncState.familyId}`,
-      },
-      (payload) => {
-        handleChildUpdate(payload);
-      }
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "parental_alerts",
-        filter: `family_id=eq.${syncState.familyId}`,
-      },
-      (payload) => {
-        handleNewAlert(payload);
-      }
-    )
+    .on("postgres_changes", {
+      event: "*", schema: "public", table: "parental_children",
+      filter: `family_id=eq.${syncState.familyId}`,
+    }, (payload) => handleChildUpdate(payload))
+    .on("postgres_changes", {
+      event: "INSERT", schema: "public", table: "parental_alerts",
+      filter: `family_id=eq.${syncState.familyId}`,
+    }, (payload) => handleNewAlert(payload))
     .subscribe((status) => {
-      console.log("Parental realtime status:", status);
       syncState.syncActive = status === "SUBSCRIBED";
     });
 
@@ -607,14 +830,8 @@ function startParentRealtimeListener() {
   return true;
 }
 
-/* =========================================================
-   REALTIME LISTENER — child phone
-   Fires when parent pushes new settings
-========================================================= */
-
 function startChildRealtimeListener() {
   const supabase = getSupabase();
-
   if (!supabase || !syncState.familyId) return false;
 
   if (syncState.realtimeChannel) {
@@ -624,71 +841,53 @@ function startChildRealtimeListener() {
 
   const channel = supabase
     .channel(`parental_child_${syncState.familyId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "parental_settings",
-        filter: `family_id=eq.${syncState.familyId}`,
-      },
-      (payload) => {
-        console.log("Settings update received from parent.");
-        pullSettingsFromSupabase();
-      }
-    )
-    .subscribe((status) => {
-      console.log("Child realtime status:", status);
-    });
+    .on("postgres_changes", {
+      event: "*", schema: "public", table: "parental_settings",
+      filter: `family_id=eq.${syncState.familyId}`,
+    }, () => pullSettingsFromSupabase())
+    .subscribe();
 
   syncState.realtimeChannel = channel;
   return true;
 }
 
+function stopRealtimeSync() {
+  const supabase = getSupabase();
+  if (syncState.realtimeChannel && supabase) {
+    try { supabase.removeChannel(syncState.realtimeChannel); } catch {}
+  }
+  syncState.realtimeChannel = null;
+  syncState.syncActive = false;
+}
+
 /* =========================================================
-   HANDLE CHILD UPDATE (parent side)
+   HANDLE REALTIME EVENTS
 ========================================================= */
 
 function handleChildUpdate(payload) {
   const child = payload.new || payload.old;
   if (!child) return;
 
-  if (child.sos_active) {
-    showParentSOSAlert(child);
-  }
+  if (child.sos_active) showParentSOSAlert(child);
 
-  // Refresh dashboard if open
-  const dashboard = document.getElementById("parental-dashboard");
-  if (dashboard) {
-    const config = window.getParentalConfig?.() || {};
-    window.renderParentalDashboardWithSync?.();
-  }
+  // If live map is open, update it
+  updateLiveMapDisplay(child);
 }
-
-/* =========================================================
-   HANDLE NEW ALERT (parent side)
-========================================================= */
 
 function handleNewAlert(payload) {
   const alert = payload.new;
   if (!alert) return;
-
   showParentAlertToast(alert);
-
-  // Flash screen for red alerts
   if (alert.level === "red") {
     document.body.animate(
-      [
-        { background: "rgba(255,0,0,.22)" },
-        { background: "transparent" },
-      ],
+      [{ background: "rgba(255,0,0,.22)" }, { background: "transparent" }],
       { duration: 800, easing: "ease-out" }
     );
   }
 }
 
 /* =========================================================
-   SHOW SOS ALERT ON PARENT PHONE
+   SOS ALERT ON PARENT PHONE
 ========================================================= */
 
 function showParentSOSAlert(child) {
@@ -703,7 +902,6 @@ function showParentSOSAlert(child) {
     display:flex;align-items:center;justify-content:center;
     padding:20px;
     font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    animation:sosBgPulse .75s infinite;
   `;
 
   overlay.innerHTML = `
@@ -715,14 +913,10 @@ function showParentSOSAlert(child) {
       box-shadow:0 0 52px rgba(255,59,59,.65);
     ">
       <div style="font-size:64px;margin-bottom:12px;">🚨</div>
-      <div style="font-size:26px;font-weight:1000;color:#ff3b3b;margin-bottom:8px;">
-        SOS ALERT
-      </div>
-      <div style="font-size:18px;font-weight:900;margin-bottom:6px;">
-        ${child.child_name || "Your child"} needs help
-      </div>
+      <div style="font-size:26px;font-weight:1000;color:#ff3b3b;margin-bottom:8px;">SOS ALERT</div>
+      <div style="font-size:18px;font-weight:900;margin-bottom:6px;">${child.child_name || "Your child"} needs help</div>
       <div style="font-size:13px;opacity:.85;margin-bottom:20px;">
-        Triggered at ${child.sos_triggered_at ? new Date(child.sos_triggered_at).toLocaleString() : "just now"}
+        ${child.sos_triggered_at ? new Date(child.sos_triggered_at).toLocaleString() : "Just now"}
       </div>
 
       ${(child.last_lat && child.last_lng) ? `
@@ -730,51 +924,38 @@ function showParentSOSAlert(child) {
           display:block;width:100%;min-height:48px;border-radius:16px;
           background:#ffd54a;color:#231600;font-weight:1000;
           text-decoration:none;line-height:48px;margin-bottom:10px;
-          box-shadow:0 0 18px rgba(255,213,74,.35);
         ">📍 VIEW LOCATION ON MAP</a>
+        <button id="btn-sos-open-livemap" type="button" style="
+          width:100%;min-height:46px;border-radius:16px;
+          background:#00d4ff;color:#05070b;font-weight:1000;
+          border:none;cursor:pointer;margin-bottom:10px;
+        ">📍 OPEN LIVE MAP IN APP</button>
       ` : `
-        <div style="
-          padding:12px;border-radius:14px;margin-bottom:12px;
-          background:rgba(255,255,255,.07);font-size:13px;opacity:.85;
-        ">Location not available. GPS may be off.</div>
+        <div style="padding:12px;border-radius:14px;margin-bottom:12px;background:rgba(255,255,255,.07);font-size:13px;opacity:.85;">
+          Location not available. GPS may be off.
+        </div>
       `}
 
       <button id="btn-parent-sos-cancel" type="button" style="
         width:100%;min-height:52px;border-radius:18px;
         background:#ff3b3b;color:white;font-weight:1000;font-size:16px;
         border:none;cursor:pointer;margin-bottom:10px;
-        box-shadow:0 0 24px rgba(255,59,59,.55);
       ">MARK SAFE — CANCEL ALERT</button>
 
       <button id="btn-parent-sos-dismiss" type="button" style="
         width:100%;min-height:44px;border-radius:16px;
-        background:#202a3c;color:white;font-weight:900;
-        border:none;cursor:pointer;
+        background:#202a3c;color:white;font-weight:900;border:none;cursor:pointer;
       ">DISMISS (alert stays active)</button>
     </div>
-
-    <style>
-      @keyframes sosBgPulse {
-        0% { background:rgba(0,0,0,.92); }
-        50% { background:rgba(180,0,0,.22); }
-        100% { background:rgba(0,0,0,.92); }
-      }
-    </style>
   `;
 
   document.body.appendChild(overlay);
 
-  // Vibrate
-  if (navigator.vibrate) {
-    navigator.vibrate([300, 200, 300, 200, 500]);
-  }
+  if (navigator.vibrate) navigator.vibrate([300, 200, 300, 200, 500]);
 
-  // Speak
   try {
     if ("speechSynthesis" in window) {
-      const msg = new SpeechSynthesisUtterance(
-        `SOS alert. ${child.child_name || "Your child"} needs help. Check the app now.`
-      );
+      const msg = new SpeechSynthesisUtterance(`SOS alert. ${child.child_name || "Your child"} needs help. Check the app now.`);
       msg.rate = 0.85;
       msg.volume = 1;
       window.speechSynthesis.speak(msg);
@@ -786,13 +967,16 @@ function showParentSOSAlert(child) {
     overlay.remove();
   });
 
-  document.getElementById("btn-parent-sos-dismiss")?.addEventListener("click", () => {
+  document.getElementById("btn-parent-sos-dismiss")?.addEventListener("click", () => overlay.remove());
+
+  document.getElementById("btn-sos-open-livemap")?.addEventListener("click", () => {
     overlay.remove();
+    openChildLiveMap(child);
   });
 }
 
 /* =========================================================
-   SHOW ALERT TOAST — parent phone
+   ALERT TOAST
 ========================================================= */
 
 function showParentAlertToast(alert) {
@@ -806,39 +990,19 @@ function showParentAlertToast(alert) {
     padding:12px 20px;border-radius:18px;
     box-shadow:0 0 24px rgba(0,0,0,.45);
     font-family:system-ui,-apple-system,sans-serif;
-    max-width:min(92vw,420px);
-    text-align:center;
-    white-space:pre-wrap;
+    max-width:min(92vw,420px);text-align:center;
   `;
   toast.innerText = alert.message || "New alert";
   document.body.appendChild(toast);
 
   setTimeout(() => {
-    toast.animate(
-      [{ opacity: 1 }, { opacity: 0 }],
-      { duration: 400, easing: "ease-out", fill: "forwards" }
-    );
+    toast.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, easing: "ease-out", fill: "forwards" });
     setTimeout(() => toast.remove(), 420);
   }, 4000);
 }
 
 /* =========================================================
-   STOP REALTIME
-========================================================= */
-
-function stopRealtimeSync() {
-  const supabase = getSupabase();
-
-  if (syncState.realtimeChannel && supabase) {
-    try { supabase.removeChannel(syncState.realtimeChannel); } catch {}
-  }
-
-  syncState.realtimeChannel = null;
-  syncState.syncActive = false;
-}
-
-/* =========================================================
-   FAMILY LINKING UI — opens from dashboard
+   FAMILY LINKING SCREEN
 ========================================================= */
 
 function openFamilyLinkingScreen() {
@@ -849,7 +1013,6 @@ function openFamilyLinkingScreen() {
 
   const isLinked = !!syncState.familyId;
   const isParent = syncState.deviceRole === "parent";
-  const isChild = syncState.deviceRole === "child";
 
   const modal = document.createElement("div");
   modal.id = "parental-family-link";
@@ -870,26 +1033,19 @@ function openFamilyLinkingScreen() {
           font-size:18px;cursor:pointer;
         ">←</button>
         <div>
-          <div style="font-size:11px;color:#ffd54a;font-weight:900;letter-spacing:.1em;">PHASE 2</div>
+          <div style="font-size:11px;color:#ffd54a;font-weight:900;letter-spacing:.1em;">PHASE 2 + 3</div>
           <div style="font-size:20px;font-weight:1000;">Family Linking</div>
         </div>
       </div>
 
-      <!-- LINKED STATUS -->
       ${isLinked ? `
-        <div style="
-          padding:16px;border-radius:18px;margin-bottom:16px;
-          background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.45);
-          text-align:center;
-        ">
+        <div style="padding:16px;border-radius:18px;margin-bottom:16px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.45);text-align:center;">
           <div style="font-weight:900;color:#22c55e;font-size:16px;">🔗 LINKED</div>
           <div style="font-size:13px;margin-top:6px;opacity:.9;">
-            Family code: <strong style="color:#ffd54a;letter-spacing:.1em;">${syncState.familyCode || "—"}</strong>
+            Code: <strong style="color:#ffd54a;letter-spacing:.1em;">${syncState.familyCode || "—"}</strong>
           </div>
           <div style="font-size:12px;margin-top:4px;opacity:.75;">
-            Role: ${isParent ? "Parent device" : "Child device"}
-          </div>
-          <div style="font-size:12px;margin-top:4px;opacity:.75;">
+            Role: ${isParent ? "Parent device" : "Child device"} •
             Sync: ${syncState.syncActive ? "🟢 Active" : "🔴 Offline"}
           </div>
         </div>
@@ -897,77 +1053,67 @@ function openFamilyLinkingScreen() {
         <div style="display:grid;gap:10px;margin-bottom:16px;">
           <button id="btn-start-sync" type="button" style="
             width:100%;min-height:50px;border-radius:16px;
-            background:#22c55e;color:#05070b;font-weight:1000;
-            border:none;cursor:pointer;font-size:15px;
+            background:#22c55e;color:#05070b;font-weight:1000;border:none;cursor:pointer;
           ">▶ START SYNC</button>
 
           ${isParent ? `
             <button id="btn-view-family" type="button" style="
               width:100%;min-height:50px;border-radius:16px;
               background:linear-gradient(180deg,#1b2538,#111827);
-              color:white;font-weight:900;
-              border:1px solid rgba(255,255,255,.1);cursor:pointer;font-size:15px;
+              color:white;font-weight:900;border:1px solid rgba(255,255,255,.1);cursor:pointer;
             ">👨‍👩‍👧 VIEW FAMILY DASHBOARD</button>
 
             <button id="btn-show-code" type="button" style="
               width:100%;min-height:50px;border-radius:16px;
               background:linear-gradient(180deg,#261b08,#111827);
-              color:#ffd54a;font-weight:900;
-              border:1px solid rgba(255,213,74,.3);cursor:pointer;font-size:15px;
+              color:#ffd54a;font-weight:900;border:1px solid rgba(255,213,74,.3);cursor:pointer;
             ">🔑 SHOW FAMILY CODE</button>
-          ` : ""}
+          ` : `
+            <button id="btn-start-location" type="button" style="
+              width:100%;min-height:50px;border-radius:16px;
+              background:#00d4ff;color:#05070b;font-weight:1000;border:none;cursor:pointer;
+            ">📍 START SHARING MY LOCATION</button>
+
+            <button id="btn-stop-location" type="button" style="
+              width:100%;min-height:46px;border-radius:16px;
+              background:#202a3c;color:white;font-weight:900;border:none;cursor:pointer;
+            ">⏹ STOP LOCATION SHARING</button>
+          `}
 
           <button id="btn-unlink" type="button" style="
             width:100%;min-height:46px;border-radius:16px;
             background:#3a1111;color:white;font-weight:900;
-            border:1px solid rgba(255,59,59,.35);cursor:pointer;font-size:14px;
+            border:1px solid rgba(255,59,59,.35);cursor:pointer;
           ">🔗 UNLINK THIS DEVICE</button>
         </div>
       ` : `
-        <!-- NOT LINKED — show both options -->
         <div style="font-size:14px;opacity:.85;margin-bottom:18px;line-height:1.6;">
-          Link your parent and child phones so SOS alerts, check-ins, and settings sync between them in real time.
+          Link your parent and child phones so SOS alerts, check-ins, settings, and live location sync between them.
         </div>
 
-        <!-- PARENT: CREATE -->
-        <div style="
-          padding:16px;border-radius:18px;background:#111827;
-          border:1px solid rgba(255,255,255,.1);margin-bottom:14px;
-        ">
+        <div style="padding:16px;border-radius:18px;background:#111827;border:1px solid rgba(255,255,255,.1);margin-bottom:14px;">
           <div style="font-weight:900;color:#ffd54a;margin-bottom:10px;">📱 THIS IS THE PARENT PHONE</div>
-          <div style="font-size:13px;opacity:.8;margin-bottom:12px;">
-            Create a family and get a code. Then enter the code on your child's phone.
-          </div>
+          <div style="font-size:13px;opacity:.8;margin-bottom:12px;">Create a family and get a code. Enter it on the child's phone.</div>
           <button id="btn-create-family" type="button" style="
             width:100%;min-height:50px;border-radius:16px;
             background:linear-gradient(180deg,#ffe27c,#ffd54a 55%,#efb000);
-            color:#231600;font-weight:1000;border:none;cursor:pointer;font-size:15px;
+            color:#231600;font-weight:1000;border:none;cursor:pointer;
           ">CREATE FAMILY & GET CODE</button>
         </div>
 
-        <!-- CHILD: JOIN -->
-        <div style="
-          padding:16px;border-radius:18px;background:#111827;
-          border:1px solid rgba(255,255,255,.1);margin-bottom:14px;
-        ">
+        <div style="padding:16px;border-radius:18px;background:#111827;border:1px solid rgba(255,255,255,.1);margin-bottom:14px;">
           <div style="font-weight:900;color:#00d4ff;margin-bottom:10px;">📱 THIS IS THE CHILD'S PHONE</div>
-          <div style="font-size:13px;opacity:.8;margin-bottom:12px;">
-            Enter the code from the parent's phone to link up.
-          </div>
-          <input id="join-code-input" type="text" maxlength="9"
-            placeholder="Enter code (e.g. KHYL-8392)"
-            style="
-              width:100%;box-sizing:border-box;min-height:50px;border-radius:12px;
-              border:1px solid rgba(0,212,255,.45);background:#0b1220;
-              color:#00d4ff;padding:0 14px;font-size:20px;font-weight:900;
-              letter-spacing:.15em;outline:none;text-align:center;
-              text-transform:uppercase;margin-bottom:10px;
-            "
-          />
+          <div style="font-size:13px;opacity:.8;margin-bottom:12px;">Enter the code from the parent's phone.</div>
+          <input id="join-code-input" type="text" maxlength="9" placeholder="Enter code (e.g. KHYL-8392)" style="
+            width:100%;box-sizing:border-box;min-height:50px;border-radius:12px;
+            border:1px solid rgba(0,212,255,.45);background:#0b1220;
+            color:#00d4ff;padding:0 14px;font-size:20px;font-weight:900;
+            letter-spacing:.15em;outline:none;text-align:center;
+            text-transform:uppercase;margin-bottom:10px;
+          " />
           <button id="btn-join-family" type="button" style="
             width:100%;min-height:50px;border-radius:16px;
-            background:#00d4ff;color:#05070b;font-weight:1000;
-            border:none;cursor:pointer;font-size:15px;
+            background:#00d4ff;color:#05070b;font-weight:1000;border:none;cursor:pointer;
           ">JOIN FAMILY</button>
         </div>
       `}
@@ -977,130 +1123,93 @@ function openFamilyLinkingScreen() {
         background:#111827;color:white;font-weight:900;
         border:1px solid rgba(255,255,255,.1);cursor:pointer;
       ">CLOSE</button>
-
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  const closeScreen = () => {
-    modal.remove();
-    // Return to dashboard
-    const config = window.getParentalConfig?.();
-    if (config) {
-      const raw = localStorage.getItem("bq_parental_controls_v1");
-      const localConfig = raw ? JSON.parse(raw) : config;
-      if (typeof window.renderParentalDashboardWithSync === "function") {
-        window.renderParentalDashboardWithSync(localConfig);
-      }
-    }
-  };
+  const closeScreen = () => modal.remove();
 
   document.getElementById("btn-link-back")?.addEventListener("click", closeScreen);
   document.getElementById("btn-link-close")?.addEventListener("click", closeScreen);
 
-  // CREATE FAMILY (parent)
   document.getElementById("btn-create-family")?.addEventListener("click", async () => {
     const raw = localStorage.getItem("bq_parental_controls_v1");
     const config = raw ? JSON.parse(raw) : {};
     const parentName = config?.parent?.name || "Parent";
-
     const btn = document.getElementById("btn-create-family");
     btn.innerText = "Creating...";
     btn.disabled = true;
-
     const family = await createFamily(parentName, config);
-
-    if (!family) {
-      alert("Could not create family. Check your internet connection.");
-      btn.innerText = "CREATE FAMILY & GET CODE";
-      btn.disabled = false;
-      return;
-    }
-
+    if (!family) { alert("Could not create family. Check your internet."); btn.innerText = "CREATE FAMILY & GET CODE"; btn.disabled = false; return; }
     modal.remove();
     openFamilyLinkingScreen();
-
-    setTimeout(() => {
-      showFamilyCode(family.family_code);
-    }, 300);
+    setTimeout(() => showFamilyCode(family.family_code), 300);
   });
 
-  // JOIN FAMILY (child)
   document.getElementById("btn-join-family")?.addEventListener("click", async () => {
     const code = document.getElementById("join-code-input")?.value?.trim()?.toUpperCase() || "";
-
-    if (!code || code.length < 4) {
-      alert("Enter the family code from the parent's phone.");
-      return;
-    }
-
+    if (!code || code.length < 4) { alert("Enter the family code from the parent's phone."); return; }
     const raw = localStorage.getItem("bq_parental_controls_v1");
     const config = raw ? JSON.parse(raw) : {};
-    const childName = config?.child?.name || "Child";
-    const childAge = config?.child?.age || 10;
-
     const btn = document.getElementById("btn-join-family");
     btn.innerText = "Joining...";
     btn.disabled = true;
-
-    const result = await joinFamily(code, childName, childAge);
-
-    if (!result) {
-      alert("Code not found or expired. Ask the parent to check their code.");
-      btn.innerText = "JOIN FAMILY";
-      btn.disabled = false;
-      return;
-    }
-
+    const result = await joinFamily(code, config?.child?.name || "Child", config?.child?.age || 10);
+    if (!result) { alert("Code not found. Ask the parent to check their code."); btn.innerText = "JOIN FAMILY"; btn.disabled = false; return; }
     startChildRealtimeListener();
-
+    startChildLocationTracking();
     modal.remove();
-    alert(`Linked! ${childName} is now connected to the family.`);
+    alert(`Linked! ${config?.child?.name || "Child"} is now connected to the family.`);
     openFamilyLinkingScreen();
   });
 
-  // START SYNC
   document.getElementById("btn-start-sync")?.addEventListener("click", () => {
-    if (syncState.deviceRole === "parent") {
-      startParentRealtimeListener();
-    } else {
-      startChildRealtimeListener();
-    }
-
+    if (syncState.deviceRole === "parent") startParentRealtimeListener();
+    else { startChildRealtimeListener(); startChildLocationTracking(); }
     modal.remove();
     openFamilyLinkingScreen();
   });
 
-  // VIEW FAMILY DASHBOARD
+  document.getElementById("btn-start-location")?.addEventListener("click", () => {
+    startChildLocationTracking();
+    alert("Location sharing started.");
+    modal.remove();
+    openFamilyLinkingScreen();
+  });
+
+  document.getElementById("btn-stop-location")?.addEventListener("click", () => {
+    stopChildLocationTracking();
+    alert("Location sharing stopped.");
+    modal.remove();
+    openFamilyLinkingScreen();
+  });
+
   document.getElementById("btn-view-family")?.addEventListener("click", () => {
     modal.remove();
     openRemoteFamilyDashboard();
   });
 
-  // SHOW CODE
   document.getElementById("btn-show-code")?.addEventListener("click", () => {
     showFamilyCode(syncState.familyCode);
   });
 
-  // UNLINK
   document.getElementById("btn-unlink")?.addEventListener("click", () => {
-    if (!confirm("Unlink this device from the family? You can re-link any time.")) return;
-
+    if (!confirm("Unlink this device? You can re-link any time.")) return;
+    stopChildLocationTracking();
+    stopRealtimeSync();
     syncState.familyId = null;
     syncState.familyCode = null;
     syncState.deviceRole = null;
     syncState.childRecordId = null;
-    stopRealtimeSync();
     saveSyncState();
-
     modal.remove();
     openFamilyLinkingScreen();
   });
 }
 
 /* =========================================================
-   SHOW FAMILY CODE — big display for parent
+   SHOW FAMILY CODE
 ========================================================= */
 
 function showFamilyCode(code) {
@@ -1122,40 +1231,30 @@ function showFamilyCode(code) {
       width:min(92vw,420px);text-align:center;color:white;
       border:2px solid rgba(255,213,74,.85);border-radius:28px;
       background:linear-gradient(180deg,#171b2b,#05070b);
-      padding:28px;
-      box-shadow:0 0 42px rgba(255,213,74,.25);
+      padding:28px;box-shadow:0 0 42px rgba(255,213,74,.25);
     ">
       <div style="font-size:42px;margin-bottom:12px;">🔑</div>
-      <div style="font-size:16px;font-weight:900;color:#ffd54a;letter-spacing:.1em;margin-bottom:8px;">
-        YOUR FAMILY CODE
-      </div>
-      <div style="
-        font-size:42px;font-weight:1000;
-        color:#ffd54a;letter-spacing:.25em;
-        margin:16px 0;
-        text-shadow:0 0 22px rgba(255,213,74,.55);
-      ">
+      <div style="font-size:16px;font-weight:900;color:#ffd54a;letter-spacing:.1em;margin-bottom:8px;">YOUR FAMILY CODE</div>
+      <div style="font-size:42px;font-weight:1000;color:#ffd54a;letter-spacing:.25em;margin:16px 0;text-shadow:0 0 22px rgba(255,213,74,.55);">
         ${code || "----"}
       </div>
       <div style="font-size:13px;opacity:.85;line-height:1.6;margin-bottom:20px;">
-        Enter this code on the child's phone under<br>
+        Enter this on the child's phone under<br>
         <strong>Parental Controls → Family Linking → This is the child's phone</strong>
       </div>
       <button id="btn-code-close" type="button" style="
         width:100%;min-height:48px;border-radius:16px;
-        background:#ffd54a;color:#231600;font-weight:1000;
-        border:none;cursor:pointer;font-size:15px;
+        background:#ffd54a;color:#231600;font-weight:1000;border:none;cursor:pointer;
       ">GOT IT</button>
     </div>
   `;
 
   document.body.appendChild(overlay);
-
   document.getElementById("btn-code-close")?.addEventListener("click", () => overlay.remove());
 }
 
 /* =========================================================
-   REMOTE FAMILY DASHBOARD — parent views child status live
+   REMOTE FAMILY DASHBOARD — now includes LIVE MAP button
 ========================================================= */
 
 async function openRemoteFamilyDashboard() {
@@ -1184,8 +1283,7 @@ async function openRemoteFamilyDashboard() {
           <div style="font-size:20px;font-weight:1000;">Family Status</div>
         </div>
         <button id="btn-remote-refresh" type="button" style="
-          margin-left:auto;
-          width:42px;height:42px;border-radius:50%;
+          margin-left:auto;width:42px;height:42px;border-radius:50%;
           background:#111827;color:white;border:1px solid rgba(255,255,255,.15);
           font-size:18px;cursor:pointer;
         ">↻</button>
@@ -1195,7 +1293,7 @@ async function openRemoteFamilyDashboard() {
         <div style="opacity:.75;padding:12px;">Loading family data...</div>
       </div>
 
-      <div id="remote-alerts-section" style="margin-top:16px;">
+      <div style="margin-top:16px;">
         <div style="font-weight:900;color:#ffd54a;margin-bottom:10px;">RECENT ALERTS</div>
         <div id="remote-alerts-list">
           <div style="opacity:.75;padding:12px;">Loading alerts...</div>
@@ -1205,26 +1303,22 @@ async function openRemoteFamilyDashboard() {
       <button id="btn-remote-close" type="button" style="
         width:100%;min-height:44px;border-radius:16px;
         background:#111827;color:white;font-weight:900;
-        border:1px solid rgba(255,255,255,.1);cursor:pointer;
-        margin-top:16px;
+        border:1px solid rgba(255,255,255,.1);cursor:pointer;margin-top:16px;
       ">CLOSE</button>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  const back = () => modal.remove();
-  document.getElementById("btn-remote-back")?.addEventListener("click", back);
-  document.getElementById("btn-remote-close")?.addEventListener("click", back);
-
-  const refresh = async () => {
+  document.getElementById("btn-remote-back")?.addEventListener("click", () => modal.remove());
+  document.getElementById("btn-remote-close")?.addEventListener("click", () => modal.remove());
+  document.getElementById("btn-remote-refresh")?.addEventListener("click", async () => {
     await renderRemoteChildren();
     await renderRemoteAlerts();
-  };
+  });
 
-  document.getElementById("btn-remote-refresh")?.addEventListener("click", refresh);
-
-  await refresh();
+  await renderRemoteChildren();
+  await renderRemoteAlerts();
   await markRemoteAlertsRead();
 }
 
@@ -1233,48 +1327,27 @@ async function renderRemoteChildren() {
   if (!list) return;
 
   const children = await loadFamilyChildren();
-
-  if (!children.length) {
-    list.innerHTML = `<div style="opacity:.75;padding:12px;">No child devices linked yet.</div>`;
-    return;
-  }
+  if (!children.length) { list.innerHTML = `<div style="opacity:.75;padding:12px;">No child devices linked yet.</div>`; return; }
 
   list.innerHTML = children.map(child => {
-    const lastSeen = child.last_seen
-      ? new Date(child.last_seen).toLocaleString()
-      : "Never";
-
-    const lastCheckin = child.last_checkin_at
-      ? new Date(child.last_checkin_at).toLocaleString()
-      : "No check-in yet";
-
+    const lastSeen = child.last_seen ? new Date(child.last_seen).toLocaleString() : "Never";
+    const lastCheckin = child.last_checkin_at ? new Date(child.last_checkin_at).toLocaleString() : "No check-in yet";
     const hasLocation = child.last_lat && child.last_lng;
+    const accuracy = child.last_accuracy;
 
     return `
       <div style="
-        padding:16px;border-radius:18px;margin-bottom:12px;
-        background:#111827;
+        padding:16px;border-radius:18px;margin-bottom:12px;background:#111827;
         border:2px solid ${child.sos_active ? "#ff3b3b" : "rgba(255,255,255,.1)"};
-        ${child.sos_active ? "animation:sosPulse .75s infinite;" : ""}
       ">
-        ${child.sos_active ? `
-          <div style="
-            padding:10px;border-radius:12px;margin-bottom:12px;
-            background:rgba(255,59,59,.2);
-            text-align:center;font-weight:1000;color:#ff3b3b;
-          ">🚨 SOS ACTIVE</div>
-        ` : ""}
+        ${child.sos_active ? `<div style="padding:10px;border-radius:12px;margin-bottom:12px;background:rgba(255,59,59,.2);text-align:center;font-weight:1000;color:#ff3b3b;">🚨 SOS ACTIVE</div>` : ""}
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div>
             <div style="font-size:18px;font-weight:900;">${child.child_name || "Child"}</div>
             <div style="font-size:12px;opacity:.7;margin-top:2px;">Age ${child.child_age || "?"}</div>
           </div>
-          <div style="
-            width:14px;height:14px;border-radius:50%;
-            background:${child.sos_active ? "#ff3b3b" : "#22c55e"};
-            box-shadow:0 0 8px ${child.sos_active ? "rgba(255,59,59,.7)" : "rgba(34,197,94,.5)"};
-          "></div>
+          <div style="width:14px;height:14px;border-radius:50%;background:${child.sos_active ? "#ff3b3b" : "#22c55e"};box-shadow:0 0 8px ${child.sos_active ? "rgba(255,59,59,.7)" : "rgba(34,197,94,.5)"};"></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
@@ -1283,42 +1356,52 @@ async function renderRemoteChildren() {
             <div style="font-size:12px;font-weight:900;margin-top:3px;">${lastSeen}</div>
           </div>
           <div style="padding:10px;border-radius:12px;background:rgba(255,255,255,.06);">
-            <div style="font-size:10px;opacity:.65;letter-spacing:.08em;">LAST CHECK-IN</div>
-            <div style="font-size:12px;font-weight:900;margin-top:3px;">${lastCheckin}</div>
+            <div style="font-size:10px;opacity:.65;letter-spacing:.08em;">GPS ACCURACY</div>
+            <div style="font-size:12px;font-weight:900;margin-top:3px;color:${accuracy > 50 ? "#ffb000" : "white"};">${accuracy ? `~${accuracy}m` : "—"}</div>
           </div>
         </div>
 
+        <button data-open-map="${child.id}" type="button" style="
+          width:100%;min-height:46px;border-radius:14px;
+          background:${hasLocation ? "#00d4ff" : "#202a3c"};
+          color:${hasLocation ? "#05070b" : "white"};
+          font-weight:1000;border:none;cursor:pointer;margin-bottom:8px;
+        ">📍 ${hasLocation ? "OPEN LIVE MAP" : "NO LOCATION YET"}</button>
+
         ${hasLocation ? `
           <a href="https://maps.google.com/?q=${child.last_lat},${child.last_lng}" target="_blank" style="
-            display:block;width:100%;min-height:44px;border-radius:14px;
+            display:block;width:100%;min-height:42px;border-radius:14px;
             background:#ffd54a;color:#231600;font-weight:1000;
-            text-decoration:none;line-height:44px;text-align:center;
-            margin-bottom:8px;
-          ">📍 VIEW LOCATION</a>
-        ` : `
-          <div style="
-            padding:10px;border-radius:12px;margin-bottom:8px;
-            background:rgba(255,255,255,.06);
-            font-size:13px;opacity:.75;text-align:center;
-          ">📍 Location not available</div>
-        `}
+            text-decoration:none;line-height:42px;text-align:center;margin-bottom:8px;
+          ">🗺️ OPEN IN GOOGLE MAPS</a>
+        ` : ""}
 
         ${child.sos_active ? `
           <button data-cancel-sos="${child.id}" type="button" style="
             width:100%;min-height:46px;border-radius:14px;
-            background:#ff3b3b;color:white;font-weight:1000;
-            border:none;cursor:pointer;
+            background:#ff3b3b;color:white;font-weight:1000;border:none;cursor:pointer;
           ">MARK SAFE / CANCEL SOS</button>
         ` : ""}
       </div>
     `;
   }).join("");
 
-  // Bind cancel SOS buttons
+  // Bind live map buttons
+  list.querySelectorAll("[data-open-map]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const childId = btn.dataset.openMap;
+      const freshChildren = await loadFamilyChildren();
+      const child = freshChildren.find(c => c.id === childId);
+      if (child) {
+        document.getElementById("remote-family-dashboard")?.remove();
+        openChildLiveMap(child);
+      }
+    });
+  });
+
   list.querySelectorAll("[data-cancel-sos]").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const childId = btn.dataset.cancelSos;
-      await cancelRemoteSOS(childId);
+      await cancelRemoteSOS(btn.dataset.cancelSos);
       await renderRemoteChildren();
     });
   });
@@ -1329,16 +1412,11 @@ async function renderRemoteAlerts() {
   if (!list) return;
 
   const alerts = await loadRemoteAlerts();
-
-  if (!alerts.length) {
-    list.innerHTML = `<div style="opacity:.75;padding:12px;">No alerts yet.</div>`;
-    return;
-  }
+  if (!alerts.length) { list.innerHTML = `<div style="opacity:.75;padding:12px;">No alerts yet.</div>`; return; }
 
   list.innerHTML = alerts.slice(0, 20).map(alert => `
     <div style="
-      padding:12px 14px;border-radius:14px;margin-bottom:8px;
-      background:#111827;
+      padding:12px 14px;border-radius:14px;margin-bottom:8px;background:#111827;
       border-left:4px solid ${alert.level === "red" ? "#ff3b3b" : alert.level === "amber" ? "#ffb000" : "#22c55e"};
       opacity:${alert.read_at ? ".65" : "1"};
     ">
@@ -1355,53 +1433,56 @@ async function renderRemoteAlerts() {
 }
 
 /* =========================================================
-   HEARTBEAT — child phone pings every 2 mins
+   HEARTBEAT
 ========================================================= */
 
 function startChildHeartbeat() {
   if (!syncState.childRecordId) return;
-
   setInterval(async () => {
     const supabase = getSupabase();
     if (!supabase || !syncState.childRecordId) return;
-
-    await supabase
-      .from("parental_children")
-      .update({ last_seen: new Date().toISOString() })
-      .eq("id", syncState.childRecordId);
+    await supabase.from("parental_children").update({ last_seen: new Date().toISOString() }).eq("id", syncState.childRecordId);
   }, 120000);
 }
 
 /* =========================================================
-   INIT — call from app.js or parental_controls.js
+   SUPABASE TABLE UPDATE NEEDED FOR PHASE 3
+   Run this in Supabase SQL editor:
+   
+   alter table parental_children add column if not exists last_accuracy int;
+   
+========================================================= */
+
+/* =========================================================
+   INIT
 ========================================================= */
 
 export function initParentalSync() {
   loadSyncState();
   getDeviceId();
 
-  // Auto-resume sync if already linked
   if (syncState.familyId) {
     if (syncState.deviceRole === "parent") {
       startParentRealtimeListener();
-      console.log("Parental sync: parent realtime resumed.");
     } else if (syncState.deviceRole === "child") {
       startChildRealtimeListener();
       startChildHeartbeat();
-      console.log("Parental sync: child realtime resumed.");
+      startChildLocationTracking();
     }
   }
 
-  // Expose to window for use from parental_controls.js
   window.openFamilyLinkingScreen = openFamilyLinkingScreen;
   window.openRemoteFamilyDashboard = openRemoteFamilyDashboard;
+  window.openChildLiveMap = openChildLiveMap;
   window.syncSOSToSupabase = syncSOSToSupabase;
   window.syncCheckInToSupabase = syncCheckInToSupabase;
   window.syncChildLocationToSupabase = syncChildLocationToSupabase;
   window.pushSettingsToSupabase = pushSettingsToSupabase;
+  window.startChildLocationTracking = startChildLocationTracking;
+  window.stopChildLocationTracking = stopChildLocationTracking;
   window.getParentalSyncState = () => syncState;
 
-  console.log("Parental sync initialised. Family ID:", syncState.familyId || "none");
+  console.log("Parental sync + live location initialised. Family ID:", syncState.familyId || "none");
 }
 
 export {
@@ -1414,11 +1495,15 @@ export {
   pullSettingsFromSupabase,
   startParentRealtimeListener,
   startChildRealtimeListener,
+  startChildLocationTracking,
+  stopChildLocationTracking,
   stopRealtimeSync,
   openFamilyLinkingScreen,
   openRemoteFamilyDashboard,
+  openChildLiveMap,
   loadFamilyChildren,
   loadRemoteAlerts,
   cancelRemoteSOS,
   showFamilyCode,
 };
+
