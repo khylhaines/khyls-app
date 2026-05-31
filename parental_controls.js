@@ -296,6 +296,11 @@ function renderParentalDashboard(config) {
   const limitLocked = isLockedByDailyLimit(config);
   const unreadAlerts = (config.alerts || []).filter((a) => !a.read).length;
 
+  // Get sync state if available
+  const syncState = window.getParentalSyncState?.() || {};
+  const isLinked = !!syncState.familyId;
+  const familyCode = syncState.familyCode || null;
+
   const modal = document.createElement("div");
   modal.id = "parental-dashboard";
   modal.style.cssText = `
@@ -430,13 +435,13 @@ function renderParentalDashboard(config) {
           font-size:15px;cursor:pointer;text-align:left;padding:0 16px;
         ">🔔 Alerts Log — ${unreadAlerts > 0 ? `${unreadAlerts} unread` : "All clear"}</button>
 
-
-<button id="btn-parental-family-link" type="button" style="
-  width:100%;min-height:52px;border-radius:16px;
-  background:linear-gradient(180deg,#1b2538,#111827);
-  color:white;font-weight:900;border:1px solid rgba(0,212,255,.3);
-  font-size:15px;cursor:pointer;text-align:left;padding:0 16px;
-">🔗 Family Linking — ${syncState?.familyCode || "Not linked"}</button>
+        <button id="btn-parental-family-link" type="button" style="
+          width:100%;min-height:52px;border-radius:16px;
+          background:linear-gradient(180deg,${isLinked ? "#0d2538" : "#1b2538"},#111827);
+          color:white;font-weight:900;
+          border:1px solid ${isLinked ? "rgba(0,212,255,.45)" : "rgba(255,255,255,.1)"};
+          font-size:15px;cursor:pointer;text-align:left;padding:0 16px;
+        ">🔗 Family Linking — ${isLinked ? `Linked (${familyCode})` : "Not linked"}</button>
 
         <button id="btn-parental-change-pin" type="button" style="
           width:100%;min-height:48px;border-radius:16px;
@@ -475,12 +480,6 @@ function renderParentalDashboard(config) {
     renderParentalDashboard(updated);
   });
 
-document.getElementById("btn-parental-family-link")?.addEventListener("click", () => {
-  modal.remove();
-  openFamilyLinkingScreen();
-});
-
-   
   document.getElementById("btn-parental-child-profile")?.addEventListener("click", () => {
     modal.remove();
     openChildProfileEditor();
@@ -511,12 +510,16 @@ document.getElementById("btn-parental-family-link")?.addEventListener("click", (
     openAlertsLog();
   });
 
+  document.getElementById("btn-parental-family-link")?.addEventListener("click", () => {
+    modal.remove();
+    openFamilyLinkingScreen();
+  });
+
   document.getElementById("btn-parental-change-pin")?.addEventListener("click", () => {
     modal.remove();
     openChangePinScreen();
   });
 }
-
 /* =========================================================
    SETUP SCREEN — FIRST TIME
 ========================================================= */
