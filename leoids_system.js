@@ -1815,35 +1815,6 @@ function closeSetupPanel() {
 }
 
 
-function setBaseHere() {
-  const isHost = !!leoidsState.isLobbyHost || !leoidsState.onlineEnabled;
-
-  if (!isHost) {
-    alert("Only the host can set the jail base.");
-    speakText?.("Only the host can set the jail base.");
-    return;
-  }
-
-  leoidsState.mapMode = "base";
-  leoidsState.pendingBasePoint = null;
-
-  closeModal?.("leoids-modal");
-  showActionButton?.(false);
-  hideLeoidsBattleHud?.();
-  hideLeoidsCommandHub?.();
-
-  showLeoidsMapControls("base");
-  enableMapPointAdding();
-
-  showLeoidsEvent(
-    "SET JAIL BASE",
-    "Tap the map where caught runners should go.",
-    "🛡️",
-    "base"
-  );
-
-  speakText?.("Tap the map to set the jail base.");
-}
 
 
   function setTagRadius(radius = DEFAULT_TAG_RADIUS) {
@@ -4558,13 +4529,13 @@ async function loadAndApplyOnlineSession() {
 
   applyOnlineSessionConfig(session);
 
-  setTimeout(() => {
-    redrawAllMapObjects?.();
-    drawPlayerMarkers?.();
-  }, 150);
+ setTimeout(() => redrawAllMapObjects?.(), 400);
+ setTimeout(() => redrawAllMapObjects?.(), 1000);
 
   return session;
 }
+
+  
 function showCountdownBanner(secondsLeft) {
   let banner = document.getElementById("leoids-countdown-banner");
 
@@ -7903,7 +7874,7 @@ return {
   openLeoidsInstructions,
   maybeShowFirstTimeLeoidsInstructions,
 
-  setRole,
+ 
   setBoundaryMode,
   setRoundLength,
   setHunterDelay,
