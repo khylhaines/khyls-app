@@ -631,9 +631,3 @@ export function getSuggestedRoutine(tier = "adult") {
 /* =========================================================
    EXPORTS
 ========================================================= */
-
-export {
-  openRoutinesHome,
-  openRoutinePlayer,
-  getSuggestedRoutine,
-};
