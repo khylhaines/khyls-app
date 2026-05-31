@@ -21,7 +21,7 @@ import { createTrailSystem } from "./trail_system.js";
 import { SHOP_ITEMS } from "./shop_items.js";
 import { initParentalControls } from "./parental_controls.js";
 import { initParentalSync } from './parental_sync.js';
-import { initOldTom, showTomOverlay } from "./old_tom.js";
+import { initOldTom } from "./old_tom.js";
 import {
   getShopItemById,
   getShopSections,
@@ -4148,6 +4148,10 @@ function hideHome() {
     enterMapFromHome("leoids");
   });
 
+$("home-btn-oldtom")?.addEventListener("click", () => {
+  window.oldTom?.openChat();
+});
+  
 $("home-btn-mindfulness")?.addEventListener("click", () => {
   window.openMindfulnessHome();
 });
