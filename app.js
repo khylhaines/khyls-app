@@ -21,6 +21,7 @@ import { createTrailSystem } from "./trail_system.js";
 import { SHOP_ITEMS } from "./shop_items.js";
 import { initParentalControls } from "./parental_controls.js";
 import { initParentalSync } from './parental_sync.js';
+import { initOldTom, showTomOverlay } from "./old_tom.js";
 import {
   getShopItemById,
   getShopSections,
@@ -4413,6 +4414,7 @@ function boot() {
     initMindfulness();
     renderEverything();
     wireButtons();
+    initOldTom();
 
 document.addEventListener("click", (event) => {
   if (!event.target.closest("button")) return;
