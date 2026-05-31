@@ -18,6 +18,7 @@ import { createBossSystem } from "./boss_system.js";
 import  { renderShop } from "./shop_ui.js";
 import { createTrailSystem } from "./trail_system.js";
 import { SHOP_ITEMS } from "./shop_items.js";
+import { initParentalControls } from "./parental_controls.js";
 import {
   getShopItemById,
   getShopSections,
@@ -4281,6 +4282,10 @@ $("home-btn-truecrime")?.addEventListener("click", () => {
     closeModal("commander-hub")
   );
 
+$("btn-parental-controls")?.addEventListener("click", () => {
+  window.openParentalDashboard?.();
+});
+  
   // ===== FORCE HOME ON FIRST LOAD =====
   showHome();
 }
@@ -4396,6 +4401,7 @@ function setupSystems() {
 function boot() {
   try {
     setupSystems();
+    initParentalControls();
     renderEverything();
     wireButtons();
 
