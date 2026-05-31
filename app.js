@@ -19,6 +19,7 @@ import  { renderShop } from "./shop_ui.js";
 import { createTrailSystem } from "./trail_system.js";
 import { SHOP_ITEMS } from "./shop_items.js";
 import { initParentalControls } from "./parental_controls.js";
+import { initParentalSync } from './parental_sync.js';
 import {
   getShopItemById,
   getShopSections,
@@ -4402,6 +4403,7 @@ function boot() {
   try {
     setupSystems();
     initParentalControls();
+    initParentalSync();
     renderEverything();
     wireButtons();
 
