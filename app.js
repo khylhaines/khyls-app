@@ -2272,6 +2272,15 @@ function handlePinOpen(pin) {
   currentPin = pin;
   showActionButton(true);
 }
+
+
+function showOldTomButton(visible) {
+  const btn = document.getElementById("btn-old-tom-float");
+  if (!btn) return;
+  btn.style.display = visible ? "flex" : "none";
+}
+
+
 /* ============================
    MAP
 ============================ */
@@ -4011,7 +4020,7 @@ function selectGameMode(mode) {
     currentPin = null;
     showActionButton(false);
     updateStartButtons();
-
+    showOldTomButton(true); 
     resetMap();
 
     speakText("Explorer mode selected.");
@@ -4090,6 +4099,7 @@ function wireButtons() {
   if (home) {
     home.style.display = "block";
     home.classList.add("active");
+    showOldTomButton(false);
   }
 }
 
@@ -4182,6 +4192,11 @@ $("home-btn-truecrime")?.addEventListener("click", () => {
     );
   });
 
+$("btn-old-tom-float")?.addEventListener("click", () => {
+  window.oldTom?.openChat(currentPin?.n || null);
+});
+
+  
   $("btn-territory-bot-difficulty")?.addEventListener("click", () => {
     const current = window.__territoryBotDifficulty || "normal";
 
