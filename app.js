@@ -4109,19 +4109,17 @@ function hideHome() {
   }
 }
 
-  function enterMapFromHome(mode = "explorer") {
-    hideHome();
-
-    const mapEl = document.getElementById("map");
-    if (mapEl) mapEl.style.display = "block";
-
-    selectGameMode(mode);
-
-    setTimeout(() => {
-      if (map) map.invalidateSize();
-      resetMap();
-    }, 250);
-  }
+ function enterMapFromHome(mode = "explorer") {
+  hideHome();
+  const mapEl = document.getElementById("map");
+  if (mapEl) mapEl.style.display = "block";
+  selectGameMode(mode);
+  setTimeout(() => {
+    if (map) map.invalidateSize();
+    resetMap();
+    if (mode === "explorer") showOldTomButton(true);
+  }, 250);
+}
 
   leoidsSystem?.wirePanelButtons?.();
 
