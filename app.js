@@ -4210,6 +4210,14 @@ $("btn-old-tom-float")?.addEventListener("click", () => {
     }
   });
 
+$("btn-territory-close")?.addEventListener("click", () =>
+  closeModal("territory-command-modal")
+);
+
+$("btn-territory-close-x")?.addEventListener("click", () =>
+  closeModal("territory-command-modal")
+);
+  
   // ===== ACTION BUTTON =====
   $("action-trigger")?.addEventListener("click", handleActionTrigger);
 
@@ -4339,7 +4347,45 @@ $("btn-parental-controls")?.addEventListener("click", () => {
   $("btn-read-answers")?.addEventListener("click", () => {
     if (currentTask?.question?.options) speakOptions(currentTask.question.options);
   });
-      
+
+  
+$("btn-territory-capture")?.addEventListener("click", () => {
+  territorySystem?.captureNode(currentPin, getActivePlayer());
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-territory-attack")?.addEventListener("click", () => {
+  territorySystem?.attackNode(currentPin, getActivePlayer());
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-territory-upgrade")?.addEventListener("click", () => {
+  territorySystem?.upgradeNode(currentPin, getActivePlayer());
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-territory-repair")?.addEventListener("click", () => {
+  territorySystem?.collectNodeCoins(currentPin, getActivePlayer());
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-defence-shield")?.addEventListener("click", () => {
+  territorySystem?.installDefence(currentPin, getActivePlayer(), "shield");
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-defence-core")?.addEventListener("click", () => {
+  territorySystem?.installDefence(currentPin, getActivePlayer(), "core");
+  openTerritoryCommandPanel(currentPin);
+});
+
+$("btn-defence-bee")?.addEventListener("click", () => {
+  territorySystem?.installDefence(currentPin, getActivePlayer(), "bee_nest");
+  openTerritoryCommandPanel(currentPin);
+});
+
+
+  
   // ===== FORCE HOME ON FIRST LOAD =====
   showHome();
 }
