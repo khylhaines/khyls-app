@@ -4312,7 +4312,34 @@ $("btn-old-tom-float")?.addEventListener("click", () => {
 $("btn-parental-controls")?.addEventListener("click", () => {
   window.openParentalDashboard?.();
 });
-  
+
+// ===== QUEST MODAL =====
+  $("btn-close-quest")?.addEventListener("click", () =>
+    closeModal("quest-modal")
+  );
+
+  $("btn-task-close")?.addEventListener("click", () =>
+    closeModal("task-modal")
+  );
+
+  document.querySelectorAll(".m-tile").forEach((tile) => {
+    tile.addEventListener("click", () => {
+      const mode = tile.dataset.mode;
+      if (mode) openTask(mode);
+    });
+  });
+
+  // ===== ADULT MODE BUTTONS =====
+  $("adult-read-case")?.addEventListener("click", () => openTask("read_case"));
+  $("adult-view-evidence")?.addEventListener("click", () => openTask("evidence"));
+  $("adult-view-clue")?.addEventListener("click", () => openTask("clue"));
+  $("adult-ar-verify")?.addEventListener("click", () => openTask("ar_verify"));
+  $("btn-ar-open")?.addEventListener("click", () => openAR());
+  $("btn-ar-close")?.addEventListener("click", () => { stopAR(); closeModal("ar-modal"); });
+  $("btn-read-answers")?.addEventListener("click", () => {
+    if (currentTask?.question?.options) speakOptions(currentTask.question.options);
+  });
+      
   // ===== FORCE HOME ON FIRST LOAD =====
   showHome();
 }
