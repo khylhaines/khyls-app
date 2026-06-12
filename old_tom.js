@@ -3,37 +3,18 @@
    Barrow Quest / LEOIDS
    =========================================================
    A wise storyteller from Barrow-in-Furness.
-   Powered by Claude AI — answers anything about Barrow,
-   Furness Abbey, the docks, the islands, the people.
+   Powered by your LOCAL Old Tom AI brain at localhost:8000
+   Answers anything about Barrow, Furness Abbey, the docks,
+   the islands, the people.
    Available any time from the home screen or map.
 ========================================================= */
 
 /* =========================================================
-   TOM'S SYSTEM PROMPT
-   This defines who Tom is and how he speaks
+   LOCAL OLD TOM API SETTINGS
+   Points to your Old Tom server running on your PC
 ========================================================= */
 
-const TOM_SYSTEM_PROMPT = `You are Old Tom, a wise and warm storyteller from Barrow-in-Furness in Cumbria, England. You have lived in Barrow your whole life and you know its history intimately — the shipyards, the docks, Furness Abbey, Walney Island, Piel Castle, the industrial past, the people, the streets, the sea.
-
-You speak in a gentle, wise, unhurried voice. You are never dry or academic. You tell stories. You bring history alive. You connect the past to the present. You care deeply about this place and the people who built it.
-
-Your knowledge covers:
-- Barrow-in-Furness: its founding, industrial growth, shipbuilding, steel, Victorian development
-- BAE Systems and the submarine building tradition going back to Holland 1 in 1901
-- Furness Abbey: founded 1127, Cistercian, dissolved 1537, one of the great monastic houses of northern England
-- Walney Island: the bridge, Vickerstown, South Walney Nature Reserve, the lighthouse, the seals
-- Piel Castle and Piel Island: built by Furness Abbey monks, Lambert Simnel's 1487 landing, the King of Piel tradition
-- The Dock Museum and Barrow's maritime heritage
-- Key figures: Henry Schneider, James Ramsden, Emlyn Hughes
-- The Cenotaph and Barrow's war history
-- The parks, the streets, the communities
-- The natural landscape: Morecambe Bay, the Irish Sea, the Furness peninsula, the fells beyond
-
-You answer questions of any kind about Barrow and Furness. If asked about something you don't know specifically, you connect it honestly to what you do know and are honest that your knowledge has limits.
-
-Keep answers conversational and warm. Usually 2-4 sentences for simple questions, a short paragraph or two for deeper ones. Never use bullet points or lists — just speak naturally, like a storyteller would.
-
-If someone asks something completely unrelated to Barrow or Furness, gently steer them back: "Now that's a question beyond my patch, friend. Ask me about Barrow and I'll talk all day..."`;
+const OLD_TOM_API = "http://localhost:8000";
 
 /* =========================================================
    CONVERSATION HISTORY
@@ -43,39 +24,38 @@ If someone asks something completely unrelated to Barrow or Furness, gently stee
 let tomHistory = [];
 
 /* =========================================================
-   CALL CLAUDE API AS OLD TOM
+   CALL YOUR LOCAL OLD TOM BRAIN
 ========================================================= */
 
 async function askTom(userMessage) {
   tomHistory.push({ role: "user", content: userMessage });
 
   try {
-   const response = await fetch("https://api.anthropic.com/v1/messages", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "x-api-key": "YOUR_API_KEY_HERE",
-    "anthropic-version": "2023-06-01",
-    "anthropic-dangerous-direct-browser-access": "true",
-  },
+    const response = await fetch(`${OLD_TOM_API}/ask`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        system: TOM_SYSTEM_PROMPT,
-        messages: tomHistory,
+        question: userMessage,
+        bot_id: "barrowquest-app",
+        bot_type: "mapping_bot",
+        context: "BarrowQuest mobile app"
       }),
     });
 
+    if (!response.ok) {
+      throw new Error(`Old Tom server returned ${response.status}`);
+    }
+
     const data = await response.json();
 
-    const reply = data.content
-      ?.filter(block => block.type === "text")
-      ?.map(block => block.text)
-      ?.join("") || "I'm sorry friend, something's gone quiet on my end. Try asking again.";
+    const reply = data.answer
+      || "The connection's gone a bit foggy, friend. Try again in a moment.";
 
     tomHistory.push({ role: "assistant", content: reply });
 
-    // Keep history to last 20 messages to avoid token overload
+    // Keep history to last 20 messages to avoid overload
     if (tomHistory.length > 20) {
       tomHistory = tomHistory.slice(-20);
     }
@@ -84,7 +64,27 @@ async function askTom(userMessage) {
 
   } catch (err) {
     console.error("Old Tom API error:", err);
-    return "The connection's gone a bit foggy, friend. Try again in a moment.";
+
+    // Friendly fallback messages
+    const fallbacks = [
+      "The connection's gone a bit foggy, friend. Make sure Old Tom is running on your PC and try again.",
+      "I seem to have lost my train of thought there. Check Old Tom is running and ask me again.",
+      "Something's gone quiet on my end, friend. Try again in a moment.",
+    ];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  }
+}
+
+/* =========================================================
+   CHECK IF OLD TOM SERVER IS RUNNING
+========================================================= */
+
+async function checkOldTomOnline() {
+  try {
+    const response = await fetch(`${OLD_TOM_API}/`, { method: "GET" });
+    return response.ok;
+  } catch {
+    return false;
   }
 }
 
@@ -134,8 +134,12 @@ export function openOldTomChat(contextPinName = null) {
       ">🧙</div>
       <div style="flex:1;">
         <div style="font-size:15px;font-weight:1000;color:#ffd54a;">OLD TOM</div>
-        <div style="font-size:12px;opacity:.65;margin-top:1px;">Barrow Historian</div>
+        <div style="font-size:12px;opacity:.65;margin-top:1px;">Barrow Historian · Local AI</div>
       </div>
+      <div id="tom-status-dot" style="
+        width:8px;height:8px;border-radius:50%;
+        background:#666;margin-right:4px;flex-shrink:0;
+      "></div>
       <button id="btn-tom-close" type="button" style="
         width:40px;height:40px;border-radius:50%;
         background:#111827;color:white;
@@ -174,6 +178,8 @@ export function openOldTomChat(contextPinName = null) {
         "Tell me about Piel Castle",
         "Who built Barrow?",
         "What's special about Walney Island?",
+        "Who was Stan Laurel?",
+        "Tell me about BAE Systems",
       ].map(q => `
         <button class="tom-suggestion" type="button" style="
           flex-shrink:0;padding:8px 14px;border-radius:20px;
@@ -213,6 +219,21 @@ export function openOldTomChat(contextPinName = null) {
 
   const messagesEl = document.getElementById("tom-messages");
   const inputEl = document.getElementById("tom-input");
+  const statusDot = document.getElementById("tom-status-dot");
+
+  // Check if Old Tom server is online and update status dot
+  checkOldTomOnline().then(online => {
+    if (statusDot) {
+      statusDot.style.background = online ? "#22c55e" : "#ef4444";
+      statusDot.title = online ? "Old Tom is online" : "Old Tom offline — start your PC server";
+    }
+    if (!online) {
+      addMessage(
+        "I'm having trouble connecting to my memory right now. Make sure Old Tom is running on your PC, then try again.",
+        "tom"
+      );
+    }
+  });
 
   // Close
   document.getElementById("btn-tom-close")?.addEventListener("click", () => modal.remove());
@@ -223,7 +244,7 @@ export function openOldTomChat(contextPinName = null) {
     inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
   });
 
-  // Send on Enter (but Shift+Enter for newline)
+  // Send on Enter (Shift+Enter for newline)
   inputEl?.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -315,7 +336,7 @@ export function openOldTomChat(contextPinName = null) {
 ========================================================= */
 
 export function hasCoverage(pinId) {
-  // All pins now covered by AI — always returns true
+  // All pins covered by Old Tom AI — always returns true
   return true;
 }
 
@@ -328,9 +349,10 @@ export function initOldTom() {
     openChat: openOldTomChat,
     hasCoverage,
     resetHistory: () => { tomHistory = []; },
+    checkOnline: checkOldTomOnline,
   };
 
-  console.log("Old Tom initialised — AI historian ready.");
+  console.log("Old Tom initialised — connected to local AI brain at " + OLD_TOM_API);
 }
 
 export default { openOldTomChat, hasCoverage, initOldTom };
