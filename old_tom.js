@@ -14,7 +14,7 @@
    Points to your Old Tom server running on your PC
 ========================================================= */
 
-const OLD_TOM_API = "http://localhost:8000";
+const OLD_TOM_API = "http://192.168.1.71:8000";
 
 /* =========================================================
    CONVERSATION HISTORY
