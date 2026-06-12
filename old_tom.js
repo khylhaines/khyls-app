@@ -4,24 +4,126 @@
    =========================================================
    A wise storyteller from Barrow-in-Furness.
    Powered by your LOCAL Old Tom AI brain at localhost:8000
-   Answers anything about Barrow, Furness Abbey, the docks,
-   the islands, the people.
-   Available any time from the home screen or map.
+   
+   Features:
+   - Connects to your local Old Tom AI brain
+   - Auto text-to-speech on every answer
+   - Pause / Resume / Repeat controls
+   - Copy answer to clipboard
+   - Share answer via native share sheet
 ========================================================= */
 
 /* =========================================================
    LOCAL OLD TOM API SETTINGS
    Points to your Old Tom server running on your PC
+   Change the IP to your PC's local IP address
 ========================================================= */
 
 const OLD_TOM_API = "http://192.168.1.71:8000";
 
 /* =========================================================
    CONVERSATION HISTORY
-   Keeps track of the chat so Tom remembers context
 ========================================================= */
 
 let tomHistory = [];
+
+/* =========================================================
+   TEXT TO SPEECH ENGINE
+========================================================= */
+
+const TomVoice = {
+  synth: window.speechSynthesis,
+  currentUtterance: null,
+  lastText: "",
+  isPaused: false,
+
+  speak(text) {
+    if (!this.synth) return;
+    this.stop();
+    this.lastText = text;
+    this.isPaused = false;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-GB";
+    utterance.rate = 0.92;
+    utterance.pitch = 0.95;
+
+    // Try to find a good British voice
+    const voices = this.synth.getVoices();
+    const preferred = voices.find(v => v.lang === "en-GB" && v.name.includes("Male"))
+      || voices.find(v => v.lang === "en-GB")
+      || voices.find(v => v.lang.startsWith("en"));
+    if (preferred) utterance.voice = preferred;
+
+    utterance.onstart = () => {
+      this.isPaused = false;
+      updateVoiceControls("speaking");
+    };
+    utterance.onend = () => {
+      this.currentUtterance = null;
+      this.isPaused = false;
+      updateVoiceControls("idle");
+    };
+    utterance.onerror = () => {
+      updateVoiceControls("idle");
+    };
+
+    this.currentUtterance = utterance;
+    this.synth.speak(utterance);
+  },
+
+  pause() {
+    if (this.synth.speaking && !this.isPaused) {
+      this.synth.pause();
+      this.isPaused = true;
+      updateVoiceControls("paused");
+    }
+  },
+
+  resume() {
+    if (this.isPaused) {
+      this.synth.resume();
+      this.isPaused = false;
+      updateVoiceControls("speaking");
+    }
+  },
+
+  stop() {
+    this.synth.cancel();
+    this.currentUtterance = null;
+    this.isPaused = false;
+    updateVoiceControls("idle");
+  },
+
+  repeat() {
+    if (this.lastText) this.speak(this.lastText);
+  },
+
+  toggle() {
+    if (this.isPaused) this.resume();
+    else if (this.synth.speaking) this.pause();
+  }
+};
+
+function updateVoiceControls(state) {
+  const playPauseBtn = document.getElementById("tom-playpause");
+  const statusEl = document.getElementById("tom-voice-status");
+  if (!playPauseBtn) return;
+
+  if (state === "speaking") {
+    playPauseBtn.textContent = "⏸";
+    playPauseBtn.title = "Pause";
+    if (statusEl) statusEl.textContent = "Speaking…";
+  } else if (state === "paused") {
+    playPauseBtn.textContent = "▶";
+    playPauseBtn.title = "Resume";
+    if (statusEl) statusEl.textContent = "Paused";
+  } else {
+    playPauseBtn.textContent = "▶";
+    playPauseBtn.title = "Play again";
+    if (statusEl) statusEl.textContent = "";
+  }
+}
 
 /* =========================================================
    CALL YOUR LOCAL OLD TOM BRAIN
@@ -33,9 +135,7 @@ async function askTom(userMessage) {
   try {
     const response = await fetch(`${OLD_TOM_API}/ask`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         question: userMessage,
         bot_id: "barrowquest-app",
@@ -44,28 +144,18 @@ async function askTom(userMessage) {
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Old Tom server returned ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Server returned ${response.status}`);
 
     const data = await response.json();
-
-    const reply = data.answer
-      || "The connection's gone a bit foggy, friend. Try again in a moment.";
+    const reply = data.answer || "The connection's gone a bit foggy, friend. Try again in a moment.";
 
     tomHistory.push({ role: "assistant", content: reply });
-
-    // Keep history to last 20 messages to avoid overload
-    if (tomHistory.length > 20) {
-      tomHistory = tomHistory.slice(-20);
-    }
+    if (tomHistory.length > 20) tomHistory = tomHistory.slice(-20);
 
     return reply;
 
   } catch (err) {
     console.error("Old Tom API error:", err);
-
-    // Friendly fallback messages
     const fallbacks = [
       "The connection's gone a bit foggy, friend. Make sure Old Tom is running on your PC and try again.",
       "I seem to have lost my train of thought there. Check Old Tom is running and ask me again.",
@@ -75,17 +165,11 @@ async function askTom(userMessage) {
   }
 }
 
-/* =========================================================
-   CHECK IF OLD TOM SERVER IS RUNNING
-========================================================= */
-
 async function checkOldTomOnline() {
   try {
-    const response = await fetch(`${OLD_TOM_API}/`, { method: "GET" });
-    return response.ok;
-  } catch {
-    return false;
-  }
+    const r = await fetch(`${OLD_TOM_API}/`, { method: "GET" });
+    return r.ok;
+  } catch { return false; }
 }
 
 /* =========================================================
@@ -95,6 +179,7 @@ async function checkOldTomOnline() {
 export function openOldTomChat(contextPinName = null) {
   const old = document.getElementById("old-tom-chat");
   if (old) old.remove();
+  TomVoice.stop();
 
   const modal = document.createElement("div");
   modal.id = "old-tom-chat";
@@ -105,12 +190,10 @@ export function openOldTomChat(contextPinName = null) {
     font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   `;
 
-  // Build opening message based on context
   const openingMessage = contextPinName
     ? `Ah, you're standing near ${contextPinName}. A fine place with a fine story. What would you like to know?`
     : "Good to see you, friend. Ask me anything about Barrow and Furness — the history, the people, the places. I've lived here all my life and I love to talk about it.";
 
-  // Pre-populate history with opening
   if (tomHistory.length === 0) {
     tomHistory.push({ role: "assistant", content: openingMessage });
   }
@@ -121,8 +204,7 @@ export function openOldTomChat(contextPinName = null) {
       padding:14px 16px;
       background:linear-gradient(180deg,#1a1508,#0d1008);
       border-bottom:1px solid rgba(255,213,74,.2);
-      display:flex;align-items:center;gap:14px;
-      flex-shrink:0;
+      display:flex;align-items:center;gap:14px;flex-shrink:0;
     ">
       <div style="
         width:48px;height:48px;border-radius:50%;
@@ -151,25 +233,62 @@ export function openOldTomChat(contextPinName = null) {
     <!-- MESSAGES -->
     <div id="tom-messages" style="
       flex:1;overflow-y:auto;padding:16px;
-      display:flex;flex-direction:column;gap:12px;
-      min-height:0;
+      display:flex;flex-direction:column;gap:12px;min-height:0;
     ">
-      <!-- Opening message -->
-      <div class="tom-msg-tom" style="
+      <div style="
         max-width:88%;align-self:flex-start;
         padding:14px 16px;border-radius:20px 20px 20px 4px;
         background:linear-gradient(135deg,#1a1508,#111);
         border:1px solid rgba(255,213,74,.25);
-        color:rgba(255,255,255,.92);font-size:15px;line-height:1.6;
-        font-style:italic;
+        color:rgba(255,255,255,.92);font-size:15px;line-height:1.6;font-style:italic;
       ">"${openingMessage}"</div>
+    </div>
+
+    <!-- VOICE CONTROLS BAR -->
+    <div id="tom-voice-bar" style="
+      padding:8px 16px;flex-shrink:0;
+      background:rgba(255,213,74,.06);
+      border-top:1px solid rgba(255,213,74,.15);
+      display:flex;align-items:center;gap:10px;
+    ">
+      <button id="tom-playpause" type="button" title="Play / Pause" style="
+        width:38px;height:38px;border-radius:50%;
+        background:linear-gradient(180deg,#ffe27c,#ffd54a 55%,#efb000);
+        color:#231600;font-size:16px;font-weight:1000;
+        border:none;cursor:pointer;flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;
+      ">▶</button>
+      <button id="tom-repeat" type="button" title="Repeat" style="
+        width:38px;height:38px;border-radius:50%;
+        background:rgba(255,213,74,.15);
+        color:#ffd54a;font-size:16px;
+        border:1px solid rgba(255,213,74,.3);cursor:pointer;flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;
+      ">🔁</button>
+      <button id="tom-copy" type="button" title="Copy answer" style="
+        width:38px;height:38px;border-radius:50%;
+        background:rgba(255,255,255,.08);
+        color:rgba(255,255,255,.7);font-size:16px;
+        border:1px solid rgba(255,255,255,.15);cursor:pointer;flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;
+      ">📋</button>
+      <button id="tom-share" type="button" title="Share" style="
+        width:38px;height:38px;border-radius:50%;
+        background:rgba(255,255,255,.08);
+        color:rgba(255,255,255,.7);font-size:16px;
+        border:1px solid rgba(255,255,255,.15);cursor:pointer;flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;
+      ">📤</button>
+      <span id="tom-voice-status" style="
+        font-size:12px;color:rgba(255,213,74,.7);
+        font-style:italic;flex:1;
+      "></span>
     </div>
 
     <!-- SUGGESTED QUESTIONS -->
     <div id="tom-suggestions" style="
       padding:10px 16px 4px;flex-shrink:0;
-      display:flex;gap:8px;overflow-x:auto;
-      scrollbar-width:none;
+      display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
     ">
       ${[
         "Tell me about Furness Abbey",
@@ -185,8 +304,7 @@ export function openOldTomChat(contextPinName = null) {
           flex-shrink:0;padding:8px 14px;border-radius:20px;
           background:rgba(255,213,74,.12);
           color:#ffd54a;font-size:12px;font-weight:900;
-          border:1px solid rgba(255,213,74,.3);cursor:pointer;
-          white-space:nowrap;
+          border:1px solid rgba(255,213,74,.3);cursor:pointer;white-space:nowrap;
         ">${q}</button>
       `).join("")}
     </div>
@@ -202,8 +320,7 @@ export function openOldTomChat(contextPinName = null) {
         flex:1;min-height:46px;max-height:120px;
         border-radius:16px;border:1px solid rgba(255,213,74,.3);
         background:#111827;color:white;padding:12px 14px;
-        font-size:15px;font-family:inherit;resize:none;outline:none;
-        line-height:1.4;
+        font-size:15px;font-family:inherit;resize:none;outline:none;line-height:1.4;
       "></textarea>
       <button id="btn-tom-send" type="button" style="
         width:46px;height:46px;border-radius:50%;flex-shrink:0;
@@ -221,22 +338,60 @@ export function openOldTomChat(contextPinName = null) {
   const inputEl = document.getElementById("tom-input");
   const statusDot = document.getElementById("tom-status-dot");
 
-  // Check if Old Tom server is online and update status dot
+  // Check if Old Tom is online
   checkOldTomOnline().then(online => {
     if (statusDot) {
       statusDot.style.background = online ? "#22c55e" : "#ef4444";
       statusDot.title = online ? "Old Tom is online" : "Old Tom offline — start your PC server";
     }
     if (!online) {
-      addMessage(
-        "I'm having trouble connecting to my memory right now. Make sure Old Tom is running on your PC, then try again.",
-        "tom"
-      );
+      addMessage("I'm having trouble connecting to my memory right now. Make sure Old Tom is running on your PC, then try again.", "tom", false);
     }
   });
 
-  // Close
-  document.getElementById("btn-tom-close")?.addEventListener("click", () => modal.remove());
+  // Load voices (needed for some browsers)
+  if (window.speechSynthesis) {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }
+
+  // Voice controls
+  document.getElementById("tom-playpause")?.addEventListener("click", () => TomVoice.toggle());
+  document.getElementById("tom-repeat")?.addEventListener("click", () => TomVoice.repeat());
+
+  // Copy button
+  document.getElementById("tom-copy")?.addEventListener("click", () => {
+    if (TomVoice.lastText) {
+      navigator.clipboard?.writeText(TomVoice.lastText).then(() => {
+        const btn = document.getElementById("tom-copy");
+        if (btn) { btn.textContent = "✅"; setTimeout(() => btn.textContent = "📋", 1500); }
+      });
+    }
+  });
+
+  // Share button
+  document.getElementById("tom-share")?.addEventListener("click", () => {
+    if (TomVoice.lastText) {
+      if (navigator.share) {
+        navigator.share({
+          title: "Old Tom — Barrow Historian",
+          text: TomVoice.lastText,
+          url: window.location.href,
+        }).catch(() => {});
+      } else {
+        // Fallback — copy to clipboard
+        navigator.clipboard?.writeText(TomVoice.lastText);
+        const btn = document.getElementById("tom-share");
+        if (btn) { btn.textContent = "✅"; setTimeout(() => btn.textContent = "📤", 1500); }
+      }
+    }
+  });
+
+  // Close — stop speaking
+  document.getElementById("btn-tom-close")?.addEventListener("click", () => {
+    TomVoice.stop();
+    modal.remove();
+  });
 
   // Auto-resize textarea
   inputEl?.addEventListener("input", () => {
@@ -244,7 +399,7 @@ export function openOldTomChat(contextPinName = null) {
     inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
   });
 
-  // Send on Enter (Shift+Enter for newline)
+  // Send on Enter
   inputEl?.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -262,7 +417,7 @@ export function openOldTomChat(contextPinName = null) {
     });
   });
 
-  function addMessage(text, role) {
+  function addMessage(text, role, autoSpeak = false) {
     const msg = document.createElement("div");
     msg.style.cssText = role === "user" ? `
       max-width:80%;align-self:flex-end;
@@ -275,13 +430,16 @@ export function openOldTomChat(contextPinName = null) {
       padding:14px 16px;border-radius:20px 20px 20px 4px;
       background:linear-gradient(135deg,#1a1508,#111);
       border:1px solid rgba(255,213,74,.25);
-      color:rgba(255,255,255,.92);font-size:15px;line-height:1.6;
-      font-style:italic;
+      color:rgba(255,255,255,.92);font-size:15px;line-height:1.6;font-style:italic;
     `;
-
     msg.innerText = role === "user" ? text : `"${text}"`;
     messagesEl.appendChild(msg);
     messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    // Auto speak Tom's answers
+    if (role === "tom" && autoSpeak) {
+      TomVoice.speak(text);
+    }
     return msg;
   }
 
@@ -308,7 +466,6 @@ export function openOldTomChat(contextPinName = null) {
     const text = inputEl?.value?.trim() || "";
     if (!text) return;
 
-    // Hide suggestions after first message
     const suggestions = document.getElementById("tom-suggestions");
     if (suggestions) suggestions.style.display = "none";
 
@@ -318,13 +475,14 @@ export function openOldTomChat(contextPinName = null) {
     const sendBtn = document.getElementById("btn-tom-send");
     if (sendBtn) sendBtn.disabled = true;
 
-    addMessage(text, "user");
+    TomVoice.stop();
+    addMessage(text, "user", false);
     showTyping();
 
     const reply = await askTom(text);
 
     removeTyping();
-    addMessage(reply, "tom");
+    addMessage(reply, "tom", true); // true = auto speak
 
     if (sendBtn) sendBtn.disabled = false;
     inputEl.focus();
@@ -332,27 +490,25 @@ export function openOldTomChat(contextPinName = null) {
 }
 
 /* =========================================================
-   STATIC CONTENT — for pins without AI (fallback)
+   STATIC CONTENT
 ========================================================= */
 
 export function hasCoverage(pinId) {
-  // All pins covered by Old Tom AI — always returns true
   return true;
 }
 
 /* =========================================================
-   INIT — call from app.js
+   INIT
 ========================================================= */
 
 export function initOldTom() {
   window.oldTom = {
     openChat: openOldTomChat,
     hasCoverage,
-    resetHistory: () => { tomHistory = []; },
+    resetHistory: () => { tomHistory = []; TomVoice.stop(); },
     checkOnline: checkOldTomOnline,
   };
-
-  console.log("Old Tom initialised — connected to local AI brain at " + OLD_TOM_API);
+  console.log("Old Tom initialised — Local AI brain at " + OLD_TOM_API);
 }
 
 export default { openOldTomChat, hasCoverage, initOldTom };
