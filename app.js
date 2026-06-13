@@ -7,6 +7,7 @@ import {
 } from "./qa.js";
 import { createTerritorySystem } from "./territory_system.js";
 import { initMindfulness } from './mindfulness/mindfulness_main.js';
+import { initExplorerBot } from './explorer_bot.js';
 import { createLeoidsSystem } from "./leoids_system.js";
 import { PINS } from "./pins.js";
 import { ADULT_PINS } from "./adult_pins.js";
@@ -2509,6 +2510,8 @@ function startLocationWatch() {
 
       currentPin = nearby;
 
+window.explorerBot?.updatePulse(nearby);
+      
 if (nearby) {
   if (activeGameMode === "territory") {
     const active = getActivePlayer();
@@ -4507,6 +4510,7 @@ function boot() {
     renderEverything();
     wireButtons();
     initOldTom();
+    initExplorerBot();
 
 document.addEventListener("click", (event) => {
   if (!event.target.closest("button")) return;
