@@ -22,6 +22,147 @@ export const EXPLORER_PIN_DATA = {
    explorer_pins_data.js (between existing entries)
 ========================================================= */
 
+/* =========================================================
+   NEW PIN ENTRIES — paste into EXPLORER_PIN_DATA in
+   explorer_pins_data.js (between existing entries)
+========================================================= */
+
+  // ═══════════════════════════════════════════════════════
+  // THE CUSTOM HOUSE
+  // ═══════════════════════════════════════════════════════
+  custom_house: {
+    name: "The Custom House",
+    zone: "town",
+    category: "heritage",
+
+    intro: {
+      kids: "Welcome to the Custom House! Look up at the roof — can you see the words 'CUSTOM HOUSE' written in big letters? This grand old building used to be a fancy hotel, then it checked all the goods coming into Barrow's port!",
+      teen: "This Gothic Revival building opened as a hotel in 1874, before becoming Barrow's Custom House in the 1880s — handling all the official paperwork for goods arriving at the port. Today it's been converted into restaurants and leisure venues.",
+      adult: "The Custom House on Abbey Road opened as a hotel in January 1874, in the Gothic Revival style using local red sandstone. It was sold in 1872 — wait, repurposed by the 1880s — becoming Barrow's Custom House and General Post Office, regulating trade transferred from the Port of Lancaster, before its modern conversion to leisure use."
+    },
+
+    facts: [
+      "The Custom House building opened as a hotel in January 1874.",
+      "The building is built in Gothic Revival style using local red sandstone with a Westmorland slate roof.",
+      "By the 1880s the building became Barrow's Custom House and General Post Office.",
+      "Customs operations were transferred to Barrow from the Custom House in Lancaster around 1882.",
+      "The words 'CUSTOM HOUSE' are still visible carved at roof level on the building.",
+      "The Custom House is a Grade II listed building.",
+      "The building stands on the corner of Abbey Road and Hindpool Road.",
+      "After years of restoration, the Custom House was converted into a bar, restaurant and family leisure venue.",
+      "The Custom House is part of Barrow's Town Centre Heritage Trail.",
+    ],
+
+    quiz: {
+      kids: [
+        { q: "What can you still see written at roof level on this building?", options: ["BARROW", "CUSTOM HOUSE", "WELCOME"], answer: 1, fact: "The bold lettering 'CUSTOM HOUSE' is still visible at roof level today." },
+        { q: "What was this building first used for in 1874?", options: ["A school", "A hotel", "A fire station"], answer: 1, fact: "It opened as a hotel in January 1874, before later becoming the Custom House." },
+        { q: "What is this building used for today?", options: ["A bar and restaurant", "A church", "A train station"], answer: 0, fact: "After restoration it became a bar, restaurant and leisure venue for families." },
+      ],
+      teen: [
+        { q: "What architectural style is the Custom House built in?", options: ["Gothic Revival", "Art Deco", "Brutalist"], answer: 0, fact: "It's built in Gothic Revival style using local red sandstone, similar to the Town Hall." },
+        { q: "Where were customs operations transferred from to Barrow around 1882?", options: ["Liverpool", "Lancaster", "Newcastle"], answer: 1, fact: "Customs duties moved from the Custom House in Lancaster to Barrow as Barrow's port grew." },
+        { q: "What heritage status does the Custom House hold?", options: ["Grade I", "Grade II", "No listing"], answer: 1, fact: "The Custom House is a Grade II listed building." },
+      ],
+      adult: [
+        { q: "What materials were used to build the Custom House?", options: ["Brick and slate from Wales", "Local red sandstone and Westmorland slate", "Imported granite"], answer: 1, fact: "Local red sandstone with a Westmorland slate roof reflects the materials used across Victorian Barrow." },
+        { q: "Before becoming the Custom House, what dual role did the building serve in the late 1800s?", options: ["A school and library", "A custom house and general post office", "A hospital and chapel"], answer: 1, fact: "The building served as both Barrow's Custom House and General Post Office until the early 1900s." },
+        { q: "The Custom House sits on the corner of Abbey Road and which other road?", options: ["Duke Street", "Hindpool Road", "Rawlinson Street"], answer: 1, fact: "It stands at the corner of Abbey Road and Hindpool Road." },
+      ],
+    },
+
+    activities: {
+      kids: [
+        { type: "observation", title: "Spot the Letters", desc: "Look up at the roof of the building. Can you find the carved letters spelling out 'CUSTOM HOUSE'? How big are they?" },
+        { type: "creative", title: "Customs Officer", desc: "Imagine you worked here checking goods arriving by ship. What kinds of things might you have been checking for?" },
+        { type: "family", title: "Then and Now", desc: "This was once a hotel, then a custom house, now a restaurant. What do you think it might become next?" },
+      ],
+      teen: [
+        { type: "observation", title: "Architecture Match", desc: "Compare the Custom House to Barrow Town Hall. Both use red sandstone and Gothic Revival style. What similarities can you spot?" },
+        { type: "knowledge", title: "Port Power Shift", desc: "Customs moved from Lancaster to Barrow around 1882. What does that shift tell you about how quickly Barrow's port had grown to overtake Lancaster's?" },
+        { type: "knowledge", title: "Building Reuse", desc: "This building has been a hotel, a custom house, a post office, a social club, and now leisure venues. What makes a Victorian building adaptable enough to survive 150 years of changing uses?" },
+      ],
+      adult: [
+        { type: "knowledge", title: "Trade Infrastructure", desc: "A custom house represents formal state infrastructure for trade. What does the presence of a dedicated custom house tell you about the scale of Barrow's port trade by the 1880s?" },
+        { type: "observation", title: "Heritage Trail Context", desc: "The Custom House sits on Barrow's Town Centre Heritage Trail alongside the Town Hall and Co-operative Building. Walking between them, what story does this trail tell about Victorian Barrow's ambitions?" },
+        { type: "knowledge", title: "Adaptive Reuse", desc: "Many Victorian civic buildings across Britain have been converted to leisure use rather than demolished. What are the benefits and risks of this kind of adaptive reuse for heritage buildings?" },
+      ],
+    },
+
+    nearby: ["town_hall_clock", "henry_schneider_statue", "james_ramsden_statue"],
+    audiobook_chapter: "iron_town_trail_chapter_3",
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // OLD FIRE STATION
+  // ═══════════════════════════════════════════════════════
+  old_fire_station: {
+    name: "Old Fire Station",
+    zone: "town",
+    category: "heritage",
+
+    intro: {
+      kids: "This grand red brick building on Abbey Road used to be Barrow's fire station! Over 100 years ago, fire engines used to race out of these very doors to help people in trouble.",
+      teen: "Built in 1911, this Central Fire Station served Barrow for over 80 years — one of the first fire stations in the country built specifically for motorised fire engines, not horse-drawn ones.",
+      adult: "The Central Fire Station on Abbey Road, built in 1911 to designs by Borough Surveyor Arthur Race, is a Grade II listed building noted by Historic England as a well-preserved early example of a fire station purpose-built for motorised fire appliances."
+    },
+
+    facts: [
+      "The Old Fire Station on Abbey Road was built in 1911 and opened in 1912.",
+      "The building was designed by the Borough Surveyors under Arthur Race.",
+      "It is built from red brick with decorative buff terracotta dressings and slate roofs.",
+      "Historic England describes it as a well-preserved early example of a fire station built for motorised fire engines.",
+      "The building served as Barrow's only fire station until a new station opened on Phoenix Road in 1996.",
+      "The original engine house has four large arched entrances where fire engines once drove in and out.",
+      "A panel on the building reads 'ERECTED A.D. 1911'.",
+      "The Old Fire Station is a Grade II listed building.",
+      "The building bears a strong resemblance to the former Technical School nearby on Abbey Road.",
+      "The Old Fire Station has since been converted into a furniture store.",
+    ],
+
+    quiz: {
+      kids: [
+        { q: "What used to happen at this building over 100 years ago?", options: ["Fire engines raced out to help people", "Trains stopped here", "It was a swimming pool"], answer: 0, fact: "This was Barrow's fire station, built in 1911!" },
+        { q: "What is the building made from?", options: ["Glass and steel", "Red brick with decorative dressings", "Wood"], answer: 1, fact: "It's built from red brick with fancy buff terracotta decorations." },
+        { q: "What is the Old Fire Station used for today?", options: ["A furniture store", "A school", "Still a fire station"], answer: 0, fact: "The old engine house is now a furniture store." },
+      ],
+      teen: [
+        { q: "What made this 1911 fire station unusual for its time?", options: ["It was the tallest building in Barrow", "It was built specifically for motorised fire engines", "It had no windows"], answer: 1, fact: "It's a well-preserved early example of a station designed for motor vehicles rather than horse-drawn engines." },
+        { q: "Who designed the Old Fire Station?", options: ["W. Henry Lynn", "Arthur Race and the Borough Surveyors", "Percy Wood"], answer: 1, fact: "Arthur Race, working for the Borough Surveyors, designed the 1911 building." },
+        { q: "Until what year did this building serve as Barrow's fire station?", options: ["1956", "1996", "2006"], answer: 1, fact: "It served until 1996, when a new station opened on Phoenix Road." },
+      ],
+      adult: [
+        { q: "How many vehicle entrance arches does the original engine house have?", options: ["Two", "Four", "Six"], answer: 1, fact: "The engine house has four segmentally-arched vehicle entrances." },
+        { q: "What heritage grade is the Old Fire Station listed at?", options: ["Grade I", "Grade II", "Grade II*"], answer: 1, fact: "It's a Grade II listed building, recognised for its architectural and historic interest." },
+        { q: "Which other Abbey Road building does the Old Fire Station closely resemble in style?", options: ["The Custom House", "The former Technical School", "The Town Hall"], answer: 1, fact: "Both buildings share red brick with buff terracotta dressings, built within a decade of each other." },
+      ],
+    },
+
+    activities: {
+      kids: [
+        { type: "observation", title: "Door Count", desc: "Look at the big arched doorways on the front of the building. How many can you count? Fire engines used to drive through these!" },
+        { type: "creative", title: "1912 Emergency", desc: "Imagine an alarm just rang in 1912. Act out the firefighters rushing to their engine and racing out of these doors." },
+        { type: "family", title: "Spot the Date", desc: "Somewhere on the building there's a panel that says when it was built. Can you find the year?" },
+      ],
+      teen: [
+        { type: "knowledge", title: "Horses to Engines", desc: "This station was built specifically for motor vehicles in 1911 — right at the moment fire brigades were switching from horses to engines. What other changes might have been happening in Barrow at the same time?" },
+        { type: "observation", title: "Functional Design", desc: "Look at the size and shape of the arched entrances. Why would they need to be that big and that shape for early motorised fire engines?" },
+        { type: "knowledge", title: "100 Years of Service", desc: "This building served as a working fire station from 1912 to 1996 — 84 years. What would have changed about firefighting technology and training over that time, all happening inside this same building?" },
+      ],
+      adult: [
+        { type: "knowledge", title: "Civic Infrastructure", desc: "Within a few decades, Barrow built a town hall, custom house, technical school and fire station — all substantial civic buildings. What does this concentration of investment in the early 1900s tell you about the town's priorities?" },
+        { type: "observation", title: "Architectural Pattern", desc: "Red brick with buff terracotta dressings appears on multiple Edwardian buildings along Abbey Road. What does this shared material palette tell you about civic building in this period?" },
+        { type: "knowledge", title: "Decommissioning Heritage", desc: "When the fire service moved to Phoenix Road in 1996, this building lost its original purpose but kept its listed status. Consider: what's the value of preserving a building's form even after its function disappears?" },
+      ],
+    },
+
+    nearby: ["custom_house", "town_hall_clock"],
+    audiobook_chapter: "iron_town_trail_chapter_3",
+  },
+
+
+
+   
   // ═══════════════════════════════════════════════════════
   // HENRY SCHNEIDER STATUE
   // ═══════════════════════════════════════════════════════
