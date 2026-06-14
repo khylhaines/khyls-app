@@ -16,6 +16,146 @@
 
 export const EXPLORER_PIN_DATA = {
 
+
+/* =========================================================
+   NEW PIN ENTRIES — paste into EXPLORER_PIN_DATA in
+   explorer_pins_data.js (between existing entries)
+========================================================= */
+
+  // ═══════════════════════════════════════════════════════
+  // HENRY SCHNEIDER STATUE
+  // ═══════════════════════════════════════════════════════
+  henry_schneider_statue: {
+    name: "Statue of Henry Schneider",
+    zone: "town",
+    category: "heritage",
+
+    intro: {
+      kids: "This statue is of Henry Schneider — the man who found the treasure that built Barrow! He discovered huge amounts of iron ore hidden in the ground nearby, and that's what turned a tiny village into a big town.",
+      teen: "This bronze statue honours Henry Schneider, who arrived in Barrow in 1839 looking for iron. In 1850 he struck it big — discovering a massive iron ore deposit that kickstarted Barrow's transformation from village to industrial powerhouse.",
+      adult: "This Grade II listed statue, erected in 1891, commemorates Henry William Schneider (1817-1887), whose discovery of the Park iron ore deposit in 1850-51 triggered the industrial development that created modern Barrow-in-Furness."
+    },
+
+    facts: [
+      "Henry Schneider arrived in Barrow in 1839 as a young speculator looking for iron ore.",
+      "In 1850-51 Schneider discovered a massive iron ore deposit at the Park mine near Askam.",
+      "Schneider and James Ramsden founded the Furness Railway, which opened its first section in 1846.",
+      "Schneider's company built Barrow's first blast furnaces between 1857 and 1859.",
+      "In 1866 Schneider's company merged with Ramsden's to form the Barrow Haematite Iron and Steel Company.",
+      "By 1876 the Barrow Haematite Steel Company was the largest iron and steel works in the world, employing over 5,000 people.",
+      "Henry Schneider served as Mayor of Barrow from 1875 to 1878.",
+      "The statue was sculpted by Percy Wood and erected in 1891 through public subscription.",
+      "The statue stands at Schneider Square, near Barrow Town Hall.",
+      "Schneider lived at Belsfield House in Bowness-on-Windermere and commuted to Barrow by steam yacht and train.",
+    ],
+
+    quiz: {
+      kids: [
+        { q: "What did Henry Schneider discover near Barrow?", options: ["Gold", "A huge deposit of iron ore", "An old castle"], answer: 1, fact: "His discovery of iron ore in 1850-51 changed Barrow forever." },
+        { q: "What job did Schneider do for Barrow?", options: ["He was Mayor", "He was a teacher", "He was a fisherman"], answer: 0, fact: "Henry Schneider was Mayor of Barrow from 1875 to 1878." },
+        { q: "What is this statue made of?", options: ["Wood", "Bronze", "Plastic"], answer: 1, fact: "The statue is bronze, standing on a granite base." },
+      ],
+      teen: [
+        { q: "In what year did Schneider discover the Park iron ore deposit?", options: ["1839", "1850", "1891"], answer: 1, fact: "The discovery came around 1850-51, near Askam-in-Furness." },
+        { q: "What railway did Schneider help found in 1846?", options: ["The Furness Railway", "The Cumbrian Coast Line", "The London and North Western"], answer: 0, fact: "The Furness Railway transported iron ore and slate, and Schneider was a key investor." },
+        { q: "By 1876, what was the scale of the Barrow Haematite Steel Company?", options: ["A small local works", "The largest iron and steel works in the world", "The second largest in Cumbria"], answer: 1, fact: "It employed over 5,000 workers and was the world's biggest steelworks at the time." },
+      ],
+      adult: [
+        { q: "Who sculpted the Henry Schneider statue, erected in 1891?", options: ["M. Noble", "Percy Wood", "George Frampton"], answer: 1, fact: "Percy Wood sculpted the bronze statue, funded by public subscription." },
+        { q: "Schneider's company partnered with whom to build Barrow's first blast furnaces?", options: ["John Hannay", "James Ramsden", "William Gradwell"], answer: 0, fact: "Schneider, Hannay and Company built the first blast furnaces between 1857-59, before merging with Ramsden's firm in 1866." },
+        { q: "Where did Schneider live while serving as chairman of the steel company?", options: ["Barrow town centre", "Belsfield House, Bowness-on-Windermere", "Piel Island"], answer: 1, fact: "He commuted from Windermere by steam yacht and train to his office in Barrow." },
+      ],
+    },
+
+    activities: {
+      kids: [
+        { type: "observation", title: "Statue Study", desc: "Look closely at the statue. What is Schneider wearing? What does his pose tell you about how important he was?" },
+        { type: "creative", title: "Treasure Hunter", desc: "Schneider was looking for iron ore for over 10 years before he found it. Imagine searching for years — how would you feel the day you finally found it?" },
+        { type: "family", title: "Two Statues", desc: "There's another statue nearby of James Ramsden. Can you find it? These two men built Barrow together!" },
+      ],
+      teen: [
+        { type: "knowledge", title: "Boom Town", desc: "Barrow's population went from 700 in 1851 to 47,000 by 1881 — almost entirely because of Schneider's discovery. What does that scale of growth in 30 years tell you about Victorian industry?" },
+        { type: "observation", title: "Civic Honour", desc: "This statue was paid for by public subscription — ordinary people contributed money to build it. Why do you think the town wanted to honour Schneider this way?" },
+        { type: "knowledge", title: "Lucky Break?", desc: "Schneider was 'just about to give up' before his discovery in 1850. How much of Barrow's history depended on this one moment of luck?" },
+      ],
+      adult: [
+        { type: "knowledge", title: "Industrial Partnership", desc: "Schneider and Ramsden's companies merged in 1866 to create the world's biggest steelworks by 1876. Consider how personal rivalries and partnerships between a handful of men shaped an entire town's destiny." },
+        { type: "observation", title: "Commuter Industrialist", desc: "Schneider lived in Bowness and commuted to Barrow by yacht and train — a very different life from the workers in his furnaces. What does this tell you about Victorian industrial hierarchy?" },
+        { type: "knowledge", title: "Boom and Bust", desc: "The Barrow Haematite Steel Company eventually closed. Standing here, consider: what happens to a town built almost entirely around one resource when that resource runs out?" },
+      ],
+    },
+
+    nearby: ["town_hall_clock", "james_ramsden_statue", "the_forum"],
+    audiobook_chapter: "iron_town_trail_chapter_1",
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // JAMES RAMSDEN STATUE
+  // ═══════════════════════════════════════════════════════
+  james_ramsden_statue: {
+    name: "Statue of James Ramsden",
+    zone: "town",
+    category: "heritage",
+
+    intro: {
+      kids: "Meet Sir James Ramsden — the man often called the founder of Barrow! He helped build the railways, the shipyard, and was Barrow's very first Mayor. Without him, Barrow might never have existed at all!",
+      teen: "This statue honours Sir James Ramsden, the engineer and industrialist who became Barrow's first Mayor in 1867. Ramsden oversaw the planning of the town itself, alongside the railway and steelworks that powered it.",
+      adult: "Erected in 1872, this Grade II listed statue commemorates Sir James Ramsden (1822-1896), the civil engineer and industrialist whose leadership of the Furness Railway and steel industry — and whose role as Barrow's first Mayor — earned him recognition as the principal founder of the modern town."
+    },
+
+    facts: [
+      "Sir James Ramsden lived from 1822 to 1896 and was a civil engineer and industrialist.",
+      "Ramsden played a leading role in developing Barrow-in-Furness from a small hamlet into an industrial town.",
+      "Ramsden was an investor in the Furness Railway, which opened its first section in 1846.",
+      "Ramsden became Barrow's first Mayor when the town received its charter of incorporation in 1867.",
+      "In 1866 Ramsden's iron company merged with Henry Schneider's to form the Barrow Haematite Iron and Steel Company.",
+      "Ramsden was knighted in 1872, the same year his statue was erected.",
+      "The statue was sculpted by M. Noble of London and erected by public subscription in 1872.",
+      "The statue stands in Ramsden Square at the junction of Duke Street and Abbey Road.",
+      "The inscription on the statue reads: 'In honor of Sir James Ramsden, first Mayor of this Borough'.",
+    ],
+
+    quiz: {
+      kids: [
+        { q: "What was James Ramsden the first ever of in Barrow?", options: ["First Mayor", "First teacher", "First doctor"], answer: 0, fact: "Ramsden became Barrow's first Mayor in 1867." },
+        { q: "What did Ramsden receive in 1872?", options: ["A medal", "A knighthood", "A new house"], answer: 1, fact: "He was knighted in 1872 — the same year his statue went up!" },
+        { q: "Where does this statue stand?", options: ["Ramsden Square", "Barrow Park", "Piel Island"], answer: 0, fact: "Ramsden Square sits at the junction of Duke Street and Abbey Road." },
+      ],
+      teen: [
+        { q: "In what year did Barrow receive its charter, making Ramsden its first Mayor?", options: ["1846", "1867", "1891"], answer: 1, fact: "Barrow became a municipal borough in 1867, with Ramsden as its first Mayor." },
+        { q: "Who sculpted the James Ramsden statue?", options: ["Percy Wood", "M. Noble of London", "George Frampton"], answer: 1, fact: "M. Noble sculpted the statue, erected by public subscription in 1872." },
+        { q: "Which company did Ramsden's firm merge with in 1866?", options: ["Schneider's iron company", "The Furness Railway", "Vickers"], answer: 0, fact: "The merger created the Barrow Haematite Iron and Steel Company, soon the world's largest steelworks." },
+      ],
+      adult: [
+        { q: "What heritage listing does the Ramsden statue hold?", options: ["Grade I", "Grade II", "Grade II*"], answer: 1, fact: "The statue is Grade II listed on the National Heritage List for England." },
+        { q: "Ramsden's statue predates Schneider's by how many years?", options: ["About 5 years", "About 19 years", "About 50 years"], answer: 1, fact: "Ramsden's statue went up in 1872; Schneider's followed in 1891." },
+        { q: "What is the exact wording on the statue's inscription?", options: ["'Founder of Barrow'", "'In honor of Sir James Ramsden, first Mayor of this Borough'", "'First Engineer of Furness'"], answer: 1, fact: "The 1872 inscription credits Ramsden specifically for his civic role as first Mayor." },
+      ],
+    },
+
+    activities: {
+      kids: [
+        { type: "observation", title: "Square Spotter", desc: "This statue stands in Ramsden Square. Look around — what buildings or streets can you see from here? Why might this spot have been chosen?" },
+        { type: "creative", title: "Founder's Speech", desc: "Imagine you're Ramsden becoming Mayor in 1867. Say a short speech about what you want for the new town of Barrow." },
+        { type: "physical", title: "Two Founders Walk", desc: "Walk between this statue and the Schneider statue. How far apart are they? These two men's stories are linked forever." },
+      ],
+      teen: [
+        { type: "knowledge", title: "Engineer to Mayor", desc: "Ramsden started as a railway engineer and ended up as Mayor of a major town. What skills might transfer from engineering to running a town?" },
+        { type: "observation", title: "1872 vs Today", desc: "This statue is over 150 years old. What has changed in Ramsden Square since 1872? What's stayed the same?" },
+        { type: "knowledge", title: "Public Subscription", desc: "Both this statue and Schneider's were funded by public subscription — ordinary residents paying for them. What does that say about how these men were viewed at the time?" },
+      ],
+      adult: [
+        { type: "knowledge", title: "Town Planner", desc: "Ramsden wasn't just an industrialist — he was involved in planning the layout of Barrow itself. Look at the street grid around you. Does it feel planned compared to older English towns?" },
+        { type: "observation", title: "Civic Memory", desc: "150+ years on, how many people walking past this statue today know who Ramsden was or what he did? What does that say about how civic memory fades?" },
+        { type: "knowledge", title: "A Town from Nothing", desc: "Ramsden helped take Barrow from a hamlet to a borough with its own Mayor in roughly 25 years. Consider what that pace of change would feel like to live through." },
+      ],
+    },
+
+    nearby: ["town_hall_clock", "henry_schneider_statue", "the_forum"],
+    audiobook_chapter: "iron_town_trail_chapter_1",
+  },
+
+   
   // ═══════════════════════════════════════════════════════
   // FURNESS ABBEY
   // ═══════════════════════════════════════════════════════
